@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogKinetix, Log, All);
+
 class FKinetixModule : public IModuleInterface
 {
 public:

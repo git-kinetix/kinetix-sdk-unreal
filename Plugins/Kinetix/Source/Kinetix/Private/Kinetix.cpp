@@ -2,6 +2,8 @@
 
 #include "Kinetix.h"
 
+DEFINE_LOG_CATEGORY(LogKinetix);
+
 #define LOCTEXT_NAMESPACE "FKinetixModule"
 
 void FKinetixModule::StartupModule()

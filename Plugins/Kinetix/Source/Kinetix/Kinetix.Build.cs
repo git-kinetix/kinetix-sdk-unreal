@@ -38,6 +38,8 @@ public class Kinetix : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"EnhancedInput",
+				"glTFRuntime"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
