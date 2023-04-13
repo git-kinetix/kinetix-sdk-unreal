@@ -7,9 +7,10 @@
 
 #include "glTFRuntimeFunctionLibrary.h"
 
-// For the logs
-#include "Kinetix.h"
 #include "Kismet/KismetSystemLibrary.h"
+
+// For the logs
+#include "KinetixRuntimeModule.h"
 
 // Sets default values for this component's properties
 UKinetixComponent::UKinetixComponent()
@@ -32,7 +33,7 @@ void UKinetixComponent::BeginPlay()
 	AActor* CurrentOwner = GetOwner();
 	if (!IsValid(CurrentOwner))
 	{
-		UE_LOG(LogKinetix, Warning, TEXT("%s's owner is NULL !"), *GetName());
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("%s's owner is NULL !"), *GetName());
 		return;
 	}
 
@@ -50,7 +51,7 @@ void UKinetixComponent::CheckSkeletalMeshComponent()
 	AActor* CurrentOwner = GetOwner();
 	if (!IsValid(CurrentOwner))
 	{
-		UE_LOG(LogKinetix, Warning, TEXT("%s's owner is NULL !"), *GetName());
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("%s's owner is NULL !"), *GetName());
 		return;
 	}
 
@@ -58,7 +59,7 @@ void UKinetixComponent::CheckSkeletalMeshComponent()
 		CurrentOwner->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
 	if (!IsValid(OwnerSkeletalMeshComponent))
 	{
-		UE_LOG(LogKinetix, Warning, TEXT("%s's owner doesn't have SkeletalMeshComponent !"), *GetName());
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("%s's owner doesn't have SkeletalMeshComponent !"), *GetName());
 		CurrentOwner->GetWorldTimerManager().SetTimer(CheckSkeletalMeshTimer, this,
 		                                              &UKinetixComponent::CheckSkeletalMeshComponent, 0.1f, true);
 		return;

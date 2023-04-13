@@ -11,7 +11,7 @@ class USkeletalMeshComponent;
 class UKinetixComponent;
 
 UCLASS()
-class KINETIX_API AKinetixPawn : public APawn
+class KINETIXRUNTIME_API AKinetixPawn : public APawn
 {
 	GENERATED_BODY()
 

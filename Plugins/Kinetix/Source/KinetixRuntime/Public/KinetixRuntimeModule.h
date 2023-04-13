@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogKinetix, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogKinetixRuntime, Log, All);
 
-class FKinetixModule : public IModuleInterface
+class FKinetixRuntimeModule : public IModuleInterface
 {
 public:
-
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+
+	static FString GetName() { return TEXT("KinetixModule"); }
 };

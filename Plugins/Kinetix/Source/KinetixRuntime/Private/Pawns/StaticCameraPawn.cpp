@@ -6,9 +6,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "Camera/CameraComponent.h"
-
-#include "Kinetix.h"
 #include "Kismet/KismetSystemLibrary.h"
+
+#include "KinetixRuntimeModule.h"
 
 // Sets default values
 AStaticCameraPawn::AStaticCameraPawn()
@@ -19,7 +19,7 @@ AStaticCameraPawn::AStaticCameraPawn()
 	CameraRoot = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraRoot"));
 	if (!IsValid(CameraRoot))
 	{
-		UE_LOG(LogKinetix, Warning, TEXT("Camera is null !"));
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("Camera is null !"));
 		return;
 	}
 

@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class Kinetix : ModuleRules
+public class KinetixRuntime : ModuleRules
 {
-	public Kinetix(ReadOnlyTargetRules Target) : base(Target)
+	public KinetixRuntime(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
@@ -25,7 +25,7 @@ public class Kinetix : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -39,7 +39,8 @@ public class Kinetix : ModuleRules
 				"Slate",
 				"SlateCore",
 				"EnhancedInput",
-				"glTFRuntime"
+				"glTFRuntime",
+				"Projects"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

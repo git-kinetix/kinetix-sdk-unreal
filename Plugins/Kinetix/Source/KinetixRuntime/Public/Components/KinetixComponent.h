@@ -10,7 +10,7 @@
 class USkeletalMeshComponent;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent, DisplayName="KinetixComponent"))
-class KINETIX_API UKinetixComponent : public UActorComponent
+class KINETIXRUNTIME_API UKinetixComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

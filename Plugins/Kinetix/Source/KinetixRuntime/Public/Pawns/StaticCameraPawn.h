@@ -10,8 +10,8 @@
 class UCameraComponent;
 class UInputMappingContext;
 
-UCLASS()
-class KINETIX_API AStaticCameraPawn : public APawn
+UCLASS(Blueprintable, BlueprintType)
+class KINETIXRUNTIME_API AStaticCameraPawn : public APawn
 {
 	GENERATED_BODY()
 
@@ -21,7 +21,7 @@ public:
 	AStaticCameraPawn();
 
 	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 protected:
 	
