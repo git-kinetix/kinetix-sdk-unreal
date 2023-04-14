@@ -3,7 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Interfaces/IPluginManager.h"
 #include "Modules/ModuleManager.h"
+
+class IPlugin;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogKinetixRuntime, Log, All);
 
@@ -14,5 +17,30 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-	static FString GetName() { return TEXT("KinetixModule"); }
+	static FString GetModuleName() { return TEXT("KinetixRuntime"); }
+	static FString GetPluginName() { return TEXT("Kinetix"); }
+
+	static FKinetixRuntimeModule& Get()
+	{
+		return FModuleManager::Get().GetModuleChecked<FKinetixRuntimeModule>(*GetModuleName());
+	}
+	static TSharedPtr<IPlugin> GetPlugin()
+	{
+		return IPluginManager::Get().FindPlugin(*GetPluginName());
+	}
+
+	static FString GetPluginRelativePath()
+	{
+		FString RelativePath(GetPlugin()->GetContentDir());
+		FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectPluginsDir());
+		return RelativePath;
+	}
+
+	static TArray<FString> GetMetadataFiles(const TCHAR* InFileExtension = TEXT("json"))
+	{
+		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+		TArray<FString> Files;
+		PlatformFile.FindFilesRecursively(Files, *GetPlugin()->GetContentDir(), InFileExtension);
+		return Files;
+	}
 };

@@ -40,7 +40,11 @@ public class KinetixRuntime : ModuleRules
 				"SlateCore",
 				"EnhancedInput",
 				"glTFRuntime",
-				"Projects"
+				"Projects",
+				"HTTP",
+				"Json",
+				"JsonUtilities",
+				"JsonBlueprintUtilities"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

@@ -86,11 +86,6 @@ void UKinetixComponent::OnOwnerAnimationInitialized()
 FString UKinetixComponent::RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path,
                                    UObject* Context)
 {
-	UKismetSystemLibrary::PrintString(this,
-	                                  FString::Printf(TEXT("NodeIndex: %i, CurveName: %s, Path: %s, Context= %s"),
-	                                                  NodeIndex, *CurveName, *Path,
-	                                                  Context == NULL ? TEXT("NULL") : *Context->GetName()));
-
 	return CurveName;
 }
 

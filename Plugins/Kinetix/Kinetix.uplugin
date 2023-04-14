@@ -27,6 +27,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "JsonBlueprintUtilities",
+			"Enabled": true
+		},
+		{
 			"Name": "glTFRuntime",
 			"Enabled": true
 		}
