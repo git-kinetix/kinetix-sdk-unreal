@@ -75,3 +75,4 @@ DerivedDataCache/*
 
 # Files related to Rider IDE
 .idea/*
+Plugins/Developer/*

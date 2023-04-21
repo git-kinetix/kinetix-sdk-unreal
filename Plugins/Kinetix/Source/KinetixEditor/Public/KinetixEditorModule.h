@@ -3,14 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AssetToolsModule.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Modules/ModuleManager.h"
-// #include "NormalDistributionActions.h"
+
+DECLARE_LOG_CATEGORY_CLASS(LogKinetixEditor, Log, All);
 
 class FKinetixEditorModule : public IModuleInterface
 {
 public:
-	void StartupModule() override;
-	void ShutdownModule() override;
-// private:
-// 	TSharedPtr<FNormalDistributionAssetTypeActions> NormalDistributionAssetTypeActions;
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+
+private:
+
 };

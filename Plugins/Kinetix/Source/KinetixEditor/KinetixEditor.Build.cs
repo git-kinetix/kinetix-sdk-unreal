@@ -39,7 +39,12 @@ public class KinetixEditor : ModuleRules
 				"Slate",
 				"SlateCore",
 				"UnrealEd",
-				"KinetixRuntime"
+				"AssetTools",
+				"ContentBrowser",
+				"AssetRegistry",
+				"Projects",
+				"KinetixRuntime",
+				"glTFRuntime"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

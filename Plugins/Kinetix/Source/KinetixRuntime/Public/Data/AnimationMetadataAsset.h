@@ -14,7 +14,7 @@ UCLASS()
 class KINETIXRUNTIME_API UAnimationMetadataAsset : public UDataAsset
 {
 	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category="Animation", meta=(ShowOnlyInnerProperties, CustomizeProperty))
+public:
+	UPROPERTY(VisibleAnywhere, Category="Animation", meta=(ShowOnlyInnerProperties, CustomizeProperty))
 	FAnimationMetadata AnimationMetadata;
 };

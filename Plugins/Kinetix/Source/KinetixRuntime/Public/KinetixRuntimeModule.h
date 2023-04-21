@@ -24,23 +24,13 @@ public:
 	{
 		return FModuleManager::Get().GetModuleChecked<FKinetixRuntimeModule>(*GetModuleName());
 	}
+	
 	static TSharedPtr<IPlugin> GetPlugin()
 	{
 		return IPluginManager::Get().FindPlugin(*GetPluginName());
 	}
 
-	static FString GetPluginRelativePath()
-	{
-		FString RelativePath(GetPlugin()->GetContentDir());
-		FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectPluginsDir());
-		return RelativePath;
-	}
-
-	static TArray<FString> GetMetadataFiles(const TCHAR* InFileExtension = TEXT("json"))
-	{
-		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-		TArray<FString> Files;
-		PlatformFile.FindFilesRecursively(Files, *GetPlugin()->GetContentDir(), InFileExtension);
-		return Files;
-	}
+private:
+	
+	void OnAssetRegistryInitialized();
 };

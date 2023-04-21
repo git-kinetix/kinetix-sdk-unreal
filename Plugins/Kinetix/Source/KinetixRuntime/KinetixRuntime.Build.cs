@@ -44,7 +44,8 @@ public class KinetixRuntime : ModuleRules
 				"HTTP",
 				"Json",
 				"JsonUtilities",
-				"JsonBlueprintUtilities"
+				"JsonBlueprintUtilities",
+				"DeveloperSettings"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

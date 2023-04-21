@@ -13,5 +13,3 @@ void FKinetixEditorModule::ShutdownModule()
 	// if (!FModuleManager::Get().IsModuleLoaded("AssetTools")) return;
 	// FAssetToolsModule::GetModule().Get().UnregisterAssetTypeActions(NormalDistributionAssetTypeActions.ToSharedRef());
 }
-
-IMPLEMENT_MODULE(FKinetixEditorModule, KinetixEditor)
