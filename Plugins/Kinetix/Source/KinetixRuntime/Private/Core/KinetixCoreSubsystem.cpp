@@ -47,7 +47,13 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 	}
 
 	KinetixAnimation = NewObject<UKinetixAnimation>(this);
-
+	if (!IsValid(KinetixAnimation))
+	{
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to create KinetixAnimation !"));
+		return false;
+	}
+	KinetixAnimation->Initialize(CoreConfiguration.bPlayAutomaticallyAnimationOnAnimators);
+	
 	FReferenceSkeletonLoadedDelegate Callback;
 	Callback.BindUFunction(this, TEXT("OnReferenceSkeletonAvailable"));
 	UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(Callback);

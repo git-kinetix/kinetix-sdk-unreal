@@ -80,7 +80,6 @@ bool UKinetixDataBlueprintFunctionLibrary::GetNameFromJson(FName& OutName,
 bool UKinetixDataBlueprintFunctionLibrary::GetOwnershipFromJson(EOwnership& OutOwnership,
                                                                 const FJsonObjectWrapper& InJsonObjectWrapper)
 {
-	bool Result = false;
 	const TSharedRef<FJsonValue> OwnershipJsonField =
 		InJsonObjectWrapper.JsonObject->GetField<EJson::String>(TEXT("origin")).ToSharedRef();
 	FString OwnershipValue;
@@ -298,12 +297,6 @@ bool UKinetixDataBlueprintFunctionLibrary::GenerateAnimationAssets(UObject* Worl
 	GeneralPath = FPaths::CreateStandardFilename(GeneralPath);
 	GeneralPath = FPaths::GetPath(GeneralPath);
 
-	// Format package path
-	FString AnimationRootPath = GeneralPath;
-	FPaths::MakePathRelativeTo(AnimationRootPath, *FPaths::ProjectPluginsDir());
-	RemoveContentFromPluginPath(AnimationRootPath);
-	AnimationRootPath = FString::Printf(TEXT("/%s/"), *AnimationRootPath);
-
 	IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
 	TArray<FString> FoundGLBs;
 	FileManager.FindFilesRecursively(FoundGLBs, *GeneralPath, TEXT(".glb"));
@@ -329,24 +322,13 @@ bool UKinetixDataBlueprintFunctionLibrary::GenerateAnimationAssets(UObject* Worl
 			continue;
 		}
 
-		FglTFRuntimeSkeletalAnimationConfig SkeletalAnimationConfig;
-		UAnimSequence* GlbAnimation = GlbAsset->LoadSkeletalAnimation(InSkeletalMesh, 0, SkeletalAnimationConfig);
-
-		if (!IsValid(GlbAnimation))
-		{
-			UE_LOG(LogKinetixRuntime, Warning, TEXT("%s Glb animation unable to be loaded !"), *FoundGLBs[i]);
-			continue;
-		}
-
-		FString GlbFilename = FPaths::GetBaseFilename(FoundGLBs[i]);
-		UE_LOG(LogKinetixRuntime, Log, TEXT("Glb loaded %s !"), *GlbFilename);
-
 		FString PackageName = FPackageName::ObjectPathToPackageName(FoundGLBs[i]);
 		FPaths::MakePathRelativeTo(PackageName, *FPaths::ProjectPluginsDir());
 		PackageName = FString::Printf(TEXT("/%s"), *PackageName);
 		RemoveContentFromPluginPath(PackageName);
 		FString PackagePath = FPackageName::GetLongPackagePath(PackageName);
-		
+
+		FString GlbFilename = FPaths::GetBaseFilename(FoundGLBs[i]);
 		FString AnimationFilename = FString::Printf(TEXT("A_%s"), *GlbFilename);
 		PackageName = FString::Printf(TEXT("%s/%s"), *PackagePath, *AnimationFilename);
 		PackageName = FPackageName::GetNormalizedObjectPath(PackagePath + TEXT("/") + AnimationFilename);
@@ -358,6 +340,15 @@ bool UKinetixDataBlueprintFunctionLibrary::GenerateAnimationAssets(UObject* Worl
 		{
 			UE_LOG(LogKinetixRuntime, Warning, TEXT("%s already exist, continuing..."),
 				   *AnimationFilename);
+			continue;
+		}
+
+		FglTFRuntimeSkeletalAnimationConfig SkeletalAnimationConfig;
+		UAnimSequence* GlbAnimation = GlbAsset->LoadSkeletalAnimation(InSkeletalMesh, 0, SkeletalAnimationConfig);
+
+		if (!IsValid(GlbAnimation))
+		{
+			UE_LOG(LogKinetixRuntime, Warning, TEXT("%s Glb animation unable to be loaded !"), *FoundGLBs[i]);
 			continue;
 		}
 		

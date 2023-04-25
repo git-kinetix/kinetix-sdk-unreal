@@ -32,21 +32,19 @@ protected:
 	void OnOwnerAnimationInitialized();
 
 	UFUNCTION(BlueprintCallable)
-	void LoadAnimationAndPlay();
+	void LoadAnimationAndPlay(const FString& Url);
 
 	//virtual void EndPlay
 	UFUNCTION()
 	FString RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path, UObject* Context);
 
 private:
+
 	UPROPERTY(VisibleAnywhere, meta=(DisplayName = "Skeletal Mesh in use"))
 	USkeletalMeshComponent* OwnerSkeletalMeshComponent;
 
 	UPROPERTY(EditAnywhere, Category="Kinetix|Animation", meta=(AllowPrivateAccess="true"))
-	FString Url;
-	
-	UPROPERTY(EditAnywhere, Category="Kinetix|Animation", meta=(AllowPrivateAccess="true"))
-	bool bPlayAnimationOnLaunch;
+	bool bRegisterPlayerOnLaunch;
 
 	FTimerHandle CheckSkeletalMeshTimer;
 

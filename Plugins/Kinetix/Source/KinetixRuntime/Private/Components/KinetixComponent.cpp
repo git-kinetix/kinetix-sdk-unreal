@@ -11,6 +11,8 @@
 
 // For the logs
 #include "KinetixRuntimeModule.h"
+#include "Core/KinetixCoreSubsystem.h"
+#include "Core/Animation/KinetixAnimation.h"
 
 // Sets default values for this component's properties
 UKinetixComponent::UKinetixComponent()
@@ -20,8 +22,7 @@ UKinetixComponent::UKinetixComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	// ...
-	Url.Empty();
-	bPlayAnimationOnLaunch = false;
+	bRegisterPlayerOnLaunch = false;
 }
 
 
@@ -30,20 +31,7 @@ void UKinetixComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AActor* CurrentOwner = GetOwner();
-	if (!IsValid(CurrentOwner))
-	{
-		UE_LOG(LogKinetixRuntime, Warning, TEXT("%s's owner is NULL !"), *GetName());
-		return;
-	}
-
-	OwnerSkeletalMeshComponent = Cast<USkeletalMeshComponent>(
-		CurrentOwner->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
-	if (!IsValid(OwnerSkeletalMeshComponent))
-	{
-		CurrentOwner->GetWorldTimerManager().SetTimer(CheckSkeletalMeshTimer, this,
-		                                              &UKinetixComponent::CheckSkeletalMeshComponent, 0.1f, true);
-	}
+	CheckSkeletalMeshComponent();
 }
 
 void UKinetixComponent::CheckSkeletalMeshComponent()
@@ -70,6 +58,8 @@ void UKinetixComponent::CheckSkeletalMeshComponent()
 		OwnerSkeletalMeshComponent->OnAnimInitialized.AddDynamic(this, &UKinetixComponent::OnOwnerAnimationInitialized);
 		return;
 	}
+
+	OnOwnerAnimationInitialized();
 }
 
 void UKinetixComponent::SetSkeletalMeshComponent(USkeletalMeshComponent* InSkeletalMeshComponent)
@@ -79,23 +69,68 @@ void UKinetixComponent::SetSkeletalMeshComponent(USkeletalMeshComponent* InSkele
 
 void UKinetixComponent::OnOwnerAnimationInitialized()
 {
-	UKismetSystemLibrary::PrintString(this,
-	                                  FString::Printf(TEXT("%s OnOwnerAnimationInitialized"), *GetName()));
+	UWorld* CurrentWorld = GetWorld();
+	if (!IsValid(CurrentWorld))
+	{
+		UKismetSystemLibrary::PrintString(this,
+		                                  FString::Printf(
+			                                  TEXT("%s OnOwnerAnimationInitialized: GetWorld() returned null!"),
+			                                  *GetName()),
+		                                  true,
+		                                  true,
+		                                  FLinearColor::Yellow,
+		                                  10.f);
+
+		return;
+	}
+
+	UGameInstance* GameInstance = CurrentWorld->GetGameInstance();
+	if (!IsValid(GameInstance))
+	{
+		UKismetSystemLibrary::PrintString(this,
+		                                  FString::Printf(
+			                                  TEXT("%s OnOwnerAnimationInitialized: GetGameInstance() returned null!"),
+			                                  *GetName()),
+		                                  true,
+		                                  true,
+		                                  FLinearColor::Yellow,
+		                                  10.f);
+
+		return;
+	}
+
+	UKinetixCoreSubsystem* KinetixCoreSubsystem = GameInstance->GetSubsystem<UKinetixCoreSubsystem>();
+	if (!IsValid(KinetixCoreSubsystem))
+	{
+		UKismetSystemLibrary::PrintString(this,
+		                                  FString::Printf(
+			                                  TEXT("%s OnOwnerAnimationInitialized: GetSubsystem() returned null!"),
+			                                  *GetName()),
+		                                  true,
+		                                  true,
+		                                  FLinearColor::Yellow,
+		                                  10.f);
+		return;
+	}
+
+	KinetixCoreSubsystem->KinetixAnimation->RegisterLocalPlayerAnimInstance(
+		OwnerSkeletalMeshComponent->GetAnimInstance());
 }
 
 FString UKinetixComponent::RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path,
-                                   UObject* Context)
+                                      UObject* Context)
 {
 	return CurveName;
 }
 
-void UKinetixComponent::LoadAnimationAndPlay()
+void UKinetixComponent::LoadAnimationAndPlay(const FString& Url)
 {
 	if (Url.IsEmpty())
 	{
 		UKismetSystemLibrary::PrintString(
-			this, FString::Printf(TEXT("%s LoadAnimationAndPlay: Url is empty ! Skipping..."), *GetOwner()->GetName()),
-			true, true, FLinearColor::Yellow, 5.f);;
+			this, FString::Printf(TEXT("%s LoadAnimationAndPlay: Url is empty ! Skipping..."),
+				*GetOwner()->GetName()),
+			true, true, FLinearColor::Yellow, 5.f);
 		return;
 	}
 

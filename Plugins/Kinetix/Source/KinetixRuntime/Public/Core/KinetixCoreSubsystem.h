@@ -45,7 +45,7 @@ protected:
 	UFUNCTION()
 	void OnReferenceSkeletonAvailable(FAssetData AssetData);
 	
-protected:
+public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UKinetixAnimation* KinetixAnimation;
