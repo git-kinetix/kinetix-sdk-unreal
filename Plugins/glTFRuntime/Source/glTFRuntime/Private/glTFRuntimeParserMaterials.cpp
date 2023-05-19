@@ -4,6 +4,7 @@
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
 #include "ImageUtils.h"
+#include "MaterialDomain.h"
 #include "Misc/FileHelper.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Math/UnrealMathUtility.h"
@@ -339,7 +340,7 @@ UMaterialInterface* FglTFRuntimeParser::BuildVertexColorOnlyMaterial(const FglTF
 	if (!Material)
 	{
 		AddError("BuildVertexColorOnlyMaterial()", "Unable to create material instance, falling back to default material");
-		return UMaterial::GetDefaultMaterial(EMaterialDomain::MD_Surface);
+		return UMaterial::GetDefaultMaterial(MD_Surface);
 	}
 
 	Material->SetScalarParameterValue("bUseVertexColors", true);

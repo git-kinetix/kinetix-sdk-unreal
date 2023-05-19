@@ -27,8 +27,8 @@ class KINETIXRUNTIME_API UKinetixNetwork : public UObject
 	 * @brief Returns the current Kinetix Network Configuration
 	 * @return A reference to the current configuration
 	 */
-	UFUNCTION(BlueprintCallable, Category="Kinetix|Network")
-	static const FKinetixNetworkConfiguration& GetConfiguration();
+	// UFUNCTION(BlueprintCallable, Category="Kinetix|Network")
+	// static const FKinetixNetworkConfiguration& GetConfiguration();
 
 	/**
 	 * @brief Returns the UKinetixComponent for a remote peer
@@ -58,4 +58,7 @@ class KINETIXRUNTIME_API UKinetixNetwork : public UObject
 	 */
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Network")
 	void UnregisterAllRemotePeers();
+    
+private:
+     // static FKinetixNetworkConfiguration NetworkConfiguration;
 };

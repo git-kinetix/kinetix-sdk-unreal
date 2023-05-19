@@ -7,10 +7,10 @@ void UKinetixNetwork::SetConfiguration(FKinetixNetworkConfiguration& InNetworkCo
 {
 }
 
-const FKinetixNetworkConfiguration& UKinetixNetwork::GetConfiguration()
-{
-	return FKinetixNetworkConfiguration();
-}
+// const FKinetixNetworkConfiguration& UKinetixNetwork::GetConfiguration()
+// {
+// 	return NetworkConfiguration;
+// }
 
 UKinetixComponent* UKinetixNetwork::GetRemoteKCC(FString InRemotePeerID)
 {

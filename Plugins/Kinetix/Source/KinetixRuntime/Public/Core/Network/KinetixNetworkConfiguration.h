@@ -1,8 +1,9 @@
-// // Copyright Kinetix. All Rights Reserved.
+// Copyright Kinetix. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
+#include "KinetixNetworkConfiguration.generated.h"
 
 /**
  * 

@@ -13,6 +13,7 @@
 #include "Rendering/SkeletalMeshRenderData.h"
 #include "Rendering/SkeletalMeshLODRenderData.h"
 #include "Rendering/SkeletalMeshVertexBuffer.h"
+#include "Engine/SkinnedAssetCommon.h"
 #if WITH_EDITOR
 #include "IMeshBuilderModule.h"
 #include "LODUtilities.h"

@@ -7,7 +7,7 @@ UKinetixAnimationId::UKinetixAnimationId(const FObjectInitializer& ObjectInitial
 	: UUID()
 {}
 
-void UKinetixAnimationId::Serialize(FJsonSerializerBase& Serializer, bool bFlatObject)
-{
+// void UKinetixAnimationId::Serialize(FJsonSerializerBase& Serializer, bool bFlatObject)
+// {
 	// Serializer.Serialize(TEXT("UUID"),UUID.ToString());
-}
+// }

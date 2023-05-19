@@ -1,6 +1,8 @@
 // Copyright 2020-2022, Roberto De Ioris.
 
 #include "glTFRuntimeParser.h"
+
+#include "MaterialDomain.h"
 #include "Misc/FileHelper.h"
 #include "Serialization/JsonSerializer.h"
 #include "Animation/Skeleton.h"
