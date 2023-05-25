@@ -25,7 +25,23 @@ struct FAnimationID
 
 	UPROPERTY(VisibleAnywhere)
 	FGuid UUID;
+
+	FAnimationID()
+	{ UUID.Invalidate(); }
+	
+	// Needed to be able to use as key in TMap (1/2)
+	bool operator==(const FAnimationID& Other) const
+	{
+		return UUID == Other.UUID;
+	}
 };
+
+// Needed to be able to use as key in TMap (2/2)
+FORCEINLINE uint32 GetTypeHash(const FAnimationID& AnimationID)
+{
+	uint32 Hash = FCrc::MemCrc32(&AnimationID, sizeof(FAnimationID));
+	return Hash;
+}
 
 USTRUCT(BlueprintType)
 struct FAnimationMetadata
@@ -76,7 +92,8 @@ struct FKinetixCoreConfiguration
 		  MaxRAMCacheInMB(50),
 		  bEnableAnalytics(true),
 		  bShowLogs(false)
-	{}
+	{
+	}
 
 	GENERATED_BODY()
 
@@ -91,13 +108,12 @@ struct FKinetixCoreConfiguration
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bEnableAnalytics;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bShowLogs;
 
 	// TODO: Implement network structure
 	// FKinetixNetworkConfiguration NetworkConfiguration
-	
 };
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FReferenceSkeletonLoadedDelegate, FAssetData, AssetData);
@@ -111,7 +127,6 @@ class KINETIXRUNTIME_API UKinetixDataBlueprintFunctionLibrary : public UBlueprin
 	GENERATED_BODY()
 
 public:
-	
 #pragma region Paths
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data", meta = (Keywords = "data"))
 	static UPARAM(DisplayName="Success") bool GetPluginRelativePath(FString& RelativePath);
@@ -167,12 +182,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
 		meta = (Keywords = "data|skeleton"))
-	static UPARAM(DisplayName="Skeleton available") bool LoadReferenceSkeletonAsset(const FReferenceSkeletonLoadedDelegate& Callback);
-	
-	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
-		meta = (WorldContext = "WorldContextObject" , Keywords = "data|skeleton"))
-	static UPARAM(DisplayName="Animations created") bool GenerateAnimationAssets(UObject* WorldContextObject, USkeletalMesh* InSkeletalMesh);
-	
-#pragma endregion
+	static UPARAM(DisplayName="Skeleton available") bool LoadReferenceSkeletonAsset(
+		const FReferenceSkeletonLoadedDelegate& Callback);
 
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
+		meta = (WorldContext = "WorldContextObject", Keywords = "data|skeleton"))
+	static UPARAM(DisplayName="Animations created") bool GenerateAnimationAssets(
+		UObject* WorldContextObject, USkeletalMesh* InSkeletalMesh);
+
+#pragma endregion
 };

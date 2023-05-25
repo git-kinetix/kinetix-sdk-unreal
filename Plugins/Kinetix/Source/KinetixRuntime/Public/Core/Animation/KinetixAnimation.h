@@ -8,6 +8,9 @@
 #include "KinetixAnimation.generated.h"
 
 class UKinetixComponent;
+
+DECLARE_LOG_CATEGORY_EXTERN(LogKinetixAnimation, Log, All);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRegisterLocalPlayer);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationLocalPlayer, UKinetixAnimationId*, AnimationId);

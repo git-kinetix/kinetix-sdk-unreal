@@ -113,8 +113,8 @@ void UKinetixComponent::OnOwnerAnimationInitialized()
 		return;
 	}
 
-	KinetixCoreSubsystem->KinetixAnimation->RegisterLocalPlayerAnimInstance(
-		OwnerSkeletalMeshComponent->GetAnimInstance());
+	// KinetixCoreSubsystem->KinetixAnimation->RegisterLocalPlayerAnimInstance(
+	// 	OwnerSkeletalMeshComponent->GetAnimInstance());
 }
 
 FString UKinetixComponent::RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path,

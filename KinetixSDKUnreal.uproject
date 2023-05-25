@@ -47,10 +47,6 @@
 		{
 			"Name": "HairStrands",
 			"Enabled": true
-		},
-		{
-			"Name": "Kinetix",
-			"Enabled": true
 		}
 	]
 }

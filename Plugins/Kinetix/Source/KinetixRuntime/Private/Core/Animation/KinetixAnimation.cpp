@@ -5,6 +5,8 @@
 #include "Managers/LocalPlayerManager.h"
 #include "Utils/Animation/RootMotionConfig.h"
 
+DEFINE_LOG_CATEGORY(LogKinetixAnimation);
+
 UKinetixAnimation::UKinetixAnimation()
 {
 };
@@ -27,9 +29,14 @@ void UKinetixAnimation::Initialize(bool bInPlayAutomaticallyOnAnimInstance)
 void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimInstance)
 {
 	if (!IsValid(InAnimInstance))
+	{
+		UE_LOG(LogKinetixAnimation, Warning, TEXT("RegisterLocalPlayerAnimInstance: AnimInstance is null !"));
 		return;
+	}
 
 	AnimInstance = InAnimInstance;
+
+	LocalPlayerManager.Get()->AddPlayerCharacterComponent(InAnimInstance);
 
 	OnRegisterLocalPlayer.Broadcast();
 }
