@@ -3,23 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Data/AnimationId.h"
 #include "Data/KinetixDataLibrary.h"
+#include "Interfaces/KinetixSubcoreInterface.h"
 #include "KinetixAnimation.generated.h"
 
 class UKinetixComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogKinetixAnimation, Log, All);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRegisterLocalPlayer);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationLocalPlayer, UKinetixAnimationId*, AnimationId);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationQueueLocalPlayer, TArray<UKinetixAnimationId*>, AnimationIds);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationStartOnLocalPlayer, UKinetixAnimationId*, AnimationId);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationEndOnLocalPlayer, UKinetixAnimationId*, AnimationId);
-
-// Maybe adding a UEnum result for better understanding in case of error 
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnKinetixLocalAnimationLoadingFinished, bool, Success);
 
 class FLocalPlayerManager;
 
@@ -28,7 +18,7 @@ class FLocalPlayerManager;
  */
 UCLASS(BlueprintType)
 class KINETIXRUNTIME_API UKinetixAnimation
-	: public UObject
+	: public UObject, public IKinetixSubcoreInterface
 {
 	GENERATED_BODY()
 
@@ -38,6 +28,10 @@ public:
 	// Needed to have TUniquePtr<> with forward declared classes
 	UKinetixAnimation(FVTableHelper& Helper);
 	~UKinetixAnimation();
+
+#pragma region IKinetixSubcoreInterface
+	virtual void Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult) override;
+#pragma endregion
 
 	void Initialize(bool bInPlayAutomaticallyOnAnimInstance);
 
@@ -78,7 +72,7 @@ public:
 	 * @param InAnimationID ID of the animation to play
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void PlayAnimationOnLocalPlayer(FAnimationID InAnimationID);
+	void PlayAnimationOnLocalPlayer(UPARAM(ref) const FAnimationID& InAnimationID);
 
 	/**
 	 * @brief Play animations on local player
@@ -86,7 +80,7 @@ public:
 	 * @param bLoop Should loop the queue
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void PlayAnimationQueueOnLocalPlayer(TArray<FAnimationID> InAnimationIDs, bool bLoop = false);
+	void PlayAnimationQueueOnLocalPlayer(TArray<FAnimationID>& InAnimationIDs, bool bLoop = false);
 
 	/**
 	 * @brief Stop animation on local player

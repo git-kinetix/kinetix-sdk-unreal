@@ -6,6 +6,7 @@
 #include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
 #include "Core/Animation/KinetixAnimation.h"
+#include "Core/Metadata/KinetixMetadata.h"
 #include "Data/KinetixDataLibrary.h"
 
 void UKinetixCoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -29,6 +30,22 @@ void UKinetixCoreSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
+bool UKinetixCoreSubsystem::InitializeSubcore(const UClass* SubcoreClass, UObject** OutSubcore)
+{
+	UObject* SubcoreObject = NewObject<UObject>(this, SubcoreClass);
+	if (!IsValid(SubcoreObject) || !SubcoreObject->Implements<UKinetixSubcoreInterface>())
+		return false;
+	
+	bool bInterfaceInitialized = false;
+	IKinetixSubcoreInterface::Execute_Initialize(SubcoreObject, CoreConfiguration, bInterfaceInitialized);
+	if(!bInterfaceInitialized)
+		return false;
+
+	*OutSubcore = SubcoreObject;
+	
+	return true;
+}
+
 bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfiguration)
 {
 	CoreConfiguration = InConfiguration;
@@ -46,20 +63,28 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 		return false;
 	}
 
-	KinetixAnimation = NewObject<UKinetixAnimation>(this);
-	if (!IsValid(KinetixAnimation))
+	UObject* SubcoreObject = nullptr;
+	if (!InitializeSubcore(UKinetixAnimation::StaticClass(), &SubcoreObject))
 	{
-		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to create KinetixAnimation !"));
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixAnimation failed to initialize !"));
 		return false;
 	}
-	KinetixAnimation->Initialize(CoreConfiguration.bPlayAutomaticallyAnimationOnAnimators);
+	KinetixAnimation = Cast<UKinetixAnimation>(SubcoreObject);
+
+	SubcoreObject = nullptr;
+	if (!InitializeSubcore(UKinetixMetadata::StaticClass(), &SubcoreObject))
+	{
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixMetadata failed to initialize !"));
+		return false;
+	}
+	KinetixMetadata = Cast<UKinetixMetadata>(SubcoreObject);
 	
 	FReferenceSkeletonLoadedDelegate Callback;
 	Callback.BindUFunction(this, TEXT("OnReferenceSkeletonAvailable"));
 	UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(Callback);
 
 	bCoreInitialized = true;
-
+	
 	for (int i = 0; i < OnCoreInitializedDelegates.Num(); ++i)
 	{
 		OnCoreInitializedDelegates[i].Execute();

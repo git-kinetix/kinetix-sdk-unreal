@@ -339,7 +339,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GenerateAnimationAssets(UObject* Worl
 		if (AssetData.IsValid())
 		{
 			UE_LOG(LogKinetixRuntime, Warning, TEXT("%s already exist, continuing..."),
-				   *AnimationFilename);
+			       *AnimationFilename);
 			continue;
 		}
 
@@ -351,7 +351,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GenerateAnimationAssets(UObject* Worl
 			UE_LOG(LogKinetixRuntime, Warning, TEXT("%s Glb animation unable to be loaded !"), *FoundGLBs[i]);
 			continue;
 		}
-		
+
 		UPackage* AnimationPackage = CreatePackage(*PackageName);
 		if (!IsValid(AnimationPackage))
 		{

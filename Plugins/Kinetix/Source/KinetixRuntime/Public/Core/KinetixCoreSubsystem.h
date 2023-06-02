@@ -7,6 +7,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "KinetixCoreSubsystem.generated.h"
 
+class UKinetixMetadata;
 class UKinetixAnimation;
 DECLARE_DYNAMIC_DELEGATE(FKinetixCoreInitializedDelegate);
 
@@ -28,6 +29,7 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+	bool InitializeSubcore(const UClass* SubcoreClass, UObject** OutSubcore);
 
 #pragma endregion
 
@@ -49,6 +51,8 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UKinetixAnimation* KinetixAnimation;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UKinetixMetadata* KinetixMetadata;
 	
 private:
 	UPROPERTY()

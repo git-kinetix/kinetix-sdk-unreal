@@ -72,6 +72,24 @@ struct FAnimationMetadata
 		: Ownership(EOwnership::O_None), Duration(-1.f)
 	{
 	}
+
+	FAnimationMetadata& operator= (const FAnimationMetadata& Other)
+	{
+		if (this == &Other)
+		{
+			return *this;
+		}
+
+		Ownership = Other.Ownership;
+		Id = Other.Id;
+		Name = Other.Name;
+		Description = Other.Description;
+		Duration = Other.Duration;
+		AnimationURL = Other.AnimationURL;
+		IconURL = Other.IconURL;
+		
+		return *this;
+	}
 };
 
 USTRUCT(BlueprintType, Category="Kinetix|Animation")
@@ -87,7 +105,7 @@ USTRUCT(BlueprintType)
 struct FKinetixCoreConfiguration
 {
 	FKinetixCoreConfiguration()
-		: bPlayAutomaticallyAnimationOnAnimators(true),
+		: bPlayAutomaticallyAnimationOnAnimInstances(true),
 		  MaxPersistentDataStorageInMB(50),
 		  MaxRAMCacheInMB(50),
 		  bEnableAnalytics(true),
@@ -98,7 +116,7 @@ struct FKinetixCoreConfiguration
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bPlayAutomaticallyAnimationOnAnimators;
+	bool bPlayAutomaticallyAnimationOnAnimInstances;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int MaxPersistentDataStorageInMB;
@@ -117,6 +135,17 @@ struct FKinetixCoreConfiguration
 };
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FReferenceSkeletonLoadedDelegate, FAssetData, AssetData);
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRegisterLocalPlayer);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationLocalPlayer, const FAnimationID&, AnimationID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationQueueLocalPlayer, const TArray<FAnimationID>&, AnimationIDs);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationStartOnLocalPlayer, const FAnimationID&, AnimationID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationEndOnLocalPlayer, const FAnimationID&, AnimationID);
+
+// Maybe adding a UEnum result for better understanding in case of error 
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnKinetixLocalAnimationLoadingFinished, bool, Success);
 
 /**
 * 

@@ -21,6 +21,12 @@ UKinetixAnimation::~UKinetixAnimation()
 	LocalPlayerManager = nullptr;
 }
 
+void UKinetixAnimation::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)
+{
+	LocalPlayerManager = MakeUnique<FLocalPlayerManager>(CoreConfiguration.bPlayAutomaticallyAnimationOnAnimInstances);
+	bResult = true;
+}
+
 void UKinetixAnimation::Initialize(bool bInPlayAutomaticallyOnAnimInstance)
 {
 	LocalPlayerManager = MakeUnique<FLocalPlayerManager>(bInPlayAutomaticallyOnAnimInstance);
@@ -55,11 +61,12 @@ void UKinetixAnimation::UnregisterLocalPlayer()
 {
 }
 
-void UKinetixAnimation::PlayAnimationOnLocalPlayer(FAnimationID InAnimationID)
+void UKinetixAnimation::PlayAnimationOnLocalPlayer(const FAnimationID& InAnimationID)
 {
+	LocalPlayerManager->PlayAnimation(InAnimationID, OnPlayedKinetixAnimationLocalPlayer);
 }
 
-void UKinetixAnimation::PlayAnimationQueueOnLocalPlayer(TArray<FAnimationID> InAnimationIDs, bool bLoop)
+void UKinetixAnimation::PlayAnimationQueueOnLocalPlayer(TArray<FAnimationID>& InAnimationIDs, bool bLoop)
 {
 }
 

@@ -4,22 +4,38 @@
 
 #include "CoreMinimal.h"
 #include "Data/KinetixDataLibrary.h"
+#include "Interfaces/KinetixSubcoreInterface.h"
 #include "KinetixMetadata.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogKinetixMetadata, Log, All);
+
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataAvailable, bool, bSuccess, FAnimationMetadata&, AnimationData);
+
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataOwnershipLoaded, bool, bSuccess, bool, bUserOwned);
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadatasAvailable, bool, bSuccess, TArray<FAnimationMetadata>, Metadatas);
+
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadatasAvailable, bool, bSuccess, const TArray<FAnimationMetadata>&, Metadatas);
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnTotalNumberOfPagesAvailable, int, NumberOfPages);
+
+class FEmoteManager;
 
 /**
  * 
  */
 UCLASS(BlueprintType)
-class KINETIXRUNTIME_API UKinetixMetadata : public UObject
+class KINETIXRUNTIME_API UKinetixMetadata
+	: public UObject, public IKinetixSubcoreInterface
 {
 	GENERATED_BODY()
 
 public:
+
+	UKinetixMetadata();
+
+	//Needed to have TUniquePtr<> with forward declared classes, see PhysicsEngine UBodySetup
+	UKinetixMetadata(FVTableHelper& Helper);
+	~UKinetixMetadata();
+
 	/**
 	 * @brief Get Metadata of a specific animation
 	 * @param InID ID of the animation
@@ -59,4 +75,26 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Metadata")
 	void GetUserAnimationMetadatasTotalPagesCount(int InCountPerPage, const FOnTotalNumberOfPagesAvailable& Callback);
+
+#pragma region IKinetixSubcoreInterface
+	virtual void Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult) override;
+#pragma endregion
+
+protected:
+
+	void OnMetadatasAvailable(TArray<FSoftObjectPath> SoftObjectPaths, FOnMetadatasAvailable OnMetadatasAvailable);
+
+private:
+
+	bool GetMetadatasSoftObjectPaths(TArray<FSoftObjectPath>& ObjectPaths);
+	void InitializeEmoteManager(TArray<FSoftObjectPath> SoftObjectPaths);
+	void ResolveMetadatas(
+		TArray<FSoftObjectPath>& SoftObjectPaths,
+		TArray<FAnimationMetadata>& Metadatas,
+		TArray<FString>& OutLocalPaths);
+	
+public:
+
+	TUniquePtr<FEmoteManager> EmoteManager;
+	
 };

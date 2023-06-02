@@ -25,7 +25,7 @@ public class KinetixUI : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core", "CommonUI", "UMG"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -38,6 +38,7 @@ public class KinetixUI : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"GameplayTags"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

@@ -13,6 +13,9 @@
 #include "KinetixRuntimeModule.h"
 #include "Core/KinetixCoreSubsystem.h"
 #include "Core/Animation/KinetixAnimation.h"
+#include "Core/Metadata/KinetixMetadata.h"
+#include "Managers/EmoteManager.h"
+#include "Subsystems/SubsystemBlueprintLibrary.h"
 
 // Sets default values for this component's properties
 UKinetixComponent::UKinetixComponent()
@@ -123,13 +126,45 @@ FString UKinetixComponent::RemapBones(const int32 NodeIndex, const FString& Curv
 	return CurveName;
 }
 
+void UKinetixComponent::PlayAnimation(const FAnimationID& InAnimationID, bool bLoop,
+                                      const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate)
+{
+	if (!InAnimationID.UUID.IsValid())
+	{
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("[KinetixComponent] PlayAnimation: %s Given AnimationID is null !"),
+		       *GetName());
+		return;
+	}
+
+	UKinetixCoreSubsystem* KinetixCoreSubsystem = Cast<UKinetixCoreSubsystem>(
+		USubsystemBlueprintLibrary::GetGameInstanceSubsystem(this, UKinetixCoreSubsystem::StaticClass()));
+	if (!IsValid(KinetixCoreSubsystem))
+	{
+		UE_LOG(LogKinetixRuntime, Error, TEXT("[UKinetixComponent] PlayAnimation: KinetixCoreSubsystem unavailable !"));
+		return;
+	}
+
+	KinetixCoreSubsystem->KinetixMetadata->EmoteManager.Get()->GetAnimSequence(InAnimationID,
+		TDelegate<void(UAnimSequence*)>::CreateLambda([&](UAnimSequence* AnimSequence)
+		{
+			if (!IsValid(AnimSequence))
+			{
+				UE_LOG(LogKinetixRuntime, Warning, TEXT("[UKinetixComponent] PlayAnimation: %s AnimSequence is null !"));
+				return;
+			}
+			
+			OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
+			OnPlayedAnimationDelegate.Broadcast(InAnimationID);
+		}));
+}
+
 void UKinetixComponent::LoadAnimationAndPlay(const FString& Url)
 {
 	if (Url.IsEmpty())
 	{
 		UKismetSystemLibrary::PrintString(
 			this, FString::Printf(TEXT("%s LoadAnimationAndPlay: Url is empty ! Skipping..."),
-				*GetOwner()->GetName()),
+			                      *GetOwner()->GetName()),
 			true, true, FLinearColor::Yellow, 5.f);
 		return;
 	}

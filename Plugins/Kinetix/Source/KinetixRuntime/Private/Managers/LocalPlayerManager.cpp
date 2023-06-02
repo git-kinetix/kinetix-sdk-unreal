@@ -4,6 +4,7 @@
 
 #include "KinetixRuntimeModule.h"
 #include "Components/KinetixComponent.h"
+#include "Core/Animation/KinetixAnimation.h"
 
 FLocalPlayerManager::FLocalPlayerManager(bool bInPlayAutomaticallyOnAnimator)
 	: bPlayAutomatcallyOnAnimInstance(bInPlayAutomaticallyOnAnimator),
@@ -50,6 +51,79 @@ bool FLocalPlayerManager::AddPlayerCharacterComponent(UAnimInstance* InAnimInsta
 	OnRegisterLocalPlayer();
 
 	return true;
+}
+
+bool FLocalPlayerManager::RemovePlayerCharacterComponent()
+{
+	// Component already removed or never spawn 
+	if (!IsValid(LocalKinetixComponent))
+		return true;
+
+	AActor* LocalOwner = LocalKinetixComponent->GetOwner();
+	if (!IsValid(LocalOwner))
+	{
+		UE_LOG(LogKinetixAnimation, Warning, TEXT("[LocalPlayerManager]: %s is valid but his owner is null !"),
+		       *LocalKinetixComponent->GetName());
+		LocalKinetixComponent->DestroyComponent();
+		return false;
+	}
+
+	LocalKinetixComponent->DestroyComponent();
+	return true;
+}
+
+bool FLocalPlayerManager::IsAnimationAvailable(FAnimationID InAnimationID) const
+{
+	return false;
+}
+
+bool FLocalPlayerManager::IsEmoteUsedByPlayer(FAnimationID InAnimationID) const
+{
+	return false;
+}
+
+void FLocalPlayerManager::GetNotifiedOnAnimationReadyToPlayOnLocalAnimInstance(FAnimationID InAnimationID,
+                                                                               TDelegate<void()> OnSucceedDelegate)
+{
+}
+
+void FLocalPlayerManager::AnimationStartOnLocalPlayerAnimInstance(FAnimationID InAnimationID) const
+{
+}
+
+void FLocalPlayerManager::AnimationEndOnLocalPlayerAnimInstance(FAnimationID InAnimationID) const
+{
+}
+
+TArray<FAnimationID> FLocalPlayerManager::GetDownloadedAnimationReadyToPlay() const
+{
+	return TArray<FAnimationID>();
+}
+
+void FLocalPlayerManager::PlayAnimation(const FAnimationID& InAnimationID, const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimation)
+{
+	if (!IsValid(LocalKinetixComponent))
+		return;
+
+	if (bPlayAutomatcallyOnAnimInstance)
+	{
+		LocalKinetixComponent->PlayAnimation(InAnimationID, false, OnPlayedAnimation);
+	}
+	// LocalKinetixComponent;
+}
+
+void FLocalPlayerManager::PlayAnimationQueue(TArray<FAnimationID> InAnimationIDs, bool bLoop,
+                                             TDelegate<void(TArray<FAnimationID>)> OnPlayedAnimations)
+{
+}
+
+void FLocalPlayerManager::StopAnimation()
+{
+}
+
+TObjectPtr<UKinetixComponent> FLocalPlayerManager::GetLocalKinetixComponent() const
+{
+	return LocalKinetixComponent;
 }
 
 void FLocalPlayerManager::OnRegisterLocalPlayer()

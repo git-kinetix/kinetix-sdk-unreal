@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "glTFRuntimeParser.h"
 #include "Components/ActorComponent.h"
+#include "Data/KinetixDataLibrary.h"
 #include "KinetixComponent.generated.h"
 
 class USkeletalMeshComponent;
@@ -17,6 +18,8 @@ class KINETIXRUNTIME_API UKinetixComponent : public UActorComponent
 public:
 	// Sets default values for this component's properties
 	UKinetixComponent();
+
+	void PlayAnimation(const FAnimationID& InAnimationID, bool bLoop, const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate);
 
 protected:
 	// Called when the game starts
@@ -34,7 +37,6 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void LoadAnimationAndPlay(const FString& Url);
 
-	//virtual void EndPlay
 	UFUNCTION()
 	FString RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path, UObject* Context);
 

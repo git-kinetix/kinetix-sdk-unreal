@@ -15,22 +15,37 @@ class FLocalPlayerManager
 public:
 	FLocalPlayerManager(bool bInPlayAutomaticallyOnAnimator);
 	~FLocalPlayerManager();
+
 	bool AddKinetixComponentAndInitialize(UAnimInstance* InAnimInstance);
+	bool AddPlayerCharacterComponent(UAnimInstance* InAnimInstance);
+	bool RemovePlayerCharacterComponent();
 
-	bool AddPlayerCharacterComponent(UAnimInstance* InAnimInstance); 
+	bool IsAnimationAvailable(FAnimationID InAnimationID) const;
 
-private:
+	bool IsEmoteUsedByPlayer(FAnimationID InAnimationID) const;
+
+	void GetNotifiedOnAnimationReadyToPlayOnLocalAnimInstance(FAnimationID InAnimationID, TDelegate<void()> OnSucceedDelegate);
 	
+	void AnimationStartOnLocalPlayerAnimInstance(FAnimationID InAnimationID) const;
+	void AnimationEndOnLocalPlayerAnimInstance(FAnimationID InAnimationID) const;
+
+	TArray<FAnimationID> GetDownloadedAnimationReadyToPlay() const;
+
+	void PlayAnimation(const FAnimationID& InAnimationID,  const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimation);
+	void PlayAnimationQueue(TArray<FAnimationID> InAnimationIDs, bool bLoop, TDelegate<void(TArray<FAnimationID>)> OnPlayedAnimations);
+	void StopAnimation();
+
+	TObjectPtr<UKinetixComponent> GetLocalKinetixComponent() const;
+	
+private:
 	void OnRegisterLocalPlayer();
-	
-private:
 
+private:
 	bool bPlayAutomatcallyOnAnimInstance;
 
 	TObjectPtr<UKinetixComponent> LocalKinetixComponent;
-	
+
 	TMap<FAnimationID, TList<TDelegate<void()>>> CallbacksOnRetargetedAnimationIDOnLocalPlayer;
 	TList<FAnimationID>* EmotesToPreload;
 	TList<FAnimationID>* DownloadedEmotesReadyToPlay;
-	
 };

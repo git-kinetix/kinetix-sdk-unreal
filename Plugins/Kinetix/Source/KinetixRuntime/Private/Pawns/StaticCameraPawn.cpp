@@ -34,11 +34,6 @@ AStaticCameraPawn::AStaticCameraPawn()
 // Called to bind functionality to input
 void AStaticCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	UKismetSystemLibrary::PrintString(this,
-	                                  FString::Printf(TEXT("%s: SetupPlayerInputComponent"), *GetName()),
-	                                  true, true,
-	                                  FLinearColor::Blue, 10.f);
-
 	APlayerController* PC = GetController<APlayerController>();
 	if (!IsValid(PC))
 		return;
@@ -130,11 +125,6 @@ void AStaticCameraPawn::GoToPreviousCamera()
 
 void AStaticCameraPawn::OnBlendEnd(AStaticCameraPawn* CameraToPossess)
 {
-	UKismetSystemLibrary::PrintString(this,
-	                                  FString::Printf(TEXT("%s OnBlendEnd"), *GetName()),
-	                                  true, true,
-	                                  FLinearColor::Green, 10.f);
-
 	TObjectPtr<APlayerCameraManager> PCM = GetController<APlayerController>()->PlayerCameraManager;
 	if (!IsValid(PCM))
 		return;
