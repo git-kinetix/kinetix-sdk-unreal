@@ -76,3 +76,6 @@ DerivedDataCache/*
 # Files related to Rider IDE
 .idea/*
 Plugins/Developer/*
+
+# Remove package folder
+Builds/*

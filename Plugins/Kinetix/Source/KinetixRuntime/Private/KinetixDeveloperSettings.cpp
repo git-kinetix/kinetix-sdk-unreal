@@ -8,3 +8,8 @@ UKinetixDeveloperSettings::UKinetixDeveloperSettings()
 {
 	SectionName = TEXT("Kinetix Section");
 }
+
+void UKinetixDeveloperSettings::GetCoreConfiguration(FKinetixCoreConfiguration& OutCoreConfiguration)
+{
+	OutCoreConfiguration = GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration;
+}

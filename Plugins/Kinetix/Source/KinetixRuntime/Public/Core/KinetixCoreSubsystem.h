@@ -7,6 +7,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "KinetixCoreSubsystem.generated.h"
 
+class UKinetixAccount;
 class UKinetixMetadata;
 class UKinetixAnimation;
 DECLARE_DYNAMIC_DELEGATE(FKinetixCoreInitializedDelegate);
@@ -53,6 +54,8 @@ public:
 	UKinetixAnimation* KinetixAnimation;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UKinetixMetadata* KinetixMetadata;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UKinetixAccount* KinetixAccount;
 	
 private:
 	UPROPERTY()

@@ -8,6 +8,14 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "KinetixDataLibrary.generated.h"
 
+#if WITH_EDITOR
+static FString SDKAPIUrlBase = TEXT("https://sdk-api.staging.kinetix.tech"); 
+#else
+static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech"); 
+#endif
+
+static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
+
 UENUM(Category="Kinetix|Animation")
 enum class EOwnership : uint8
 {
@@ -27,8 +35,10 @@ struct FAnimationID
 	FGuid UUID;
 
 	FAnimationID()
-	{ UUID.Invalidate(); }
-	
+	{
+		UUID.Invalidate();
+	}
+
 	// Needed to be able to use as key in TMap (1/2)
 	bool operator==(const FAnimationID& Other) const
 	{
@@ -73,7 +83,7 @@ struct FAnimationMetadata
 	{
 	}
 
-	FAnimationMetadata& operator= (const FAnimationMetadata& Other)
+	FAnimationMetadata& operator=(const FAnimationMetadata& Other)
 	{
 		if (this == &Other)
 		{
@@ -87,7 +97,7 @@ struct FAnimationMetadata
 		Duration = Other.Duration;
 		AnimationURL = Other.AnimationURL;
 		IconURL = Other.IconURL;
-		
+
 		return *this;
 	}
 };
@@ -109,7 +119,8 @@ struct FKinetixCoreConfiguration
 		  MaxPersistentDataStorageInMB(50),
 		  MaxRAMCacheInMB(50),
 		  bEnableAnalytics(true),
-		  bShowLogs(false)
+		  bShowLogs(false),
+		  VirtualWorld(FString())
 	{
 	}
 
@@ -132,20 +143,39 @@ struct FKinetixCoreConfiguration
 
 	// TODO: Implement network structure
 	// FKinetixNetworkConfiguration NetworkConfiguration
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString VirtualWorld;
 };
 
-DECLARE_DYNAMIC_DELEGATE_OneParam(FReferenceSkeletonLoadedDelegate, FAssetData, AssetData);
+#pragma region Delagates
 
-
+#pragma region Animation
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRegisterLocalPlayer);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationLocalPlayer, const FAnimationID&, AnimationID);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationQueueLocalPlayer, const TArray<FAnimationID>&, AnimationIDs);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationQueueLocalPlayer, const TArray<FAnimationID>&,
+                                            AnimationIDs);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationStartOnLocalPlayer, const FAnimationID&, AnimationID);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationEndOnLocalPlayer, const FAnimationID&, AnimationID);
 
 // Maybe adding a UEnum result for better understanding in case of error 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnKinetixLocalAnimationLoadingFinished, bool, Success);
+#pragma endregion
+
+#pragma region Account
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUpdatedAccount);
+
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAccountConnectedDelegate, bool, bInSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAccountConnected);
+
+#pragma endregion
+
+#pragma endregion
 
 /**
 * 
@@ -204,20 +234,7 @@ public:
 #pragma endregion
 
 #pragma region General
-	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
-		meta = (WorldContext = "WorldContextObject", Keywords = "data"))
-	static UPARAM(DisplayName="Assets created") bool GenerateMetadataAssets(
-		UObject* WorldContextObject, TArray<FString>& MetadataFiles);
 
-	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
-		meta = (Keywords = "data|skeleton"))
-	static UPARAM(DisplayName="Skeleton available") bool LoadReferenceSkeletonAsset(
-		const FReferenceSkeletonLoadedDelegate& Callback);
-
-	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
-		meta = (WorldContext = "WorldContextObject", Keywords = "data|skeleton"))
-	static UPARAM(DisplayName="Animations created") bool GenerateAnimationAssets(
-		UObject* WorldContextObject, USkeletalMesh* InSkeletalMesh);
 
 #pragma endregion
 };

@@ -3,11 +3,12 @@
 
 #include "Emote/KinetixEmote.h"
 
+FKinetixEmote::FKinetixEmote(): bIsLocal(false)
+{}
+
 FKinetixEmote::FKinetixEmote(const FAnimationID& InAnimationID)
-	: AnimationID(InAnimationID), bIsLocal(false)
-{
-	
-}
+: AnimationID(InAnimationID), bIsLocal(false)
+{}
 
 FKinetixEmote::~FKinetixEmote()
 {

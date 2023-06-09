@@ -109,7 +109,6 @@ void FLocalPlayerManager::PlayAnimation(const FAnimationID& InAnimationID, const
 	{
 		LocalKinetixComponent->PlayAnimation(InAnimationID, false, OnPlayedAnimation);
 	}
-	// LocalKinetixComponent;
 }
 
 void FLocalPlayerManager::PlayAnimationQueue(TArray<FAnimationID> InAnimationIDs, bool bLoop,

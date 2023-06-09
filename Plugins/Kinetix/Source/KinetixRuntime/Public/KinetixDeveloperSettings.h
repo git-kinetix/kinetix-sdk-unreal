@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/KinetixDataLibrary.h"
 #include "Engine/DeveloperSettings.h"
 #include "KinetixDeveloperSettings.generated.h"
 
@@ -18,9 +19,14 @@ public:
 
 	UKinetixDeveloperSettings();
 
+	UFUNCTION(BlueprintPure, Category="Kinetix|Settings")
+	static void GetCoreConfiguration(FKinetixCoreConfiguration& OutCoreConfiguration);
+
 public:
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", meta = (DisplayName="Load At Startup"))
 	bool bLoadAtStartup;
 	
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", meta = (DisplayName="Core Configuration"))
+	FKinetixCoreConfiguration CoreConfiguration;
 };

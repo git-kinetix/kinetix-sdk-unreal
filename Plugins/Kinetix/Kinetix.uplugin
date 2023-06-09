@@ -18,7 +18,11 @@
 		{
 			"Name": "KinetixRuntime",
 			"Type": "Runtime",
-			"LoadingPhase": "PreDefault"
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "KinetixEditor",
+			"Type": "Editor"
 		}
 	],
 	"Plugins": [

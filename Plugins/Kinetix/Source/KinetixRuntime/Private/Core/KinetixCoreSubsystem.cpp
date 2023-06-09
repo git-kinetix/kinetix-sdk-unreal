@@ -5,6 +5,7 @@
 
 #include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
+#include "Core/Account/KinetixAccount.h"
 #include "Core/Animation/KinetixAnimation.h"
 #include "Core/Metadata/KinetixMetadata.h"
 #include "Data/KinetixDataLibrary.h"
@@ -48,18 +49,14 @@ bool UKinetixCoreSubsystem::InitializeSubcore(const UClass* SubcoreClass, UObjec
 
 bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfiguration)
 {
+	if (bCoreInitialized) return true;
+
 	CoreConfiguration = InConfiguration;
 
 	TArray<FString> MetadataFiles;
 	if (!UKinetixDataBlueprintFunctionLibrary::GetMetadataFiles(MetadataFiles))
 	{
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to find any metadata files !"));
-		return false;
-	}
-
-	if (!UKinetixDataBlueprintFunctionLibrary::GenerateMetadataAssets(this, MetadataFiles))
-	{
-		UE_LOG(LogKinetixRuntime, Warning, TEXT("No Metadata files found !"));
 		return false;
 	}
 
@@ -78,11 +75,15 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 		return false;
 	}
 	KinetixMetadata = Cast<UKinetixMetadata>(SubcoreObject);
-	
-	FReferenceSkeletonLoadedDelegate Callback;
-	Callback.BindUFunction(this, TEXT("OnReferenceSkeletonAvailable"));
-	UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(Callback);
 
+	SubcoreObject = nullptr;
+	if (!InitializeSubcore(UKinetixAccount::StaticClass(), &SubcoreObject))
+	{
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixAccount failed to initialize !"));
+		return false;
+	}
+	KinetixAccount = Cast<UKinetixAccount>(SubcoreObject);
+	
 	bCoreInitialized = true;
 	
 	for (int i = 0; i < OnCoreInitializedDelegates.Num(); ++i)
@@ -90,6 +91,8 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 		OnCoreInitializedDelegates[i].Execute();
 	}
 
+	UE_LOG(LogKinetixRuntime, Log, TEXT("%s successfully initialized !"), *GetName());
+	
 	return true;
 }
 

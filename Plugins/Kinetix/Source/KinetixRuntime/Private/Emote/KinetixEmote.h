@@ -11,6 +11,7 @@
 class FKinetixEmote
 {
 public:
+	FKinetixEmote();
 	FKinetixEmote(const FAnimationID& InAnimationID);
 	~FKinetixEmote();
 
