@@ -24,9 +24,9 @@ void FKinetixEmote::SetMetadata(const FAnimationMetadata& InAnimationMetadata)
 	AnimationMetadata = InAnimationMetadata;
 }
 
-void FKinetixEmote::SetLocalMetadata(const FAnimationMetadata& InAnimationMetata, FString InLocalGLBPath)
+void FKinetixEmote::SetLocalMetadata(const FAnimationMetadata& InAnimationMetadata, FString InLocalGLBPath)
 {
-	AnimationMetadata = InAnimationMetata;
+	AnimationMetadata = InAnimationMetadata;
 	PathToGLB = InLocalGLBPath;
 	bIsLocal = true;
 }

@@ -3,35 +3,20 @@
 #include "AccountManager.h"
 
 #include "HttpModule.h"
+#include "JsonObjectConverter.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Tasks/Pipe.h"
+#include "Tasks/Task.h"
 
 FAccountManager::FAccountManager(const FString& InVirtualWorld)
-	: VirtualWorldID(InVirtualWorld)
+	: VirtualWorldID(InVirtualWorld), LoggedAccount(nullptr), AssignEmotePipe(TEXT("AssignEmotePipe")),
+	  Event(TEXT("AssignEmoteEvent"))
 {
 }
 
 FAccountManager::~FAccountManager()
 {
-}
-
-void FAccountManager::FinishAccountConnection()
-{
-	if (!LoggedAccount.IsEmpty())
-	{
-		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] ConnectAccount: %s already connected !"),
-		       *LoggedAccount);
-		DisconnectAccount();
-	}
-
-	LoggedAccount = UserID;
-	UserID.Empty();
-
-	// LoggedAccount.FetchMetadatas();
-	Accounts.Add(LoggedAccount);
-
-	OnUpdatedAccountDelegate.Broadcast();
-	OnConnectedAccountDelegate.Broadcast();
 }
 
 bool FAccountManager::ConnectAccount(const FString& InUserID)
@@ -60,17 +45,143 @@ bool FAccountManager::ConnectAccount(const FString& InUserID)
 	return true;
 }
 
+void FAccountManager::FinishAccountConnection()
+{
+	if (LoggedAccount != nullptr)
+	{
+		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] ConnectAccount: %s already connected !"),
+		       *LoggedAccount->GetAccountID());
+		DisconnectAccount();
+	}
+
+	LoggedAccount = new FAccount(UserID, false);
+	UserID.Empty();
+
+	LoggedAccount->FetchMetadatas();
+
+	Accounts.Add(LoggedAccount);
+
+	OnUpdatedAccountDelegate.Broadcast();
+	OnConnectedAccountDelegate.Broadcast();
+}
+
 void FAccountManager::DisconnectAccount()
 {
 }
 
 bool FAccountManager::AssociateEmotesToVirtualWorld(const TArray<FAnimationID>& InEmotes)
 {
-	return false;
+	if (VirtualWorldID.IsEmpty())
+		return false;
+
+	FHttpModule& HttpModule = FHttpModule::Get();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
+	Request->OnProcessRequestComplete().BindRaw(this, &FAccountManager::OnGetEmotesToVirtualWorldResponse);
+
+	Request->SetURL(SDKAPIUrlBase + SDKAPIVirtualWorldEmoteUrl);
+	Request->SetVerb(TEXT("POST"));
+	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
+	Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
+
+	FString UUIDs;
+	for (int i = 0; i < InEmotes.Num(); ++i)
+	{
+		UUIDs += FString::Printf(TEXT("\"%s\""),
+		                         *InEmotes[i].UUID.ToString(EGuidFormats::DigitsWithHyphensLower));
+		if (i != (InEmotes.Num() - 1))
+		{
+			UUIDs += ",";
+		}
+	}
+
+	Request->SetContentAsString(FString::Printf(TEXT("{\"uuids\":[%s]}"), *UUIDs));
+
+	UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AssociateEmotesToVirtualWorld: %s"),
+	       *FString::Printf(TEXT("{\"uuids\":%s}"), *UUIDs));
+	if (!Request->ProcessRequest())
+	{
+		UE_LOG(LogKinetixAccount, Warning,
+		       TEXT("[FAccountManager] AssociateEmotesToVirtualWorld: %s Error in Http request"),
+		       *LoggedAccount->GetAccountID());
+		return false;
+	}
+	return true;
 }
 
 bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 {
+	if (LoggedAccount == nullptr)
+	{
+		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AssociateEmoteToUser: No acount connected !"));
+		return false;
+	}
+
+	if (LoggedAccount->HasEmote(InEmote))
+		return true;
+
+	Emotes.Empty();
+	Emotes.Add(InEmote);
+
+	AssignEmotePipe.Launch(UE_SOURCE_LOCATION, [&]
+	{
+		AssociateEmotesToVirtualWorld(Emotes);
+	});
+
+	AssignEmotePipe.Launch(UE_SOURCE_LOCATION, [&]
+	{
+		FHttpModule& HttpModule = FHttpModule::Get();
+		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
+
+		Request->OnProcessRequestComplete().BindLambda([&](
+			TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> OldRequest,
+			TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
+			bool bSuccess)
+			{
+				if (!Response.IsValid())
+				{
+					UE_LOG(LogKinetixAccount, Warning,
+					       TEXT("[FAccountManager] OnGetEmotesToVirtualWorldResponse: Failed to connect to service"));
+					return;
+				}
+
+				if (Response->GetResponseCode() == EHttpResponseCodes::Denied)
+				{
+					UE_LOG(LogKinetixAccount, Warning,
+					       TEXT(
+						       "[FAccountManager] OnGetEmotesToVirtualWorldResponse: Emote is already registered or there is an error in the request : %s!"
+					       ), *Response->GetContentAsString());
+					return;
+				}
+
+				OnAssociatedEmoteDelegate.Broadcast();
+			});
+
+		Request->SetURL(
+			SDKAPIUrlBase +
+			FString::Printf(
+				SDKAPIEmoteUsersUrl,
+				*LoggedAccount->GetAccountID()) + "/" + Emotes[0].UUID.ToString(EGuidFormats::DigitsWithHyphensLower)
+		);
+
+		UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] AssociateEmotesToUser: Generated URL %s"), *Request->GetURL());
+		
+		Request->SetVerb(TEXT("POST"));
+		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+		Request->SetHeader(TEXT("accept"), TEXT("application/json"));
+		Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
+
+		if (!Request->ProcessRequest())
+		{
+			UE_LOG(LogKinetixAccount, Warning,
+			       TEXT("[FAccountManager] AssociateEmotesToUser: %s Error in Http request"),
+			       *LoggedAccount->GetAccountID());
+			return false;
+		}
+
+		return true;
+	}, Event);
+
 	return false;
 }
 
@@ -213,4 +324,28 @@ void FAccountManager::OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 	}
 
 	FinishAccountConnection();
+}
+
+void FAccountManager::OnGetEmotesToVirtualWorldResponse(
+	TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request,
+	TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
+	bool bSuccess)
+{
+	if (!Response.IsValid())
+	{
+		UE_LOG(LogKinetixAccount, Warning,
+		       TEXT("[FAccountManager] OnGetEmotesToVirtualWorldResponse: Failed to connect to service"));
+		return;
+	}
+
+	if (Response->GetResponseCode() == EHttpResponseCodes::Denied)
+	{
+		UE_LOG(LogKinetixAccount, Warning,
+		       TEXT(
+			       "[FAccountManager] OnGetEmotesToVirtualWorldResponse: Emote is already registered or there is an error in the request : %s!"
+		       ), *Response->GetContentAsString());
+		return;
+	}
+
+	Event.Trigger();
 }

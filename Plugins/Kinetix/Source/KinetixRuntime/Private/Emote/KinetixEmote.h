@@ -29,10 +29,10 @@ public:
 
 	/**
 	 * @brief Set the metadata for this emote
-	 * @param InAnimationMetata Metadata of the emote
+	 * @param InAnimationMetadata Metadata of the emote
 	 * @param InLocalGLBPath Absolute local path on disk
 	 */
-	void SetLocalMetadata(const FAnimationMetadata& InAnimationMetata, FString InLocalGLBPath);
+	void SetLocalMetadata(const FAnimationMetadata& InAnimationMetadata, FString InLocalGLBPath);
 
 	/**
 	 * @brief Mainly used for network purposes

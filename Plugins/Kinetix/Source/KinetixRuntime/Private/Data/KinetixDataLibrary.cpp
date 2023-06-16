@@ -49,7 +49,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetMetadataFiles(TArray<FString>& Out
 
 
 #if WITH_EDITOR
-  	PlatformFile.FindFilesRecursively(OutFiles,
+	PlatformFile.FindFilesRecursively(OutFiles,
 	                                  *FKinetixRuntimeModule::GetPlugin()->GetContentDir(),
 	                                  *InFileExtension);
 #else
@@ -112,6 +112,12 @@ bool UKinetixDataBlueprintFunctionLibrary::GetDurationFromJson(float& OutDuratio
 	return DurationJsonField->TryGetNumber(OutDuration);
 }
 
+bool UKinetixDataBlueprintFunctionLibrary::GetAnimationIDFromString(const FString& InAnimationID,
+	FAnimationID& OutAnimationID)
+{
+	return FGuid::Parse(InAnimationID, OutAnimationID.UUID); 
+}
+
 bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromFile(UObject* WorldContextObject, FString File,
                                                                         FAnimationMetadata& AnimationMetadata)
 {
@@ -147,6 +153,34 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromFile(UObject*
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to get Duration !"));
 		return false;
 	}
+
+	return true;
+}
+
+bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
+	const TSharedPtr<FJsonObject>& JsonObject,
+	FAnimationMetadata& AnimationMetadata)
+{
+	FString Value;
+	if (!JsonObject->TryGetStringField(TEXT("uuid"), Value))
+		return false;
+	FGuid::Parse(Value, AnimationMetadata.Id.UUID);
+
+	if (!JsonObject->TryGetStringField(TEXT("name"), Value))
+		return false;
+	AnimationMetadata.Name = FName(Value);
+
+	if (!JsonObject->TryGetStringField(TEXT("ownership"), Value))
+		return false;
+
+	Value = FString::Printf(TEXT("o_%s"), *Value);
+	AnimationMetadata.Ownership =
+		static_cast<EOwnership>(StaticEnum<EOwnership>()->GetValueByNameString(Value));
+
+	float Duration = 0.f;
+	if (!JsonObject->TryGetNumberField(TEXT("duration"), Duration))
+		return false;
+	AnimationMetadata.Duration = Duration;
 
 	return true;
 }

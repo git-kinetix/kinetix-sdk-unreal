@@ -15,6 +15,8 @@ static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech");
 #endif
 
 static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
+#define SDKAPIEmoteUsersUrl TEXT("/v1/users/%s/emotes")
+#define SDKAPIVirtualWorldEmoteUrl TEXT("/v1/virtual-world/emotes")
 
 UENUM(Category="Kinetix|Animation")
 enum class EOwnership : uint8
@@ -172,6 +174,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUpdatedAccount);
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAccountConnectedDelegate, bool, bInSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAccountConnected);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteAssociated);
 
 #pragma endregion
 
@@ -206,6 +209,10 @@ public:
 	                                                                       FString File,
 	                                                                       FAnimationMetadata& AnimationMetadata);
 
+	/** Helper function to retrieve animation metadata from a json object */
+	static bool GetAnimationMetadataFromJson(const TSharedPtr<FJsonObject>& JsonObject,
+	                                         FAnimationMetadata& AnimationMetadata);
+
 	/**  */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
 		meta = (WorldContext = "WorldContextObject", Keywords = "data"))
@@ -231,6 +238,12 @@ public:
 		meta = (WorldContext = "WorldContextObject", Keywords = "data"))
 	static UPARAM(DisplayName="Success") bool GetDurationFromJson(float& OutDuration,
 	                                                              const FJsonObjectWrapper& InJsonObjectWrapper);
+
+	UFUNCTION(BlueprintPure, Category = "Kinetix|Data",
+		meta = (Keywords = "id"))
+	static UPARAM(DisplayName="Success") bool GetAnimationIDFromString(const FString& InAnimationID,
+	                                                              FAnimationID& OutAnimationID);
+	
 #pragma endregion
 
 #pragma region General

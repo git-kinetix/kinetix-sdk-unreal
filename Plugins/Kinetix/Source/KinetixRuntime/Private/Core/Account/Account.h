@@ -4,16 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Emote/KinetixEmote.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Tasks/Task.h"
 
 /**
  * 
  */
-class Account
+class FAccount
 {
 public:
-
-	Account(const FString& InUserID);
-	~Account();
+	FAccount(const FString& InUserID, bool bPreFetch = true);
+	~FAccount();
 
 	const TArray<FKinetixEmote> FetchMetadatas();
 
@@ -22,11 +23,17 @@ public:
 	void AddEmoteFromID(const FAnimationID& InAnimationID);
 
 	bool HasEmote(const FAnimationID& InAnimationID);
-	
-private:
 
+	FString GetAccountID() const { return AccountID; }
+
+	void TestFunc();
+	void MetadataRequestComplete(
+		TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request,
+		TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
+		bool bSuccess);
+
+private:
 	const FString AccountID;
 
 	TSet<FKinetixEmote> Emotes;
-	
 };

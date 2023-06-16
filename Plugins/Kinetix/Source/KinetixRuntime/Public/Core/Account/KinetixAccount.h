@@ -9,6 +9,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogKinetixAccount, Log, All);
 
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnOperationFinished, bool, bSuccess);
+
 class FAccountManager;
 
 /**
@@ -34,6 +36,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
 	void ConnectAccount(const FString& InUserID);
 		
+	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
+	void AssociateEmoteToUser(const FAnimationID& InAnimationID);
+
 private:
 
 	UFUNCTION()
@@ -42,6 +47,9 @@ private:
 	UFUNCTION()
 	void ConnectedAccount();
 
+	UFUNCTION()
+	void AssociatedEmote();
+	
 public:
 
 	UPROPERTY(BlueprintAssignable)
@@ -49,6 +57,9 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnAccountConnected OnConnectedAccount;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnEmoteAssociated OnEmoteAssociated;
 
 private:
 
