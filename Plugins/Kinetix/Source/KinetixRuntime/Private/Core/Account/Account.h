@@ -16,7 +16,7 @@ public:
 	FAccount(const FString& InUserID, bool bPreFetch = true);
 	~FAccount();
 
-	const TArray<FKinetixEmote> FetchMetadatas();
+	const TArray<FKinetixEmote*> FetchMetadatas();
 
 	void AddEmoteFromMetadata(const FAnimationMetadata& InAnimationMetadata);
 
@@ -26,14 +26,28 @@ public:
 
 	FString GetAccountID() const { return AccountID; }
 
-	void TestFunc();
 	void MetadataRequestComplete(
 		TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request,
 		TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
 		bool bSuccess);
 
+	void RegisterOrCallMetadatasAvailable(
+		const FOnMetadatasAvailable& OnMetadatasAvailable);
+
+protected:
+	
+	void AnimationRequestComplete(
+		TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
+		TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> HttpResponse,
+		bool bSuccess, FAnimationMetadata InAnimationMetadata, FKinetixEmote* InConcernedEmote);
+
+	void CallMetadatasAvailableDelegates();
+
 private:
 	const FString AccountID;
 
-	TSet<FKinetixEmote> Emotes;
+	TSet<FKinetixEmote*> Emotes;
+	TSet<FAnimationMetadata> Metadatas;
+	
+	TArray<FOnMetadatasAvailable> OnMetadatasAvailableDelegates;
 };

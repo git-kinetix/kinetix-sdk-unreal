@@ -56,7 +56,7 @@ bool UKinetixAssetsFunctionLibrary::GenerateMetadataAssets(UObject* WorldContext
 		// Add a '/' at the beginning to avoid due to the removal by MakePathRelativeTo
 		Filepath = FString::Printf(TEXT("/%s"), *Filepath);
 
-		if (!UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(Filepath))
+		if (!UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(Filepath, TEXT("/Kinetix")))
 		{
 			UE_LOG(LogKinetixEditor, Warning, TEXT("Wrong path for %s"), *Filepath);
 			continue;
@@ -124,60 +124,6 @@ bool UKinetixAssetsFunctionLibrary::GenerateMetadataAssets(UObject* WorldContext
 	return bMetadataCreated;
 }
 
-bool UKinetixAssetsFunctionLibrary::LoadReferenceSkeletonAsset(const FReferenceSkeletonLoadedDelegate& Callback)
-{
-	FAssetRegistryModule& AssetRegistryModule =
-		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-
-	// Normalize path
-	FString GeneralPath = FKinetixRuntimeModule::GetPlugin()->GetContentDir() + TEXT("/Characters/Sam/");
-	GeneralPath = FPaths::CreateStandardFilename(GeneralPath);
-	GeneralPath = FPaths::GetPath(GeneralPath);
-
-	// Format package path
-	FString SkeletalMeshPackagePath = GeneralPath;
-	FPaths::MakePathRelativeTo(SkeletalMeshPackagePath, *FPaths::ProjectPluginsDir());
-	UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(SkeletalMeshPackagePath);
-	SkeletalMeshPackagePath = FString::Printf(TEXT("/%s"), *SkeletalMeshPackagePath);
-
-	FARFilter Filter;
-	Filter.ClassPaths.Add(USkeletalMesh::StaticClass()->GetClassPathName());
-	Filter.PackagePaths.Add(FName(SkeletalMeshPackagePath));
-	Filter.bRecursiveClasses = true;
-	Filter.bRecursivePaths = true;
-
-	TArray<FAssetData> SkeletalMeshDatas;
-	AssetRegistryModule.Get().GetAssets(Filter, SkeletalMeshDatas);
-
-	if (SkeletalMeshDatas.IsEmpty())
-	{
-		UE_LOG(LogKinetixEditor, Warning, TEXT("No asset found"));
-		return false;
-	}
-
-	if (!SkeletalMeshDatas[0].IsAssetLoaded())
-	{
-		UE_LOG(LogKinetixEditor, Log, TEXT("%s not loaded yet, launch loading..."),
-		       *SkeletalMeshDatas[0].AssetName.ToString());
-
-		FStreamableDelegate TempDelegate = FStreamableDelegate::CreateLambda(
-			[Callback, SkeletalMeshDatas]()
-			{
-				Callback.Execute(SkeletalMeshDatas[0]);
-			});
-
-		// Launch async loading
-		UAssetManager::GetStreamableManager().RequestAsyncLoad(
-			SkeletalMeshDatas[0].ToSoftObjectPath(),
-			TempDelegate);
-		return false;
-	}
-
-	Callback.Execute(SkeletalMeshDatas[0]);
-
-	return true;
-}
-
 bool UKinetixAssetsFunctionLibrary::GenerateAnimationAssets(UObject* WorldContextObject,
                                                                    USkeletalMesh* InSkeletalMesh)
 {
@@ -217,7 +163,7 @@ bool UKinetixAssetsFunctionLibrary::GenerateAnimationAssets(UObject* WorldContex
 		FString PackageName = FPackageName::ObjectPathToPackageName(FoundGLBs[i]);
 		FPaths::MakePathRelativeTo(PackageName, *FPaths::ProjectPluginsDir());
 		PackageName = FString::Printf(TEXT("/%s"), *PackageName);
-		UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(PackageName);
+		UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(PackageName, TEXT("/Kinetix"));
 		FString PackagePath = FPackageName::GetLongPackagePath(PackageName);
 
 		FString GlbFilename = FPaths::GetBaseFilename(FoundGLBs[i]);

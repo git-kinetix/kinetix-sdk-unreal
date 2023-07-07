@@ -1,7 +1,8 @@
-// Copyright 2020, Roberto De Ioris.
+// Copyright 2020-2023, Roberto De Ioris.
 
 #include "glTFRuntimeAsset.h"
 #include "Animation/AnimSequence.h"
+#include "Engine/World.h"
 
 #define GLTF_CHECK_ERROR_MESSAGE() UE_LOG(LogGLTFRuntime, Error, TEXT("No glTF Asset loaded."))
 
@@ -27,6 +28,28 @@ bool UglTFRuntimeAsset::LoadFromFilename(const FString& Filename, const FglTFRun
 	}
 
 	Parser = FglTFRuntimeParser::FromFilename(Filename, LoaderConfig);
+	if (Parser)
+	{
+		FScriptDelegate Delegate;
+		Delegate.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UglTFRuntimeAsset, OnErrorProxy));
+		Parser->OnError.Add(Delegate);
+		Delegate.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UglTFRuntimeAsset, OnStaticMeshCreatedProxy));
+		Parser->OnStaticMeshCreated.Add(Delegate);
+		Delegate.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(UglTFRuntimeAsset, OnSkeletalMeshCreatedProxy));
+		Parser->OnSkeletalMeshCreated.Add(Delegate);
+	}
+	return Parser != nullptr;
+}
+
+bool UglTFRuntimeAsset::SetParser(TSharedRef<FglTFRuntimeParser> InParser)
+{
+	// asset already loaded ?
+	if (Parser)
+	{
+		return false;
+	}
+
+	Parser = InParser;
 	if (Parser)
 	{
 		FScriptDelegate Delegate;
@@ -613,6 +636,96 @@ UTexture2D* UglTFRuntimeAsset::LoadImage(const int32 ImageIndex, const FglTFRunt
 	return nullptr;
 }
 
+UTextureCube* UglTFRuntimeAsset::LoadCubeMap(const int32 ImageIndexXP, const int32 ImageIndexXN, const int32 ImageIndexYP, const int32 ImageIndexYN, const int32 ImageIndexZP, const int32 ImageIndexZN, const FglTFRuntimeImagesConfig& ImagesConfig)
+{
+	GLTF_CHECK_PARSER(nullptr);
+	TArray64<uint8> UncompressedBytes[6];
+	int32 Width = 0;
+	int32 Height = 0;
+	int32 CurrentWidth = 0;
+	int32 CurrentHeight = 0;
+	if (!Parser->LoadImage(ImageIndexXP, UncompressedBytes[0], Width, Height, ImagesConfig))
+	{
+		return nullptr;
+	}
+
+	if (Width <= 0 || Height <= 0)
+	{
+		return nullptr;
+	}
+
+	CurrentWidth = Width;
+	CurrentHeight = Height;
+
+	if (!Parser->LoadImage(ImageIndexXN, UncompressedBytes[1], Width, Height, ImagesConfig))
+	{
+		return nullptr;
+	}
+
+	if (Width != CurrentWidth || Height != CurrentHeight)
+	{
+		return nullptr;
+	}
+
+	if (!Parser->LoadImage(ImageIndexYP, UncompressedBytes[2], Width, Height, ImagesConfig))
+	{
+		return nullptr;
+	}
+
+	if (Width != CurrentWidth || Height != CurrentHeight)
+	{
+		return nullptr;
+	}
+
+	if (!Parser->LoadImage(ImageIndexYN, UncompressedBytes[3], Width, Height, ImagesConfig))
+	{
+		return nullptr;
+	}
+
+	if (Width != CurrentWidth || Height != CurrentHeight)
+	{
+		return nullptr;
+	}
+
+	if (!Parser->LoadImage(ImageIndexZP, UncompressedBytes[4], Width, Height, ImagesConfig))
+	{
+		return nullptr;
+	}
+
+	if (Width != CurrentWidth || Height != CurrentHeight)
+	{
+		return nullptr;
+	}
+
+	if (!Parser->LoadImage(ImageIndexZN, UncompressedBytes[5], Width, Height, ImagesConfig))
+	{
+		return nullptr;
+	}
+
+	if (Width != CurrentWidth || Height != CurrentHeight)
+	{
+		return nullptr;
+	}
+
+
+	FglTFRuntimeMipMap MipXP(-1, Width, Height, UncompressedBytes[0]);
+	FglTFRuntimeMipMap MipXN(-1, Width, Height, UncompressedBytes[1]);
+	FglTFRuntimeMipMap MipYP(-1, Width, Height, UncompressedBytes[2]);
+	FglTFRuntimeMipMap MipYN(-1, Width, Height, UncompressedBytes[3]);
+	FglTFRuntimeMipMap MipZP(-1, Width, Height, UncompressedBytes[4]);
+	FglTFRuntimeMipMap MipZN(-1, Width, Height, UncompressedBytes[5]);
+
+
+	TArray<FglTFRuntimeMipMap> MipsXP = { MipXP };
+	TArray<FglTFRuntimeMipMap> MipsXN = { MipXN };
+	TArray<FglTFRuntimeMipMap> MipsYP = { MipYP };
+	TArray<FglTFRuntimeMipMap> MipsYN = { MipYN };
+	TArray<FglTFRuntimeMipMap> MipsZP = { MipZP };
+	TArray<FglTFRuntimeMipMap> MipsZN = { MipZN };
+	return Parser->BuildTextureCube(this, MipsXP, MipsXN, MipsYP, MipsYN, MipsZP, MipsZN, ImagesConfig, FglTFRuntimeTextureSampler());
+
+}
+
 UTexture2D* UglTFRuntimeAsset::LoadImageFromBlob(const FglTFRuntimeImagesConfig& ImagesConfig)
 {
 	GLTF_CHECK_PARSER(nullptr);
@@ -855,4 +968,28 @@ bool UglTFRuntimeAsset::GetNodeExtensionIndex(const int32 NodeIndex, const FStri
 
 	Index = Parser->GetJsonExtensionObjectIndex(NodeObject.ToSharedRef(), ExtensionName, FieldName, INDEX_NONE);
 	return Index > INDEX_NONE;
+}
+
+void UglTFRuntimeAsset::AddUsedExtension(const FString& ExtensionName)
+{
+	GLTF_CHECK_PARSER_VOID();
+
+	Parser->ExtensionsUsed.Add(ExtensionName);
+}
+
+void UglTFRuntimeAsset::AddRequiredExtension(const FString& ExtensionName)
+{
+	GLTF_CHECK_PARSER_VOID();
+
+	Parser->ExtensionsRequired.Add(ExtensionName);
+}
+
+void UglTFRuntimeAsset::AddUsedExtensions(const TArray<FString>& ExtensionsNames)
+{
+	Parser->ExtensionsUsed.Append(ExtensionsNames);
+}
+
+void UglTFRuntimeAsset::AddRequiredExtensions(const TArray<FString>& ExtensionsNames)
+{
+	Parser->ExtensionsRequired.Append(ExtensionsNames);
 }

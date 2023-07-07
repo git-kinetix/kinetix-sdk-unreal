@@ -7,7 +7,7 @@
 #include "UObject/NoExportTypes.h"
 #include "KinetixNetwork.generated.h"
 
-class UKinetixComponent;
+class UKinetixCharacterComponent;
 /**
  * 
  */
@@ -36,7 +36,7 @@ class KINETIXRUNTIME_API UKinetixNetwork : public UObject
 	 * @return The UKinetixComponent if he has one
 	 */
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Network")
-	UKinetixComponent* GetRemoteKCC(FString InRemotePeerID);
+	UKinetixCharacterComponent* GetRemoteKCC(FString InRemotePeerID);
 
 	/**
 	 * @brief Register remote peer anim instance

@@ -8,7 +8,7 @@
 
 class UCapsuleComponent;
 class USkeletalMeshComponent;
-class UKinetixComponent;
+class UKinetixCharacterComponent;
 
 UCLASS()
 class KINETIXRUNTIME_API AKinetixPawn : public APawn
@@ -38,5 +38,5 @@ private:
 	USkeletalMeshComponent* SkeletalMeshTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess="true"))
-	UKinetixComponent* KinetixComponent;
+	UKinetixCharacterComponent* KinetixComponent;
 };

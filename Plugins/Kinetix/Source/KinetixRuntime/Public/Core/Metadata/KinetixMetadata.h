@@ -9,13 +9,7 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogKinetixMetadata, Log, All);
 
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataAvailable, bool, bSuccess, FAnimationMetadata&, AnimationData);
 
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataOwnershipLoaded, bool, bSuccess, bool, bUserOwned);
-
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadatasAvailable, bool, bSuccess, const TArray<FAnimationMetadata>&, Metadatas);
-
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnTotalNumberOfPagesAvailable, int, NumberOfPages);
 
 class FEmoteManager;
 
@@ -29,12 +23,6 @@ class KINETIXRUNTIME_API UKinetixMetadata
 	GENERATED_BODY()
 
 public:
-
-	UKinetixMetadata();
-
-	//Needed to have TUniquePtr<> with forward declared classes, see PhysicsEngine UBodySetup
-	UKinetixMetadata(FVTableHelper& Helper);
-	~UKinetixMetadata();
 
 	/**
 	 * @brief Get Metadata of a specific animation
@@ -81,10 +69,15 @@ public:
 #pragma endregion
 
 protected:
-
 	void OnMetadatasAvailable(TArray<FSoftObjectPath> SoftObjectPaths, FOnMetadatasAvailable OnMetadatasAvailable);
 
 private:
+
+	UKinetixMetadata();
+
+	//Needed to have TUniquePtr<> with forward declared classes, see PhysicsEngine UBodySetup
+	UKinetixMetadata(FVTableHelper& Helper);
+	~UKinetixMetadata();
 
 	bool GetMetadatasSoftObjectPaths(TArray<FSoftObjectPath>& ObjectPaths);
 	void InitializeEmoteManager(TArray<FSoftObjectPath> SoftObjectPaths);
@@ -92,9 +85,9 @@ private:
 		TArray<FSoftObjectPath>& SoftObjectPaths,
 		TArray<FAnimationMetadata>& Metadatas,
 		TArray<FString>& OutLocalPaths);
-	
+
 public:
 
-	TUniquePtr<FEmoteManager> EmoteManager;
+	// static TUniquePtr<FEmoteManager> EmoteManager;
 	
 };

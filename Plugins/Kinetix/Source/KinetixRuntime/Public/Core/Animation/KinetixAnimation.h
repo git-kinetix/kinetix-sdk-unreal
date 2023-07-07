@@ -7,7 +7,7 @@
 #include "Interfaces/KinetixSubcoreInterface.h"
 #include "KinetixAnimation.generated.h"
 
-class UKinetixComponent;
+class UKinetixCharacterComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogKinetixAnimation, Log, All);
 
@@ -94,7 +94,7 @@ public:
 	 * @param OnSuccessDelegate Callback with loading result
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void LoadLocalPlayerAnimation(FAnimationID InAnimationID, const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
+	void LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString& InLockID, const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
 
 	/**
 	 * @brief Load local player animations
@@ -131,7 +131,7 @@ public:
 	 * @return The UKinetixComponent registered (if there is one)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	UKinetixComponent* GetLocalKCC() const;
+	UKinetixCharacterComponent* GetLocalKCC() const;
 	
 public:
 	/**

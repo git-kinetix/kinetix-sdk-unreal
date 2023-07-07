@@ -2,8 +2,9 @@
 
 #include "Managers/LocalPlayerManager.h"
 
+#include "EmoteManager.h"
 #include "KinetixRuntimeModule.h"
-#include "Components/KinetixComponent.h"
+#include "..\..\Public\Components\KinetixCharacterComponent.h"
 #include "Core/Animation/KinetixAnimation.h"
 
 FLocalPlayerManager::FLocalPlayerManager(bool bInPlayAutomaticallyOnAnimator)
@@ -29,11 +30,11 @@ bool FLocalPlayerManager::AddKinetixComponentAndInitialize(UAnimInstance* InAnim
 	if (!IsValid(AnimInstanceOwner))
 		return false;
 
-	LocalKinetixComponent = AnimInstanceOwner->FindComponentByClass<UKinetixComponent>();
+	LocalKinetixComponent = AnimInstanceOwner->FindComponentByClass<UKinetixCharacterComponent>();
 	if (IsValid(LocalKinetixComponent))
 		return true;
 
-	LocalKinetixComponent = NewObject<UKinetixComponent>(AnimInstanceOwner);
+	LocalKinetixComponent = NewObject<UKinetixCharacterComponent>(AnimInstanceOwner);
 	if (!IsValid(LocalKinetixComponent))
 		return false;
 
@@ -100,7 +101,8 @@ TArray<FAnimationID> FLocalPlayerManager::GetDownloadedAnimationReadyToPlay() co
 	return TArray<FAnimationID>();
 }
 
-void FLocalPlayerManager::PlayAnimation(const FAnimationID& InAnimationID, const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimation)
+void FLocalPlayerManager::PlayAnimation(const FAnimationID& InAnimationID,
+                                        const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimation)
 {
 	if (!IsValid(LocalKinetixComponent))
 		return;
@@ -120,9 +122,35 @@ void FLocalPlayerManager::StopAnimation()
 {
 }
 
-TObjectPtr<UKinetixComponent> FLocalPlayerManager::GetLocalKinetixComponent() const
+TObjectPtr<UKinetixCharacterComponent> FLocalPlayerManager::GetLocalKinetixComponent() const
 {
 	return LocalKinetixComponent;
+}
+
+void FLocalPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString InLockID,
+                                                   const TDelegate<void()>& OnSuccess,
+                                                   const TDelegate<void()>& OnFailure)
+{
+	FKinetixEmote* Emote = FEmoteManager::Get().GetEmote(InAnimationID);
+	if (Emote == nullptr)
+	{
+		OnFailure.ExecuteIfBound();
+		return;
+	}
+
+	Async(EAsyncExecution::Thread, [Emote, OnSuccess, OnFailure]()
+	{
+		FEmoteManager::Get().LoadAnimation(Emote,
+		                                   TDelegate<void()>::CreateLambda(
+			                                   [OnSuccess]()
+			                                   {
+				                                   UE_LOG(LogKinetixAnimation, Warning,
+				                                          TEXT(
+					                                          "[LocalPlayerManager] LodLocalPlayerAnimation: AnimationLoaded"
+				                                          ));
+				                                   OnSuccess.ExecuteIfBound();
+			                                   }));
+	});
 }
 
 void FLocalPlayerManager::OnRegisterLocalPlayer()

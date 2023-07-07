@@ -25,7 +25,7 @@ void UKinetixAccount::Initialize_Implementation(const FKinetixCoreConfiguration&
 	AccountManager.Get()->OnConnectedAccount().AddUObject(this, &UKinetixAccount::ConnectedAccount);
 	AccountManager.Get()->OnUpdatedAccount().AddUObject(this, &UKinetixAccount::UpdatedAccount);
 	AccountManager.Get()->OnAssociatedEmote().AddUObject(this, &UKinetixAccount::AssociatedEmote);
-	
+
 	bResult = true;
 }
 

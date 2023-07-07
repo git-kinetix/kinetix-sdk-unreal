@@ -3,15 +3,31 @@
 
 #include "Managers/EmoteManager.h"
 
+#include "glTFRuntimeAsset.h"
+#include "glTFRuntimeFunctionLibrary.h"
+#include "glTFRuntimeParser.h"
+#include "HttpModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Core/Animation/KinetixAnimation.h"
 #include "Engine/AssetManager.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
+
+// Otherwise there is no exports of static symbols
+TUniquePtr<FEmoteManager> FEmoteManager::Instance(nullptr);
 
 FEmoteManager::FEmoteManager()
+	: ReferenceSkeletalMesh(nullptr)
 {
 }
 
 FEmoteManager::~FEmoteManager()
 {
+	if (IsValid(ReferenceSkeletalMesh))
+	{
+		ReferenceSkeletalMesh->RemoveFromRoot();
+	}
+	Instance = nullptr;
 }
 
 FKinetixEmote* FEmoteManager::GetEmote(const FAnimationID& InAnimationID)
@@ -57,11 +73,13 @@ void FEmoteManager::GetAnimSequence(const FAnimationID& InAnimationID, const TDe
 	if (!Emote->IsLocal())
 		return;
 
+	OnSuccess.ExecuteIfBound(Emote->GetAnimSequence());
+
 	FString PackagePath = Emote->GetPathToGlb();
 	FPaths::MakePathRelativeTo(PackagePath, *FPaths::ProjectPluginsDir());
-	UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(PackagePath);
+	UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(PackagePath, TEXT("/Kinetix"));
 	PackagePath = FString::Printf(TEXT("/%s"), *PackagePath);
-	
+
 	FARFilter Filter;
 	Filter.ClassPaths.Add(UAnimSequence::StaticClass()->GetClassPathName());
 	Filter.PackagePaths.Add(FName(PackagePath));
@@ -86,7 +104,8 @@ void FEmoteManager::GetAnimSequence(const FAnimationID& InAnimationID, const TDe
 	);
 }
 
-void FEmoteManager::AnimSequenceAvailable(FSoftObjectPath SoftObjectPath, TDelegate<void(UAnimSequence*)> Delegate) const
+void FEmoteManager::AnimSequenceAvailable(FSoftObjectPath SoftObjectPath,
+                                          TDelegate<void(UAnimSequence*)> Delegate) const
 {
 	if (!SoftObjectPath.IsValid())
 		return;
@@ -96,4 +115,111 @@ void FEmoteManager::AnimSequenceAvailable(FSoftObjectPath SoftObjectPath, TDeleg
 		return;
 
 	Delegate.Execute(AnimSequence);
+}
+
+FEmoteManager& FEmoteManager::Get()
+{
+	if (!Instance.IsValid())
+	{
+		Instance = MakeUnique<FEmoteManager>();
+		Instance->RefSkeletonLoadedDelegate = TDelegate<void(FAssetData)>::CreateRaw(
+			Instance.Get(), &FEmoteManager::OnReferenceSkeletonAvailable);
+		UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(Instance->RefSkeletonLoadedDelegate);
+	}
+	return *Instance;
+}
+
+USkeletalMesh* FEmoteManager::GetReferenceSkeleton() const
+{
+	return ReferenceSkeletalMesh;
+}
+
+void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
+                                  const TDelegate<void()>& OnOperationFinished)
+{
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
+		FHttpModule::Get().CreateRequest();
+
+	HttpRequest->SetURL(InEmote->GetAnimationMetadata().AnimationURL.Map);
+	HttpRequest->OnProcessRequestComplete().BindRaw(
+		this, &FEmoteManager::AnimationRequestComplete,
+		InEmote->GetAnimationMetadata(), OnOperationFinished);
+
+	if (!HttpRequest->ProcessRequest())
+	{
+		UE_LOG(LogKinetixAnimation, Warning,
+		       TEXT("[EmoteManager] LoadAnimation: Unable to process animation request !"));
+	}
+}
+
+void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
+                                             TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> HttpResponse, bool bSuccess,
+                                             FAnimationMetadata InAnimationMetadata,
+                                             TDelegate<void()> OnSuccessDelegate)
+{
+	if (!bSuccess
+		|| !HttpResponse.IsValid()
+		|| !EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
+		return;
+
+	FString JsonString = HttpResponse->GetContentAsString();
+
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	const TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonString);
+
+	FglTFRuntimeConfig RuntimeConfig;
+	RuntimeConfig.TransformBaseType = EglTFRuntimeTransformBaseType::YForward;
+	UglTFRuntimeAsset* GlTFAsset =
+		UglTFRuntimeFunctionLibrary::glTFLoadAssetFromData(
+			HttpResponse->GetContent(),
+			RuntimeConfig);
+
+	if (!IsValid(GlTFAsset))
+	{
+		UE_LOG(LogKinetixAnimation, Warning,
+		       TEXT("[FAccount] AnimationRequestComplete(): Unable to deserialize response ! %s"),
+		       *JsonString);
+		return;
+	}
+
+	FglTFRuntimeSkeletalAnimationConfig SkeletalAnimConfig;
+	USkeletalMesh* RefSkeletalMesh = GetReferenceSkeleton();
+
+	UAnimSequence* AnimSequence = GlTFAsset->LoadSkeletalAnimation(RefSkeletalMesh, 0,
+	                                                               SkeletalAnimConfig);
+
+	if (!IsValid(AnimSequence))
+	{
+		UE_LOG(LogKinetixAnimation, Warning,
+		       TEXT("[FAccount] AnimationRequestComplete(): AnimSequence is null !"));
+		return;
+	}
+
+	FKinetixEmote* Emote = GetEmote(InAnimationMetadata.Id);
+	if (Emote != nullptr)
+	{
+		Emote->SetAnimSequence(AnimSequence);
+		OnSuccessDelegate.ExecuteIfBound();
+	}
+}
+
+void FEmoteManager::OnReferenceSkeletonAvailable(FAssetData AssetData)
+{
+	if (!AssetData.IsValid())
+	{
+		UE_LOG(LogKinetixAnimation, Warning,
+		       TEXT("[EmoteManager] OnReferenceSkeletonAvailable: AssetData not valid !"));
+		return;
+	}
+
+	ReferenceSkeletalMesh = Cast<USkeletalMesh>(AssetData.GetAsset());
+	if (!IsValid(ReferenceSkeletalMesh))
+	{
+		UE_LOG(LogKinetixAnimation, Warning,
+		       TEXT("[EmoteManager] OnReferenceSkeletonAvailable: ReferenceSkeletalMesh not valid !"));
+		return;
+	}
+
+	// Prevent of being GC
+	ReferenceSkeletalMesh->AddToRoot();
 }

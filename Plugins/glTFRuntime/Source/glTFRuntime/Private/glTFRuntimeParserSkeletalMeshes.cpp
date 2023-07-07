@@ -1,6 +1,7 @@
 // Copyright 2020-2022, Roberto De Ioris.
 
 #include "glTFRuntimeParser.h"
+#include "Runtime/Launch/Resources/Version.h"
 #if ENGINE_MAJOR_VERSION > 4
 #include "Animation/AnimData/AnimDataModel.h"
 #include "Animation/AnimData/IAnimationDataController.h"
@@ -13,7 +14,6 @@
 #include "Rendering/SkeletalMeshRenderData.h"
 #include "Rendering/SkeletalMeshLODRenderData.h"
 #include "Rendering/SkeletalMeshVertexBuffer.h"
-#include "Engine/SkinnedAssetCommon.h"
 #if WITH_EDITOR
 #include "IMeshBuilderModule.h"
 #include "LODUtilities.h"
@@ -25,6 +25,11 @@
 #endif
 #endif
 #include "Engine/SkeletalMeshSocket.h"
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 1
+#include "Engine/SkinnedAssetCommon.h"
+#else
+#include "Engine/SkeletalMesh.h"
+#endif
 #include "glTFAnimBoneCompressionCodec.h"
 #include "glTFAnimCurveCompressionCodec.h"
 #include "Model.h"
@@ -35,6 +40,14 @@
 #include "PhysicsEngine/PhysicsConstraintTemplate.h"
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 #include "UObject/SavePackage.h"
+#endif
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+#define BONE_INFLUENCE_TYPE uint16
+#define MAX_BONE_INFLUENCE_WEIGHT 0xffff
+#else
+#define BONE_INFLUENCE_TYPE uint8
+#define MAX_BONE_INFLUENCE_WEIGHT 0xff
 #endif
 
 struct FglTFRuntimeSkeletalMeshContextFinalizer
@@ -274,15 +287,25 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 	TMap<int32, int32> MainBonesCache;
 	int32 MatIndex = 0;
 
+	SkeletalMeshContext->SkeletalMesh->NeverStream = true;
+
 	SkeletalMeshContext->SkeletalMesh->ResetLODInfo();
+
+	const float TangentsDirection = SkeletalMeshContext->SkeletalMeshConfig.bReverseTangents ? -1 : 1;
 
 #if WITH_EDITOR
 
 	FSkeletalMeshModel* ImportedResource = SkeletalMeshContext->SkeletalMesh->GetImportedModel();
 	ImportedResource->LODModels.Empty();
 
+	const bool bForceNormalsGeneration = SkeletalMeshContext->SkeletalMeshConfig.NormalsGenerationStrategy == EglTFRuntimeNormalsGenerationStrategy::Always;
+
 	for (FglTFRuntimeSkeletalMeshLOD& LOD : SkeletalMeshContext->LODs)
 	{
+
+		// we initially set bHasTangents and bHasNormals as true: if a primitive misses them we set reset them as false
+		LOD.bHasTangents = true;
+		LOD.bHasNormals = true;
 
 		TArray<SkeletalMeshImportData::FVertex> Wedges;
 		TArray<SkeletalMeshImportData::FTriangle> Triangles;
@@ -378,7 +401,7 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 					Triangle.WedgeIndex[1] = WedgeIndex - 1;
 					Triangle.WedgeIndex[2] = WedgeIndex;
 
-					if (Primitive.Normals.Num() > 0)
+					if (Primitive.Normals.Num() > 0 && !bForceNormalsGeneration)
 					{
 #if ENGINE_MAJOR_VERSION > 4
 						Triangle.TangentZ[0] = FVector3f(Primitive.Normals[Primitive.Indices[i - 2]]);
@@ -389,9 +412,9 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 						Triangle.TangentZ[1] = Primitive.Normals[Primitive.Indices[i - 1]];
 						Triangle.TangentZ[2] = Primitive.Normals[Primitive.Indices[i]];
 #endif
-						LOD.bHasNormals = true;
+
 					}
-					else
+					else if (SkeletalMeshContext->SkeletalMeshConfig.NormalsGenerationStrategy == EglTFRuntimeNormalsGenerationStrategy::IfMissing || bForceNormalsGeneration)
 					{
 						FVector Position0 = Primitive.Positions[Primitive.Indices[i - 2]];
 						FVector Position1 = Primitive.Positions[Primitive.Indices[i - 1]];
@@ -409,11 +432,19 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 						Triangle.TangentZ[1] = NormalFromCross;
 						Triangle.TangentZ[2] = NormalFromCross;
 #endif
-						LOD.bHasNormals = true;
+					}
+					else
+					{
+						LOD.bHasNormals = false;
 					}
 
+					float TangentXW[3] = { 1,1,1 };
 					if (Primitive.Tangents.Num() > 0)
 					{
+						TangentXW[0] = Primitive.Tangents[Primitive.Indices[i - 2]].W;
+						TangentXW[1] = Primitive.Tangents[Primitive.Indices[i - 1]].W;
+						TangentXW[2] = Primitive.Tangents[Primitive.Indices[i]].W;
+
 #if ENGINE_MAJOR_VERSION > 4
 						Triangle.TangentX[0] = FVector3f(FVector(Primitive.Tangents[Primitive.Indices[i - 2]]));
 						Triangle.TangentX[1] = FVector3f(FVector(Primitive.Tangents[Primitive.Indices[i - 1]]));
@@ -423,13 +454,21 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 						Triangle.TangentX[1] = Primitive.Tangents[Primitive.Indices[i - 1]];
 						Triangle.TangentX[2] = Primitive.Tangents[Primitive.Indices[i]];
 #endif
-						LOD.bHasTangents = true;
 					}
 					else
 					{
 						LOD.bHasTangents = false;
 					}
 
+#if ENGINE_MAJOR_VERSION > 4
+					Triangle.TangentY[0] = FVector3f(ComputeTangentYWithW(FVector(Triangle.TangentZ[0]), FVector(Triangle.TangentX[0]), TangentXW[0] * TangentsDirection));
+					Triangle.TangentY[1] = FVector3f(ComputeTangentYWithW(FVector(Triangle.TangentZ[1]), FVector(Triangle.TangentX[1]), TangentXW[1] * TangentsDirection));
+					Triangle.TangentY[2] = FVector3f(ComputeTangentYWithW(FVector(Triangle.TangentZ[2]), FVector(Triangle.TangentX[2]), TangentXW[2] * TangentsDirection));
+#else
+					Triangle.TangentY[0] = ComputeTangentYWithW(Triangle.TangentZ[0], Triangle.TangentX[0], TangentXW[0] * TangentsDirection);
+					Triangle.TangentY[1] = ComputeTangentYWithW(Triangle.TangentZ[1], Triangle.TangentX[1], TangentXW[1] * TangentsDirection);
+					Triangle.TangentY[2] = ComputeTangentYWithW(Triangle.TangentZ[2], Triangle.TangentX[2], TangentXW[2] * TangentsDirection);
+#endif
 					Triangle.MatIndex = MatIndex;
 
 					Triangles.Add(Triangle);
@@ -450,7 +489,7 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 			SkeletalMeshContext->BoundingBox += Points[PointIndex] * SkeletalMeshContext->SkeletalMeshConfig.BoundsScale;
 #endif
 			PointToRawMap.Add(PointIndex);
-		}
+	}
 
 		if (SkeletalMeshContext->SkeletalMeshConfig.bIgnoreSkin || SkeletalMeshContext->SkinIndex <= INDEX_NONE)
 		{
@@ -516,13 +555,13 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 						if (!MorphTarget.Positions[PointIndex].IsNearlyZero())
 						{
 							bSkip = false;
-						}
+					}
 #if ENGINE_MAJOR_VERSION > 4
 						MorphTargetPositions.Add(FVector3f(Primitive.Positions[PointIndex] + MorphTarget.Positions[PointIndex]));
 #else
 						MorphTargetPositions.Add(Primitive.Positions[PointIndex] + MorphTarget.Positions[PointIndex]);
 #endif
-					}
+			}
 
 					if (SkeletalMeshContext->SkeletalMeshConfig.bIgnoreEmptyMorphTargets && bSkip)
 					{
@@ -590,7 +629,7 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 					}
 
 					MorphTargetIndex++;
-				}
+		}
 				PointsBase += Primitive.Positions.Num();
 			}
 
@@ -606,6 +645,9 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 
 	for (FglTFRuntimeSkeletalMeshLOD& LOD : SkeletalMeshContext->LODs)
 	{
+		LOD.bHasTangents = true;
+		LOD.bHasNormals = true;
+
 		FSkeletalMeshLODRenderData* LodRenderData = new FSkeletalMeshLODRenderData();
 		int32 LODIndex = SkeletalMeshContext->SkeletalMesh->GetResourceForRendering()->LODRenderData.Add(LodRenderData);
 
@@ -666,6 +708,8 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 				int32 Index = Primitive.Indices[VertexIndex];
 				FModelVertex ModelVertex;
 
+				float TangentXW = 1;
+
 #if ENGINE_MAJOR_VERSION > 4
 				ModelVertex.Position = FVector3f(Primitive.Positions[Index]);
 				SkeletalMeshContext->BoundingBox += FVector(ModelVertex.Position) * SkeletalMeshContext->SkeletalMeshConfig.BoundsScale;
@@ -684,7 +728,6 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 #else
 					ModelVertex.TangentZ = Primitive.Normals[Index];
 #endif
-					LOD.bHasNormals = true;
 				}
 				else
 				{
@@ -694,11 +737,12 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 				if (Index < Primitive.Tangents.Num())
 				{
 #if ENGINE_MAJOR_VERSION > 4
+					TangentXW = Primitive.Tangents[Index].W;
 					ModelVertex.TangentX = FVector4f(Primitive.Tangents[Index]);
 #else
 					ModelVertex.TangentX = Primitive.Tangents[Index];
 #endif
-					LOD.bHasTangents = true;
+
 				}
 				else
 				{
@@ -725,8 +769,14 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 					LOD.bHasUV = false;
 				}
 
+#if ENGINE_MAJOR_VERSION > 4
+				FVector3f TangentY = FVector3f(ComputeTangentYWithW(FVector(ModelVertex.TangentZ), FVector(ModelVertex.TangentX), TangentXW * TangentsDirection));
+#else
+				FVector TangentY = ComputeTangentYWithW(ModelVertex.TangentZ, ModelVertex.TangentX, TangentXW * TangentsDirection);
+#endif
+
 				LodRenderData->StaticVertexBuffers.PositionVertexBuffer.VertexPosition(TotalVertexIndex) = ModelVertex.Position;
-				LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(TotalVertexIndex, ModelVertex.TangentX, ModelVertex.GetTangentY(), ModelVertex.TangentZ);
+				LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(TotalVertexIndex, ModelVertex.TangentX, TangentY, ModelVertex.TangentZ);
 				LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexUV(TotalVertexIndex, 0, ModelVertex.TexCoord);
 
 				TMap<int32, FName>& BoneMapInUse = Primitive.OverrideBoneMap.Num() > 0 ? Primitive.OverrideBoneMap : MainBoneMap;
@@ -755,11 +805,11 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 									BonesCacheInUse.Add(Joints[j], BoneIndex);
 								}
 
-								uint8 QuantizedWeight = FMath::Clamp((uint8)(Weights[j] * ((double)0xFF)), (uint8)0x00, (uint8)0xFF);
+								BONE_INFLUENCE_TYPE QuantizedWeight = FMath::Clamp((BONE_INFLUENCE_TYPE)(Weights[j] * ((double)MAX_BONE_INFLUENCE_WEIGHT)), (BONE_INFLUENCE_TYPE)0x00, (BONE_INFLUENCE_TYPE)MAX_BONE_INFLUENCE_WEIGHT);
 
-								if (QuantizedWeight + TotalWeight > 255)
+								if (QuantizedWeight + TotalWeight > MAX_BONE_INFLUENCE_WEIGHT)
 								{
-									QuantizedWeight = 255 - TotalWeight;
+									QuantizedWeight = MAX_BONE_INFLUENCE_WEIGHT - TotalWeight;
 								}
 
 								InWeights[TotalVertexIndex].InfluenceWeights[JointsIndex * 4 + j] = QuantizedWeight;
@@ -776,16 +826,18 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 					}
 
 					// fix weight
-					if (TotalWeight < 255)
+					if (TotalWeight < MAX_BONE_INFLUENCE_WEIGHT)
 					{
-						InWeights[TotalVertexIndex].InfluenceWeights[0] += 255 - TotalWeight;
+						InWeights[TotalVertexIndex].InfluenceWeights[0] += MAX_BONE_INFLUENCE_WEIGHT - TotalWeight;
 					}
 				}
 				else
 				{
+					// reset it to be meaningful
+					MeshSection.MaxBoneInfluences = 1;
 					for (int32 j = 0; j < MeshSection.MaxBoneInfluences; j++)
 					{
-						InWeights[TotalVertexIndex].InfluenceWeights[j] = j == 0 ? 0xFF : 0;
+						InWeights[TotalVertexIndex].InfluenceWeights[j] = j == 0 ? MAX_BONE_INFLUENCE_WEIGHT : 0;
 						InWeights[TotalVertexIndex].InfluenceBones[j] = 0;
 					}
 				}
@@ -799,15 +851,26 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 			}
 		}
 
+		if (SkeletalMeshContext->SkeletalMeshConfig.NormalsGenerationStrategy == EglTFRuntimeNormalsGenerationStrategy::Always)
+		{
+			LOD.bHasNormals = false;
+		}
+		else if (SkeletalMeshContext->SkeletalMeshConfig.NormalsGenerationStrategy == EglTFRuntimeNormalsGenerationStrategy::Never)
+		{
+			LOD.bHasNormals = true;
+		}
+
+		if (SkeletalMeshContext->SkeletalMeshConfig.TangentsGenerationStrategy == EglTFRuntimeTangentsGenerationStrategy::Always)
+		{
+			LOD.bHasTangents = false;
+		}
+		else if (SkeletalMeshContext->SkeletalMeshConfig.TangentsGenerationStrategy == EglTFRuntimeTangentsGenerationStrategy::Never)
+		{
+			LOD.bHasTangents = true;
+		}
+
 		if ((!LOD.bHasTangents || !LOD.bHasNormals) && TotalVertexIndex % 3 == 0)
 		{
-			auto GetTangentY = [](FVector4 Normal, FVector TangentX)
-			{
-				FVector TanX = TangentX;
-				FVector TanZ = Normal;
-
-				return (TanZ ^ TanX) * Normal.W;
-			};
 
 			//normals with NaNs are incorrectly handled on Android
 			auto FixVectorIfNan = [](FVector& Tangent, int32 Index)
@@ -887,18 +950,12 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 					FVector TriangleTangentY = ((DeltaPosition0 * DeltaUV1.X) - (DeltaPosition1 * DeltaUV0.X)) * Factor;
 
 					FVector TangentX0 = TriangleTangentX - (TangentZ0 * FVector::DotProduct(TangentZ0, TriangleTangentX));
-					FVector CrossX0 = FVector::CrossProduct(TangentZ0, TangentX0);
-					TangentX0 *= (FVector::DotProduct(CrossX0, TriangleTangentY) < 0) ? -1.0f : 1.0f;
 					TangentX0.Normalize();
 
 					FVector TangentX1 = TriangleTangentX - (TangentZ1 * FVector::DotProduct(TangentZ1, TriangleTangentX));
-					FVector CrossX1 = FVector::CrossProduct(TangentZ1, TangentX1);
-					TangentX1 *= (FVector::DotProduct(CrossX1, TriangleTangentY) < 0) ? -1.0f : 1.0f;
 					TangentX1.Normalize();
 
 					FVector TangentX2 = TriangleTangentX - (TangentZ2 * FVector::DotProduct(TangentZ2, TriangleTangentX));
-					FVector CrossX2 = FVector::CrossProduct(TangentZ2, TangentX2);
-					TangentX2 *= (FVector::DotProduct(CrossX2, TriangleTangentY) < 0) ? -1.0f : 1.0f;
 					TangentX2.Normalize();
 
 #if PLATFORM_ANDROID
@@ -907,9 +964,9 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 					FixVectorIfNan(TangentX2, 0);
 #endif
 
-					FVector TangentY0 = GetTangentY(TangentZ0, TangentX0);
-					FVector TangentY1 = GetTangentY(TangentZ1, TangentX1);
-					FVector TangentY2 = GetTangentY(TangentZ2, TangentX2);
+					FVector TangentY0 = ComputeTangentY(TangentZ0, TangentX0) * TangentsDirection;
+					FVector TangentY1 = ComputeTangentY(TangentZ1, TangentX1) * TangentsDirection;
+					FVector TangentY2 = ComputeTangentY(TangentZ2, TangentX2) * TangentsDirection;
 #if PLATFORM_ANDROID
 					FixVectorIfNan(TangentY0, 1);
 					FixVectorIfNan(TangentY1, 1);
@@ -918,13 +975,13 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 
 
 #if ENGINE_MAJOR_VERSION > 4
-					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex, FVector3f(TangentX0), FVector3f(GetTangentY(TangentZ0, TangentX0)), FVector3f(FVector(TangentZ0)));
-					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 1, FVector3f(TangentX1), FVector3f(GetTangentY(TangentZ1, TangentX1)), FVector3f(FVector(TangentZ1)));
-					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 2, FVector3f(TangentX2), FVector3f(GetTangentY(TangentZ2, TangentX2)), FVector3f(FVector(TangentZ2)));
+					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex, FVector3f(TangentX0), FVector3f(TangentY0), FVector3f(FVector(TangentZ0)));
+					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 1, FVector3f(TangentX1), FVector3f(TangentY1), FVector3f(FVector(TangentZ1)));
+					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 2, FVector3f(TangentX2), FVector3f(TangentY2), FVector3f(FVector(TangentZ2)));
 #else
-					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex, TangentX0, GetTangentY(TangentZ0, TangentX0), TangentZ0);
-					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 1, TangentX1, GetTangentY(TangentZ1, TangentX1), TangentZ1);
-					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 2, TangentX2, GetTangentY(TangentZ2, TangentX2), TangentZ2);
+					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex, TangentX0, TangentY0, TangentZ0);
+					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 1, TangentX1, TangentY1, TangentZ1);
+					LodRenderData->StaticVertexBuffers.StaticMeshVertexBuffer.SetVertexTangents(VertexIndex + 2, TangentX2, TangentY2, TangentZ2);
 #endif
 				}
 				else if (!LOD.bHasNormals) // if we are here we need to reapply normals
@@ -964,7 +1021,7 @@ USkeletalMesh* FglTFRuntimeParser::CreateSkeletalMeshFromLODs(TSharedRef<FglTFRu
 			LodRenderData->MultiSizeIndexContainer.GetIndexBuffer()->AddItem(Index);
 		}
 #endif
-	}
+		}
 
 	return SkeletalMeshContext->SkeletalMesh;
 }
@@ -983,12 +1040,29 @@ USkeletalMesh* FglTFRuntimeParser::FinalizeSkeletalMeshWithLODs(TSharedRef<FglTF
 		SkeletalMeshContext->SkeletalMesh->SaveLODImportedData(LODIndex, SkeletalMeshContext->LODs[LODIndex].ImportData);
 #endif
 		// LOD tuning
+		if (SkeletalMeshContext->SkeletalMeshConfig.NormalsGenerationStrategy == EglTFRuntimeNormalsGenerationStrategy::Always)
+		{
+			SkeletalMeshContext->LODs[LODIndex].bHasNormals = false;
+		}
+		else if (SkeletalMeshContext->SkeletalMeshConfig.NormalsGenerationStrategy == EglTFRuntimeNormalsGenerationStrategy::Never)
+		{
+			SkeletalMeshContext->LODs[LODIndex].bHasNormals = true;
+		}
+
+		if (SkeletalMeshContext->SkeletalMeshConfig.TangentsGenerationStrategy == EglTFRuntimeTangentsGenerationStrategy::Always)
+		{
+			SkeletalMeshContext->LODs[LODIndex].bHasTangents = false;
+		}
+		else if (SkeletalMeshContext->SkeletalMeshConfig.TangentsGenerationStrategy == EglTFRuntimeTangentsGenerationStrategy::Never)
+		{
+			SkeletalMeshContext->LODs[LODIndex].bHasTangents = true;
+		}
 
 		FSkeletalMeshLODInfo& LODInfo = SkeletalMeshContext->SkeletalMesh->AddLODInfo();
 		LODInfo.ReductionSettings.NumOfTrianglesPercentage = 1.0f;
 		LODInfo.ReductionSettings.NumOfVertPercentage = 1.0f;
 		LODInfo.ReductionSettings.MaxDeviationPercentage = 0.0f;
-		LODInfo.BuildSettings.bRecomputeNormals = false; // do not force normals regeneration to avoid inconsistencies between editor and runtime
+		LODInfo.BuildSettings.bRecomputeNormals = !SkeletalMeshContext->LODs[LODIndex].bHasNormals;
 		LODInfo.BuildSettings.bRecomputeTangents = !SkeletalMeshContext->LODs[LODIndex].bHasTangents;
 		LODInfo.BuildSettings.bUseFullPrecisionUVs = SkeletalMeshContext->SkeletalMeshConfig.bUseHighPrecisionUVs;
 		LODInfo.LODHysteresis = 0.02f;
@@ -1142,7 +1216,10 @@ USkeletalMesh* FglTFRuntimeParser::FinalizeSkeletalMeshWithLODs(TSharedRef<FglTF
 			TArray<FSkeletalMaterial>& SkeletalMaterials = SkeletalMeshContext->SkeletalMesh->Materials;
 #endif
 			int32 NewMatIndex = SkeletalMaterials.Add(SkeletalMeshContext->LODs[LODIndex].RuntimeLOD->Primitives[MatIndex].Material);
+
+
 			SkeletalMaterials[NewMatIndex].UVChannelData.bInitialized = true;
+
 			SkeletalMaterials[NewMatIndex].MaterialSlotName = FName(FString::Printf(TEXT("LOD_%d_Section_%d_%s"), LODIndex, MatIndex, *(SkeletalMeshContext->LODs[LODIndex].RuntimeLOD->Primitives[MatIndex].MaterialName)));
 		}
 #if WITH_EDITOR
@@ -1162,7 +1239,6 @@ USkeletalMesh* FglTFRuntimeParser::FinalizeSkeletalMeshWithLODs(TSharedRef<FglTF
 #if WITH_EDITOR
 	SkeletalMeshContext->SkeletalMesh->Build();
 #endif
-
 	SkeletalMeshContext->SkeletalMesh->CalculateInvRefMatrices();
 
 	if (SkeletalMeshContext->SkeletalMeshConfig.bShiftBoundsByRootBone)
@@ -1368,12 +1444,13 @@ USkeletalMesh* FglTFRuntimeParser::FinalizeSkeletalMeshWithLODs(TSharedRef<FglTF
 			{
 				FAssetRegistryModule::AssetCreated(SkeletalMeshContext->SkeletalMesh);
 			}
-		}
 	}
+		}
 #endif
 
+
 	return SkeletalMeshContext->SkeletalMesh;
-}
+	}
 
 USkeletalMesh* FglTFRuntimeParser::LoadSkeletalMesh(const int32 MeshIndex, const int32 SkinIndex, const FglTFRuntimeSkeletalMeshConfig & SkeletalMeshConfig)
 {
@@ -1677,6 +1754,9 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 	AnimSequence->SetPreviewMesh(SkeletalMesh);
 #if ENGINE_MAJOR_VERSION > 4
 #if WITH_EDITOR
+	FFrameRate FrameRate(SkeletalAnimationConfig.FramesPerSecond, 1);
+
+#if ENGINE_MINOR_VERSION < 2
 	FIntProperty* IntProperty = CastField<FIntProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("NumberOfFrames")));
 	IntProperty->SetPropertyValue_InContainer(AnimSequence->GetDataModel(), NumFrames);
 	FFloatProperty* FloatProperty = CastField<FFloatProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("PlayLength")));
@@ -1684,10 +1764,11 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 	IntProperty = CastField<FIntProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("NumberOfKeys")));
 	IntProperty->SetPropertyValue_InContainer(AnimSequence->GetDataModel(), NumFrames);
 
-	FFrameRate FrameRate(SkeletalAnimationConfig.FramesPerSecond, 1);
+
 	FStructProperty* StructProperty = CastField<FStructProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("FrameRate")));
 	FFrameRate* FrameRatePtr = StructProperty->ContainerPtrToValuePtr<FFrameRate>(AnimSequence->GetDataModel());
 	*FrameRatePtr = FrameRate;
+#endif
 #else
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #if ENGINE_MINOR_VERSION >= 2
@@ -1727,6 +1808,11 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 
 		}
 	}
+#else
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+	AnimSequence->GetController().OpenBracket(FText::FromString("glTFRuntime"), false);
+	AnimSequence->GetController().InitializeModel();
+#endif
 #endif
 
 	bool bHasTracks = false;
@@ -1871,8 +1957,8 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 #else
 					Pair.Value.ScaleKeys[FrameIndex] = FrameTransform.GetScale3D();
 #endif
-				}
 			}
+		}
 
 			if (SkeletalAnimationConfig.bRemoveRootMotion)
 			{
@@ -1881,17 +1967,22 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 					Pair.Value.PosKeys[FrameIndex] = Pair.Value.PosKeys[0];
 				}
 			}
-		}
+	}
 
 
 #if WITH_EDITOR
-#if ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MAJOR_VERSION >= 5
+#if ENGINE_MINOR_VERSION >= 2
+		AnimSequence->GetController().AddBoneCurve(BoneName, false);
+		AnimSequence->GetController().SetBoneTrackKeys(BoneName, Pair.Value.PosKeys, Pair.Value.RotKeys, Pair.Value.ScaleKeys, false);
+#else
 		TArray<FBoneAnimationTrack>& BoneTracks = const_cast<TArray<FBoneAnimationTrack>&>(AnimSequence->GetDataModel()->GetBoneAnimationTracks());
 		FBoneAnimationTrack BoneTrack;
 		BoneTrack.Name = BoneName;
 		BoneTrack.BoneTreeIndex = BoneIndex;
 		BoneTrack.InternalTrackData = Pair.Value;
 		BoneTracks.Add(BoneTrack);
+#endif
 #else
 		AnimSequence->AddNewRawTrack(BoneName, &Pair.Value);
 #endif
@@ -1899,7 +1990,7 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 		CompressionCodec->Tracks[BoneIndex] = Pair.Value;
 #endif
 		bHasTracks = true;
-	}
+}
 
 	if (SkeletalAnimationConfig.bFillAllCurves)
 	{
@@ -1928,12 +2019,17 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 					}
 #if WITH_EDITOR
 #if ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MINOR_VERSION >= 2
+					AnimSequence->GetController().AddBoneCurve(*BoneName, false);
+					AnimSequence->GetController().SetBoneTrackKeys(*BoneName, NewTrack.PosKeys, NewTrack.RotKeys, NewTrack.ScaleKeys, false);
+#else
 					TArray<FBoneAnimationTrack>& BoneTracks = const_cast<TArray<FBoneAnimationTrack>&>(AnimSequence->GetDataModel()->GetBoneAnimationTracks());
 					FBoneAnimationTrack BoneTrack;
 					BoneTrack.Name = *BoneName;
 					BoneTrack.BoneTreeIndex = BoneIndex;
 					BoneTrack.InternalTrackData = NewTrack;
 					BoneTracks.Add(BoneTrack);
+#endif
 #else
 					AnimSequence->AddNewRawTrack(*BoneName, &NewTrack);
 #endif
@@ -1957,22 +2053,31 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 
 #if ENGINE_MAJOR_VERSION > 4
 #if WITH_EDITOR
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+		FAnimationCurveIdentifier CurveId(SmartName, ERawCurveTrackTypes::RCT_Float);
+		AnimSequence->GetController().AddCurve(CurveId);
+		FRichCurve RichCurve;
+#else
 		FAnimationCurveData& RawCurveData = const_cast<FAnimationCurveData&>(AnimSequence->GetDataModel()->GetCurveData());
 		int32 NewCurveIndex = RawCurveData.FloatCurves.Add(FFloatCurve(SmartName, 0));
 		FFloatCurve* NewCurve = &RawCurveData.FloatCurves[NewCurveIndex];
+		FRichCurve& RichCurve = NewCurve->FloatCurve;
+#endif
 #else
 		FRawCurveTracks& CurveTracks = const_cast<FRawCurveTracks&>(AnimSequence->GetCurveData());
 		int32 NewCurveIndex = CurveTracks.FloatCurves.Add(FFloatCurve(SmartName, 0));
 		FFloatCurve* NewCurve = &CurveTracks.FloatCurves[NewCurveIndex];
+		FRichCurve& RichCurve = NewCurve->FloatCurve;
 #endif
 #else
 		AnimSequence->RawCurveData.AddCurveData(SmartName);
 		FFloatCurve* NewCurve = (FFloatCurve*)AnimSequence->RawCurveData.GetCurveData(SmartName.UID, ERawCurveTrackTypes::RCT_Float);
+		FRichCurve& RichCurve = NewCurve->FloatCurve;
 #endif
 
 		for (TPair<float, float>& CurvePair : Pair.Value)
 		{
-			FKeyHandle NewKeyHandle = NewCurve->FloatCurve.AddKey(CurvePair.Key, CurvePair.Value, false);
+			FKeyHandle NewKeyHandle = RichCurve.AddKey(CurvePair.Key, CurvePair.Value, false);
 
 			ERichCurveInterpMode NewInterpMode = RCIM_Linear;
 			ERichCurveTangentMode NewTangentMode = RCTM_Auto;
@@ -1983,9 +2088,9 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 			float LeaveTangentWeight = 0.f;
 			float ArriveTangentWeight = 0.f;
 
-			NewCurve->FloatCurve.SetKeyInterpMode(NewKeyHandle, NewInterpMode);
-			NewCurve->FloatCurve.SetKeyTangentMode(NewKeyHandle, NewTangentMode);
-			NewCurve->FloatCurve.SetKeyTangentWeightMode(NewKeyHandle, NewTangentWeightMode);
+			RichCurve.SetKeyInterpMode(NewKeyHandle, NewInterpMode);
+			RichCurve.SetKeyTangentMode(NewKeyHandle, NewTangentMode);
+			RichCurve.SetKeyTangentWeightMode(NewKeyHandle, NewTangentWeightMode);
 		}
 
 		AnimSequence->GetSkeleton()->AccumulateCurveMetaData(Pair.Key, false, true);
@@ -1993,10 +2098,14 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 #if !WITH_EDITOR
 		AnimSequence->CompressedData.CompressedCurveNames.Add(SmartName);
 		const_cast<FCurveMetaData*>(AnimSequence->GetSkeleton()->GetCurveMetaData(SmartName.UID))->Type.bMorphtarget = true;
+#else
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+		AnimSequence->GetController().SetCurveKeys(CurveId, RichCurve.GetConstRefOfKeys());
+#endif
 #endif
 
 		bHasTracks = true;
-	}
+		}
 
 	if (!bHasTracks)
 	{
@@ -2005,11 +2114,14 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 	}
 
 #if WITH_EDITOR
-#if ENGINE_MAJOR_VERSION > 4
-	// hack for calling GenerateTransientData()
-#if ENGINE_MINOR_VERSION > 1
-	AnimSequence->GetDataModelInterface().GetObject()->PostDuplicate(false);
+#if ENGINE_MAJOR_VERSION >= 5
+#if ENGINE_MINOR_VERSION >= 2
+	AnimSequence->GetController().SetFrameRate(FrameRate, false);
+	AnimSequence->GetController().SetNumberOfFrames(NumFrames);
+	AnimSequence->GetController().NotifyPopulated();
+	AnimSequence->GetController().CloseBracket(false);
 #else
+	// hack for calling GenerateTransientData()
 	AnimSequence->GetDataModel()->PostDuplicate(false);
 #endif
 #else
@@ -2028,7 +2140,7 @@ UAnimSequence* FglTFRuntimeParser::LoadSkeletalAnimation(USkeletalMesh * Skeleta
 #endif
 
 	return AnimSequence;
-}
+	}
 
 UAnimSequence* FglTFRuntimeParser::CreateAnimationFromPose(USkeletalMesh * SkeletalMesh, const int32 SkinIndex, const FglTFRuntimeSkeletalAnimationConfig & SkeletalAnimationConfig)
 {
@@ -2049,17 +2161,18 @@ UAnimSequence* FglTFRuntimeParser::CreateAnimationFromPose(USkeletalMesh * Skele
 	AnimSequence->SetPreviewMesh(SkeletalMesh);
 #if ENGINE_MAJOR_VERSION > 4
 #if WITH_EDITOR
+	FFrameRate FrameRate(SkeletalAnimationConfig.FramesPerSecond, 1);
+#if ENGINE_MINOR_VERSION < 2
 	FIntProperty* IntProperty = CastField<FIntProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("NumberOfFrames")));
 	IntProperty->SetPropertyValue_InContainer(AnimSequence->GetDataModel(), NumFrames);
 	FFloatProperty* FloatProperty = CastField<FFloatProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("PlayLength")));
 	FloatProperty->SetPropertyValue_InContainer(AnimSequence->GetDataModel(), Duration);
 	IntProperty = CastField<FIntProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("NumberOfKeys")));
 	IntProperty->SetPropertyValue_InContainer(AnimSequence->GetDataModel(), NumFrames);
-
-	FFrameRate FrameRate(SkeletalAnimationConfig.FramesPerSecond, 1);
 	FStructProperty* StructProperty = CastField<FStructProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("FrameRate")));
 	FFrameRate* FrameRatePtr = StructProperty->ContainerPtrToValuePtr<FFrameRate>(AnimSequence->GetDataModel());
 	*FrameRatePtr = FrameRate;
+#endif
 #else
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #if ENGINE_MINOR_VERSION >= 2
@@ -2101,6 +2214,11 @@ UAnimSequence* FglTFRuntimeParser::CreateAnimationFromPose(USkeletalMesh * Skele
 
 		}
 	}
+#else
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+	AnimSequence->GetController().OpenBracket(FText::FromString("glTFRuntime"), false);
+	AnimSequence->GetController().InitializeModel();
+#endif
 #endif
 
 	int64 RootBoneIndex = INDEX_NONE;
@@ -2176,7 +2294,7 @@ UAnimSequence* FglTFRuntimeParser::CreateAnimationFromPose(USkeletalMesh * Skele
 #endif
 
 		Tracks.Add(TrackName, Track);
-	}
+		}
 
 	OnCreatedPoseTracks.Broadcast(AsShared(), Tracks);
 
@@ -2185,12 +2303,17 @@ UAnimSequence* FglTFRuntimeParser::CreateAnimationFromPose(USkeletalMesh * Skele
 		const int32 BoneIndex = AnimSequence->GetSkeleton()->GetReferenceSkeleton().FindBoneIndex(*Pair.Key);
 #if WITH_EDITOR
 #if ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MINOR_VERSION >= 2
+		AnimSequence->GetController().AddBoneCurve(*(Pair.Key), false);
+		AnimSequence->GetController().SetBoneTrackKeys(*(Pair.Key), Pair.Value.PosKeys, Pair.Value.RotKeys, Pair.Value.ScaleKeys, false);
+#else
 		TArray<FBoneAnimationTrack>& BoneTracks = const_cast<TArray<FBoneAnimationTrack>&>(AnimSequence->GetDataModel()->GetBoneAnimationTracks());
 		FBoneAnimationTrack BoneTrack;
 		BoneTrack.Name = *Pair.Key;
 		BoneTrack.BoneTreeIndex = BoneIndex;
 		BoneTrack.InternalTrackData = Pair.Value;
 		BoneTracks.Add(BoneTrack);
+#endif
 #else
 		AnimSequence->AddNewRawTrack(*Pair.Key, const_cast<FRawAnimSequenceTrack*>(&Pair.Value));
 #endif
@@ -2200,11 +2323,14 @@ UAnimSequence* FglTFRuntimeParser::CreateAnimationFromPose(USkeletalMesh * Skele
 	}
 
 #if WITH_EDITOR
-#if ENGINE_MAJOR_VERSION > 4
-	// hack for calling GenerateTransientData()
-#if ENGINE_MINOR_VERSION > 1
-	AnimSequence->GetDataModelInterface().GetObject()->PostDuplicate(false);
+#if ENGINE_MAJOR_VERSION >= 5
+#if ENGINE_MINOR_VERSION >= 2
+	AnimSequence->GetController().SetFrameRate(FrameRate, false);
+	AnimSequence->GetController().SetNumberOfFrames(NumFrames);
+	AnimSequence->GetController().NotifyPopulated();
+	AnimSequence->GetController().CloseBracket(false);
 #else
+	// hack for calling GenerateTransientData()
 	AnimSequence->GetDataModel()->PostDuplicate(false);
 #endif
 #else
@@ -2221,7 +2347,7 @@ UAnimSequence* FglTFRuntimeParser::CreateAnimationFromPose(USkeletalMesh * Skele
 #endif
 
 	return AnimSequence;
-}
+	}
 
 UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh * SkeletalMesh, const TArray<FglTFRuntimePathItem>&BonesPath, const TArray<FglTFRuntimePathItem>&MorphTargetsPath, const FglTFRuntimeSkeletalAnimationConfig & SkeletalAnimationConfig)
 {
@@ -2318,6 +2444,8 @@ UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh
 	AnimSequence->SetPreviewMesh(SkeletalMesh);
 #if ENGINE_MAJOR_VERSION > 4
 #if WITH_EDITOR
+	FFrameRate FrameRate(SkeletalAnimationConfig.FramesPerSecond, 1);
+#if ENGINE_MINOR_VERSION < 2
 	FIntProperty* IntProperty = CastField<FIntProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("NumberOfFrames")));
 	IntProperty->SetPropertyValue_InContainer(AnimSequence->GetDataModel(), NumFrames);
 	FFloatProperty* FloatProperty = CastField<FFloatProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("PlayLength")));
@@ -2325,10 +2453,10 @@ UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh
 	IntProperty = CastField<FIntProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("NumberOfKeys")));
 	IntProperty->SetPropertyValue_InContainer(AnimSequence->GetDataModel(), NumFrames);
 
-	FFrameRate FrameRate(SkeletalAnimationConfig.FramesPerSecond, 1);
 	FStructProperty* StructProperty = CastField<FStructProperty>(UAnimDataModel::StaticClass()->FindPropertyByName(TEXT("FrameRate")));
 	FFrameRate* FrameRatePtr = StructProperty->ContainerPtrToValuePtr<FFrameRate>(AnimSequence->GetDataModel());
 	*FrameRatePtr = FrameRate;
+#endif
 #else
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #if ENGINE_MINOR_VERSION >= 2
@@ -2346,6 +2474,12 @@ UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh
 	AnimSequence->bEnableRootMotion = SkeletalAnimationConfig.bRootMotion;
 	AnimSequence->RootMotionRootLock = SkeletalAnimationConfig.RootMotionRootLock;
 
+
+#if WITH_EDITOR && ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+	AnimSequence->GetController().OpenBracket(FText::FromString("glTFRuntime"), false);
+	AnimSequence->GetController().InitializeModel();
+#endif
+
 	// add MorphTarget curves
 	for (TPair<FName, TArray<TPair<float, float>>>& Pair : MorphTargetCurves)
 	{
@@ -2358,23 +2492,31 @@ UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh
 
 #if ENGINE_MAJOR_VERSION > 4
 #if WITH_EDITOR
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+		FAnimationCurveIdentifier CurveId(SmartName, ERawCurveTrackTypes::RCT_Float);
+		AnimSequence->GetController().AddCurve(CurveId);
+		FRichCurve RichCurve;
+#else
 		FAnimationCurveData& RawCurveData = const_cast<FAnimationCurveData&>(AnimSequence->GetDataModel()->GetCurveData());
 		int32 NewCurveIndex = RawCurveData.FloatCurves.Add(FFloatCurve(SmartName, 0));
 		FFloatCurve* NewCurve = &RawCurveData.FloatCurves[NewCurveIndex];
+		FRichCurve& RichCurve = NewCurve->FloatCurve;
+#endif
 #else
 		FRawCurveTracks& CurveTracks = const_cast<FRawCurveTracks&>(AnimSequence->GetCurveData());
 		int32 NewCurveIndex = CurveTracks.FloatCurves.Add(FFloatCurve(SmartName, 0));
 		FFloatCurve* NewCurve = &CurveTracks.FloatCurves[NewCurveIndex];
+		FRichCurve& RichCurve = NewCurve->FloatCurve;
 #endif
 #else
 		AnimSequence->RawCurveData.AddCurveData(SmartName);
 		FFloatCurve* NewCurve = (FFloatCurve*)AnimSequence->RawCurveData.GetCurveData(SmartName.UID, ERawCurveTrackTypes::RCT_Float);
-
+		FRichCurve& RichCurve = NewCurve->FloatCurve;
 #endif
 
 		for (TPair<float, float>& CurvePair : Pair.Value)
 		{
-			FKeyHandle NewKeyHandle = NewCurve->FloatCurve.AddKey(CurvePair.Key, CurvePair.Value, false);
+			FKeyHandle NewKeyHandle = RichCurve.AddKey(CurvePair.Key, CurvePair.Value, false);
 
 			ERichCurveInterpMode NewInterpMode = RCIM_Linear;
 			ERichCurveTangentMode NewTangentMode = RCTM_Auto;
@@ -2385,9 +2527,9 @@ UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh
 			float LeaveTangentWeight = 0.f;
 			float ArriveTangentWeight = 0.f;
 
-			NewCurve->FloatCurve.SetKeyInterpMode(NewKeyHandle, NewInterpMode);
-			NewCurve->FloatCurve.SetKeyTangentMode(NewKeyHandle, NewTangentMode);
-			NewCurve->FloatCurve.SetKeyTangentWeightMode(NewKeyHandle, NewTangentWeightMode);
+			RichCurve.SetKeyInterpMode(NewKeyHandle, NewInterpMode);
+			RichCurve.SetKeyTangentMode(NewKeyHandle, NewTangentMode);
+			RichCurve.SetKeyTangentWeightMode(NewKeyHandle, NewTangentWeightMode);
 		}
 
 		AnimSequence->GetSkeleton()->AccumulateCurveMetaData(Pair.Key, false, true);
@@ -2395,15 +2537,22 @@ UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh
 #if !WITH_EDITOR
 		AnimSequence->CompressedData.CompressedCurveNames.Add(SmartName);
 		const_cast<FCurveMetaData*>(AnimSequence->GetSkeleton()->GetCurveMetaData(SmartName.UID))->Type.bMorphtarget = true;
+#else
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+		AnimSequence->GetController().SetCurveKeys(CurveId, RichCurve.GetConstRefOfKeys());
+#endif
 #endif
 	}
 
 #if WITH_EDITOR
-#if ENGINE_MAJOR_VERSION > 4
-	// hack for calling GenerateTransientData()
-#if ENGINE_MINOR_VERSION > 1
-	AnimSequence->GetDataModelInterface().GetObject()->PostDuplicate(false);
+#if ENGINE_MAJOR_VERSION >= 5
+#if ENGINE_MINOR_VERSION >= 2
+	AnimSequence->GetController().SetFrameRate(FrameRate, false);
+	AnimSequence->GetController().SetNumberOfFrames(NumFrames);
+	AnimSequence->GetController().NotifyPopulated();
+	AnimSequence->GetController().CloseBracket(false);
 #else
+	// hack for calling GenerateTransientData()
 	AnimSequence->GetDataModel()->PostDuplicate(false);
 #endif
 #else
@@ -2423,7 +2572,7 @@ UAnimSequence* FglTFRuntimeParser::CreateSkeletalAnimationFromPath(USkeletalMesh
 #endif
 
 	return AnimSequence;
-}
+		}
 
 FVector4 FglTFRuntimeParser::CubicSpline(const float TC, const float T0, const float T1, const FVector4 Value0, const FVector4 OutTangent, const FVector4 Value1, const FVector4 InTangent)
 {
@@ -2502,7 +2651,7 @@ bool FglTFRuntimeParser::LoadSkeletalAnimation_Internal(TSharedRef<FJsonObject> 
 				RetargetParentIndex = RetargetRefSkeleton.GetParentIndex(RetargetParentIndex);
 			}
 		}
-	}
+			}
 
 	auto RetargetQuat = [&](const FQuat LocalAnimQuat, const FQuat WorldPoseQuat, const FQuat WorldParentPoseQuat, const FQuat WorldRetargetPoseQuat, const FQuat WorldRetargetParentPoseQuat) -> FQuat
 	{
@@ -2662,8 +2811,8 @@ bool FglTFRuntimeParser::LoadSkeletalAnimation_Internal(TSharedRef<FJsonObject> 
 #else
 				Track.RotKeys.Add(AnimQuat);
 #endif
+				}
 			}
-		}
 		else if (Path == "translation" && !SkeletalAnimationConfig.bRemoveTranslations)
 		{
 			if (Curve.Timeline.Num() != Curve.Values.Num())
@@ -2756,8 +2905,8 @@ bool FglTFRuntimeParser::LoadSkeletalAnimation_Internal(TSharedRef<FJsonObject> 
 #else
 				Track.PosKeys.Add(AnimLocation);
 #endif
+				}
 			}
-		}
 		else if (Path == "scale" && !SkeletalAnimationConfig.bRemoveScales)
 		{
 			if (Curve.Timeline.Num() != Curve.Values.Num())
@@ -2816,11 +2965,11 @@ bool FglTFRuntimeParser::LoadSkeletalAnimation_Internal(TSharedRef<FJsonObject> 
 				MorphTargetCurves.Add(MorphTargetName, Curves);
 			}
 		}
-	};
+		};
 
 	FString IgnoredName;
 	return LoadAnimation_Internal(JsonAnimationObject, Duration, IgnoredName, Callback, Filter, SkeletalAnimationConfig.OverrideTrackNameFromExtension);
-}
+		}
 
 
 bool FglTFRuntimeParser::LoadSkinnedMeshRecursiveAsRuntimeLOD(const FString & NodeName, int32 & SkinIndex, const TArray<FString>&ExcludeNodes, FglTFRuntimeMeshLOD & RuntimeLOD, const FglTFRuntimeMaterialsConfig & MaterialsConfig, const FglTFRuntimeSkeletonConfig & SkeletonConfig)

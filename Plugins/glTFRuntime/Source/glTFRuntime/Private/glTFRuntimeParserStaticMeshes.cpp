@@ -6,10 +6,13 @@
 #include "StaticMeshAttributes.h"
 #include "StaticMeshOperations.h"
 #include "Engine/StaticMeshSocket.h"
+#include "Engine/World.h"
 #if WITH_EDITOR
 #include "Editor/EditorEngine.h"
 #endif
 #include "PhysicsEngine/BodySetup.h"
+#include "Runtime/Launch/Resources/Version.h"
+#include "StaticMeshResources.h"
 
 FglTFRuntimeStaticMeshContext::FglTFRuntimeStaticMeshContext(TSharedRef<FglTFRuntimeParser> InParser, const FglTFRuntimeStaticMeshConfig& InStaticMeshConfig) :
 	Parser(InParser),
@@ -108,7 +111,7 @@ UStaticMesh* FglTFRuntimeParser::LoadStaticMesh_Internal(TSharedRef<FglTFRuntime
 
 	int32 LODIndex = 0;
 
-	const float TangentsDirection = StaticMeshConfig.bReverseTangents ? 1 : -1;
+	const float TangentsDirection = StaticMeshConfig.bReverseTangents ? -1 : 1;
 
 	// this is used for inheriting materials while in multi LOD mode
 	TMap<int32, int32> SectionMaterialMap;

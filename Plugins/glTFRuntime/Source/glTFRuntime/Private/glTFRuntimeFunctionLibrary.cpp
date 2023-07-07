@@ -1,11 +1,13 @@
-// Copyright 2022, Roberto De Ioris.
+// Copyright 2020-2023, Roberto De Ioris.
 
 
 #include "glTFRuntimeFunctionLibrary.h"
+#include "Async/Async.h"
 #include "HttpModule.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 UglTFRuntimeAsset* UglTFRuntimeFunctionLibrary::glTFLoadAssetFromFilename(const FString& Filename, const bool bPathRelativeToContent, const FglTFRuntimeConfig& LoaderConfig)
 {
@@ -32,6 +34,46 @@ UglTFRuntimeAsset* UglTFRuntimeFunctionLibrary::glTFLoadAssetFromFilename(const 
 	}
 
 	return Asset;
+}
+
+void UglTFRuntimeFunctionLibrary::glTFLoadAssetFromFilenameAsync(const FString& Filename, const bool bPathRelativeToContent, const FglTFRuntimeConfig& LoaderConfig, const FglTFRuntimeHttpResponse& Completed)
+{
+	UglTFRuntimeAsset* Asset = NewObject<UglTFRuntimeAsset>();
+	if (!Asset)
+	{
+		Completed.ExecuteIfBound(nullptr);
+		return;
+	}
+
+	Asset->RuntimeContextObject = LoaderConfig.RuntimeContextObject;
+	Asset->RuntimeContextString = LoaderConfig.RuntimeContextString;
+
+	// Annoying copy, but we do not want to remove the const
+	FglTFRuntimeConfig OverrideConfig = LoaderConfig;
+
+	if (bPathRelativeToContent)
+	{
+		OverrideConfig.bSearchContentDir = true;
+	}
+
+	Async(EAsyncExecution::Thread, [Filename, Asset, Completed, OverrideConfig]()
+		{
+			TSharedPtr<FglTFRuntimeParser> Parser = FglTFRuntimeParser::FromFilename(Filename, OverrideConfig);
+
+
+	FGraphEventRef Task = FFunctionGraphTask::CreateAndDispatchWhenReady([Parser, Asset, Completed]()
+		{
+			if (Parser.IsValid() && Asset->SetParser(Parser.ToSharedRef()))
+			{
+				Completed.ExecuteIfBound(Asset);
+			}
+			else
+			{
+				Completed.ExecuteIfBound(nullptr);
+			}
+		}, TStatId(), nullptr, ENamedThreads::GameThread);
+	FTaskGraphInterface::Get().WaitUntilTaskCompletes(Task);
+		});
 }
 
 UglTFRuntimeAsset* UglTFRuntimeFunctionLibrary::glTFLoadAssetFromString(const FString& JsonData, const FglTFRuntimeConfig& LoaderConfig)
@@ -69,11 +111,11 @@ void UglTFRuntimeFunctionLibrary::glTFLoadAssetFromUrl(const FString& Url, const
 	HttpRequest->OnProcessRequestComplete().BindLambda([](FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bSuccess, FglTFRuntimeHttpResponse Completed, const FglTFRuntimeConfig& LoaderConfig)
 		{
 			UglTFRuntimeAsset* Asset = nullptr;
-			if (bSuccess)
-			{
-				Asset = glTFLoadAssetFromData(ResponsePtr->GetContent(), LoaderConfig);
-			}
-			Completed.ExecuteIfBound(Asset);
+	if (bSuccess)
+	{
+		Asset = glTFLoadAssetFromData(ResponsePtr->GetContent(), LoaderConfig);
+	}
+	Completed.ExecuteIfBound(Asset);
 		}, Completed, LoaderConfig);
 
 	HttpRequest->ProcessRequest();
@@ -95,21 +137,21 @@ void UglTFRuntimeFunctionLibrary::glTFLoadAssetFromUrlWithProgress(const FString
 	HttpRequest->OnProcessRequestComplete().BindLambda([](FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bSuccess, FglTFRuntimeHttpResponse Completed, const FglTFRuntimeConfig& LoaderConfig)
 		{
 			UglTFRuntimeAsset* Asset = nullptr;
-			if (bSuccess)
-			{
-				Asset = glTFLoadAssetFromData(ResponsePtr->GetContent(), LoaderConfig);
-			}
-			Completed.ExecuteIfBound(Asset);
+	if (bSuccess)
+	{
+		Asset = glTFLoadAssetFromData(ResponsePtr->GetContent(), LoaderConfig);
+	}
+	Completed.ExecuteIfBound(Asset);
 		}, Completed, LoaderConfig);
 
 	HttpRequest->OnRequestProgress().BindLambda([](FHttpRequestPtr RequestPtr, int32 BytesSent, int32 BytesReceived, FglTFRuntimeHttpProgress Progress, const FglTFRuntimeConfig& LoaderConfig)
 		{
 			int32 ContentLength = 0;
-			if (RequestPtr->GetResponse().IsValid())
-			{
-				ContentLength = RequestPtr->GetResponse()->GetContentLength();
-			}
-			Progress.ExecuteIfBound(LoaderConfig, BytesReceived, ContentLength);
+	if (RequestPtr->GetResponse().IsValid())
+	{
+		ContentLength = RequestPtr->GetResponse()->GetContentLength();
+	}
+	Progress.ExecuteIfBound(LoaderConfig, BytesReceived, ContentLength);
 		}, Progress, LoaderConfig);
 
 	HttpRequest->ProcessRequest();

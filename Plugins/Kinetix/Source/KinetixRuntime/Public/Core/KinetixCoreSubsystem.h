@@ -10,7 +10,6 @@
 class UKinetixAccount;
 class UKinetixMetadata;
 class UKinetixAnimation;
-DECLARE_DYNAMIC_DELEGATE(FKinetixCoreInitializedDelegate);
 
 /**
  * 

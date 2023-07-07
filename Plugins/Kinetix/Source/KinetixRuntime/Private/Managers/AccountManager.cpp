@@ -10,13 +10,17 @@
 #include "Tasks/Task.h"
 
 FAccountManager::FAccountManager(const FString& InVirtualWorld)
-	: VirtualWorldID(InVirtualWorld), LoggedAccount(nullptr), AssignEmotePipe(TEXT("AssignEmotePipe")),
-	  Event(TEXT("AssignEmoteEvent"))
+	: VirtualWorldID(InVirtualWorld), LoggedAccount(nullptr), AssignEmotePipe(TEXT("AssignEmotePipe"))
 {
+	check(!AssociateEmoteEvent.IsValid());
+	AssociateEmoteEvent = MakeUnique<UE::Tasks::FTaskEvent>(UE_SOURCE_LOCATION);
 }
 
 FAccountManager::~FAccountManager()
 {
+	check(AssociateEmoteEvent.IsValid());
+	AssociateEmoteEvent->Trigger();
+	AssociateEmoteEvent = nullptr;
 }
 
 bool FAccountManager::ConnectAccount(const FString& InUserID)
@@ -180,7 +184,7 @@ bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 		}
 
 		return true;
-	}, Event);
+	}, *AssociateEmoteEvent);
 
 	return false;
 }
@@ -191,8 +195,12 @@ bool FAccountManager::IsAccountConnected(const FString& InUserID)
 }
 
 void FAccountManager::GetAllUserAnimationMetadatas(
-	const TDelegate<void(TArray<FAnimationMetadata>&)>& OnMetadatasAvailable, TDelegate<void()> OnFailed)
+	const FOnMetadatasAvailable& OnMetadatasAvailable, TDelegate<void()> OnFailed)
 {
+	if (!LoggedAccount)
+		return;
+	LoggedAccount->RegisterOrCallMetadatasAvailable(OnMetadatasAvailable);
+	LoggedAccount->FetchMetadatas();
 }
 
 void FAccountManager::IsAnimationOwnedByUser(const FAnimationID& InAnimationID, const TDelegate<bool()>& OnSuccess,
@@ -244,7 +252,7 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 	Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
-
+	
 	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
 	if (!Request->ProcessRequest())
 	{
@@ -347,5 +355,6 @@ void FAccountManager::OnGetEmotesToVirtualWorldResponse(
 		return;
 	}
 
-	Event.Trigger();
+	AssociateEmoteEvent->Trigger();
+	AssociateEmoteEvent.Reset();
 }

@@ -43,6 +43,12 @@ public:
 	void SetShortMetadata(const FAnimationID& InAnimationID, FString InAnimationURL);
 
 	/**
+	 * @brief Set the AnimSequence to use for this Emote
+	 * @param InAnimSequence The AnimSequence loaded with the Reference Skeleton
+	 */
+	void SetAnimSequence(UAnimSequence* InAnimSequence);
+	
+	/**
 	 * @brief Check if the GLB file is used (e.g. Import Retargeting)
 	 * @return True if currently used
 	 */
@@ -58,6 +64,11 @@ public:
 	bool IsLocal() const;
 	
 	FString GetPathToGlb() const;
+
+	const FAnimationMetadata& GetAnimationMetadata() const;
+
+	UAnimSequence* GetAnimSequence() const;
+
 private:
 	
 	/**
@@ -72,7 +83,7 @@ private:
 	 * @return True if the emote is currently retargeting to that specific AnimInstance
 	 */
 	bool IsRetargeting(UAnimInstance* InAnimInstance);
-	
+
 private:
 
 	FAnimationID AnimationID;
@@ -82,5 +93,7 @@ private:
 	FAnimationMetadata AnimationMetadata;
 
 	FString PathToGLB;
+
+	UAnimSequence* AnimSequence;
 
 };

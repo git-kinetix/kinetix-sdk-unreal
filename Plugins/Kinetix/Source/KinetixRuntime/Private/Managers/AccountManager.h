@@ -27,7 +27,7 @@ public:
 
 	bool IsAccountConnected(const FString& InUserID);
 
-	void GetAllUserAnimationMetadatas(const TDelegate<void(TArray<FAnimationMetadata>&)>& OnMetadatasAvailable,
+	void GetAllUserAnimationMetadatas(const FOnMetadatasAvailable& OnMetadatasAvailable,
 	                                  TDelegate<void()> OnFailed);
 
 	void IsAnimationOwnedByUser(const FAnimationID& InAnimationID, const TDelegate<bool()>& OnSuccess,
@@ -74,7 +74,7 @@ private:
 	TArray<FAnimationID> Emotes;
 
 	UE::Tasks::FPipe AssignEmotePipe;
-	UE::Tasks::FTaskEvent Event;
+	TUniquePtr<UE::Tasks::FTaskEvent> AssociateEmoteEvent;
 	
 	FOnUpdatedAccount OnUpdatedAccountDelegate;
 	FOnConnectedAccount OnConnectedAccountDelegate;

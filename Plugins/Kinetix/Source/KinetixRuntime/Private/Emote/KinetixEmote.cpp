@@ -3,12 +3,16 @@
 
 #include "Emote/KinetixEmote.h"
 
-FKinetixEmote::FKinetixEmote(): bIsLocal(false)
-{}
+#include "Core/Metadata/KinetixMetadata.h"
+
+FKinetixEmote::FKinetixEmote(): bIsLocal(false), AnimSequence(nullptr)
+{
+}
 
 FKinetixEmote::FKinetixEmote(const FAnimationID& InAnimationID)
-: AnimationID(InAnimationID), bIsLocal(false)
-{}
+	: AnimationID(InAnimationID), bIsLocal(false), AnimSequence(nullptr)
+{
+}
 
 FKinetixEmote::~FKinetixEmote()
 {
@@ -38,6 +42,19 @@ void FKinetixEmote::SetShortMetadata(const FAnimationID& InAnimationID, FString 
 	AnimationMetadata.AnimationURL.Map = InAnimationURL;
 }
 
+void FKinetixEmote::SetAnimSequence(UAnimSequence* InAnimSequence)
+{
+	if (!IsValid(InAnimSequence))
+	{
+		UE_LOG(LogKinetixMetadata, Warning, TEXT("[KinetixEmote] SetAnimSequence: Given AnimSequence is null !"));
+		return;
+	}
+
+	bIsLocal = true;
+	AnimSequence = InAnimSequence;
+	AnimSequence->AddToRoot();
+}
+
 bool FKinetixEmote::IsFileInUse() const
 {
 	return false;
@@ -56,6 +73,16 @@ bool FKinetixEmote::IsLocal() const
 FString FKinetixEmote::GetPathToGlb() const
 {
 	return PathToGLB;
+}
+
+const FAnimationMetadata& FKinetixEmote::GetAnimationMetadata() const
+{
+	return AnimationMetadata;
+}
+
+UAnimSequence* FKinetixEmote::GetAnimSequence() const
+{
+	return AnimSequence;
 }
 
 bool FKinetixEmote::HasValidPath() const

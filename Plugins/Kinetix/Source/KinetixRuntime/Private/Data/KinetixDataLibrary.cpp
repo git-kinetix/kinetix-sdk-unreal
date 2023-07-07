@@ -27,10 +27,9 @@ bool UKinetixDataBlueprintFunctionLibrary::GetPluginRelativePath(FString& Relati
 	return FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectPluginsDir());
 }
 
-bool UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(FString& RelativePath)
+bool UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(FString& RelativePath, FString PathRoot)
 {
-	FString KinetixRoot = "Kinetix/";
-	int32 Index = RelativePath.Find(KinetixRoot);
+	int32 Index = RelativePath.Find(PathRoot);
 
 	if (Index == INDEX_NONE)
 	{
@@ -39,7 +38,7 @@ bool UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(FString& 
 	}
 
 	FString ContentPath = "Content/";
-	RelativePath.RemoveAt(Index + KinetixRoot.Len(), ContentPath.Len());
+	RelativePath.RemoveAt(Index + PathRoot.Len(), ContentPath.Len());
 	return true;
 }
 
@@ -183,4 +182,84 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 	AnimationMetadata.Duration = Duration;
 
 	return true;
+}
+
+bool UKinetixDataBlueprintFunctionLibrary::GetIconURL(const FAnimationMetadata& InAnimationMetadata,
+	FString& OutIconURL)
+{
+	if (InAnimationMetadata.IconURL.Map.IsEmpty())
+		return false;
+
+	OutIconURL = InAnimationMetadata.IconURL.Map;
+	return true;
+}
+
+bool UKinetixDataBlueprintFunctionLibrary::EqualEqual_AnimationMetadataAnimationMetadata(FAnimationMetadata A,
+	FAnimationMetadata B)
+{
+	return A == B;
+}
+
+bool UKinetixDataBlueprintFunctionLibrary::IsValid(FAnimationMetadata& InAnimationMetadata)
+{
+	return InAnimationMetadata.Id.UUID.IsValid();
+}
+
+bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDelegate<void(FAssetData)>& Callback)
+{
+	FAssetRegistryModule& AssetRegistryModule =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+
+	// Normalize path D:/Kinetix/kinetix-sdk-unreal/Plugins/ReadyPlayerMe/Content/Character/Fullbody/Mesh/RPM_Mixamo_SkeletalMesh.uasset
+	FString GeneralPath = IPluginManager::Get().FindPlugin(TEXT("ReadyPlayerMe"))->GetContentDir() + TEXT("/Character/Fullbody/Mesh");
+	GeneralPath = FPaths::CreateStandardFilename(GeneralPath);
+	// GeneralPath = FPaths::GetPath(GeneralPath);
+
+	// Format package path
+	FString SkeletalMeshPackagePath = GeneralPath;
+	RemoveContentFromPluginPath(SkeletalMeshPackagePath, TEXT("/ReadyPlayerMe"));
+	FPaths::MakePathRelativeTo(SkeletalMeshPackagePath, *FPaths::ProjectPluginsDir());
+	SkeletalMeshPackagePath = FString::Printf(TEXT("/%s"), *SkeletalMeshPackagePath);
+
+	FARFilter Filter;
+	Filter.ClassPaths.Add(USkeletalMesh::StaticClass()->GetClassPathName());
+	Filter.PackagePaths.Add(FName(SkeletalMeshPackagePath));
+	Filter.bRecursiveClasses = true;
+	Filter.bRecursivePaths = true;
+
+	TArray<FAssetData> SkeletalMeshDatas;
+	AssetRegistryModule.Get().GetAssets(Filter, SkeletalMeshDatas);
+
+	if (SkeletalMeshDatas.IsEmpty())
+	{
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("No asset found"));
+		return false;
+	}
+
+	if (!SkeletalMeshDatas[0].IsAssetLoaded())
+	{
+		UE_LOG(LogKinetixRuntime, Log, TEXT("%s not loaded yet, launch loading..."),
+			   *SkeletalMeshDatas[0].AssetName.ToString());
+
+		FStreamableDelegate TempDelegate = FStreamableDelegate::CreateLambda(
+			[Callback, SkeletalMeshDatas]()
+			{
+				Callback.Execute(SkeletalMeshDatas[0]);
+			});
+
+		// Launch async loading
+		UAssetManager::GetStreamableManager().RequestAsyncLoad(
+			SkeletalMeshDatas[0].ToSoftObjectPath(),
+			TempDelegate);
+		return false;
+	}
+
+	Callback.Execute(SkeletalMeshDatas[0]);
+
+	return true;
+}
+
+FString UKinetixDataBlueprintFunctionLibrary::GetKinetixSlotName()
+{
+	return KINETIXSLOTNAME;
 }

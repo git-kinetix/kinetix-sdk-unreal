@@ -3,6 +3,7 @@
 #include "Core/Animation/KinetixAnimation.h"
 
 #include "Managers/LocalPlayerManager.h"
+#include "Tasks/Task.h"
 #include "Utils/Animation/RootMotionConfig.h"
 
 DEFINE_LOG_CATEGORY(LogKinetixAnimation);
@@ -12,7 +13,7 @@ UKinetixAnimation::UKinetixAnimation()
 };
 
 UKinetixAnimation::UKinetixAnimation(FVTableHelper& Helper)
-	:Super(Helper)
+	: Super(Helper)
 {
 }
 
@@ -74,13 +75,19 @@ void UKinetixAnimation::StopAnimationOnLocalPlayer()
 {
 }
 
-void UKinetixAnimation::LoadLocalPlayerAnimation(FAnimationID InAnimationID,
-	const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate)
+void UKinetixAnimation::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString& InLockID,
+                                                 const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate)
 {
+	LocalPlayerManager.Get()->LoadLocalPlayerAnimation(
+		InAnimationID, InLockID,
+		TDelegate<void()>::CreateLambda([OnSuccessDelegate]()
+		{
+			OnSuccessDelegate.ExecuteIfBound(true);
+		}));
 }
 
 void UKinetixAnimation::LoadLocalPlayerAnimations(TArray<FAnimationID> InAnimationIDs,
-	const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate)
+                                                  const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate)
 {
 }
 
@@ -97,7 +104,7 @@ bool UKinetixAnimation::IsAnimationAvailableOnLocalPlayer(FAnimationID InAnimati
 	return false;
 }
 
-UKinetixComponent* UKinetixAnimation::GetLocalKCC() const
+UKinetixCharacterComponent* UKinetixAnimation::GetLocalKCC() const
 {
 	return nullptr;
 }

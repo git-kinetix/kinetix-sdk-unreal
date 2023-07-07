@@ -53,13 +53,6 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 
 	CoreConfiguration = InConfiguration;
 
-	TArray<FString> MetadataFiles;
-	if (!UKinetixDataBlueprintFunctionLibrary::GetMetadataFiles(MetadataFiles))
-	{
-		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to find any metadata files !"));
-		return false;
-	}
-
 	UObject* SubcoreObject = nullptr;
 	if (!InitializeSubcore(UKinetixAnimation::StaticClass(), &SubcoreObject))
 	{

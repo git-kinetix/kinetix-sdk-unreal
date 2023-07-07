@@ -12,7 +12,7 @@ void UKinetixNetwork::SetConfiguration(FKinetixNetworkConfiguration& InNetworkCo
 // 	return NetworkConfiguration;
 // }
 
-UKinetixComponent* UKinetixNetwork::GetRemoteKCC(FString InRemotePeerID)
+UKinetixCharacterComponent* UKinetixNetwork::GetRemoteKCC(FString InRemotePeerID)
 {
 	return nullptr;
 }

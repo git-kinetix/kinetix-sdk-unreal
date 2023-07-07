@@ -3,10 +3,16 @@
 
 #include "Core/Account/Account.h"
 
+#include "glTFRuntimeFunctionLibrary.h"
 #include "HttpModule.h"
 #include "KinetixDeveloperSettings.h"
+#include "Core/KinetixCoreSubsystem.h"
 #include "Core/Account/KinetixAccount.h"
+#include "Core/Metadata/KinetixMetadata.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Kismet/BlueprintPlatformLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Managers/EmoteManager.h"
 #include "Tasks/Task.h"
 
 FAccount::FAccount(const FString& InUserID, bool bPreFetch)
@@ -20,12 +26,14 @@ FAccount::~FAccount()
 {
 }
 
-const TArray<FKinetixEmote> FAccount::FetchMetadatas()
+const TArray<FKinetixEmote*> FAccount::FetchMetadatas()
 {
 	if (!Emotes.IsEmpty())
+	{
+		CallMetadatasAvailableDelegates();
 		return Emotes.Array();
+	}
 
-	// auto AnimationsMetadatas = ;
 	UE::Tasks::FTask FetchTask = UE::Tasks::Launch(
 		UE_SOURCE_LOCATION, [&]()
 		{
@@ -48,6 +56,11 @@ const TArray<FKinetixEmote> FAccount::FetchMetadatas()
 
 void FAccount::AddEmoteFromMetadata(const FAnimationMetadata& InAnimationMetadata)
 {
+	FKinetixEmote* NewlyEmote = FEmoteManager::Get().GetEmote(InAnimationMetadata.Id);
+	NewlyEmote->SetMetadata(InAnimationMetadata);
+
+	Emotes.Add(NewlyEmote);
+	Metadatas.Add(InAnimationMetadata);
 }
 
 void FAccount::AddEmoteFromID(const FAnimationID& InAnimationID)
@@ -57,11 +70,6 @@ void FAccount::AddEmoteFromID(const FAnimationID& InAnimationID)
 bool FAccount::HasEmote(const FAnimationID& InAnimationID)
 {
 	return false;
-}
-
-void FAccount::TestFunc()
-{
-	UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccount] TestFunc: On instance"))
 }
 
 void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request,
@@ -141,14 +149,49 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 
 			FileObject->TryGetStringField(TEXT("name"), StringField);
 			if (StringField == TEXT("thumbnail"))
+			{
+				FileObject->TryGetStringField(TEXT("extension"), StringField);
+				if (StringField != TEXT("png"))
+					continue;
 				FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.IconURL.Map);
-			else if (StringField == TEXT("glb"))
+				continue;
+			}
+
+			if (StringField == TEXT("animation"))
 				FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.AnimationURL.Map);
 		}
+
+		UE_LOG(LogKinetixAccount, Warning,
+		       TEXT("[FAccount] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
+		       *AnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
+		       *AnimationMetadata.Name.ToString(),
+		       AnimationMetadata.Duration,
+		       *AnimationMetadata.IconURL.Map,
+		       *AnimationMetadata.AnimationURL.Map);
 
 		AddEmoteFromMetadata(AnimationMetadata);
 	}
 
-	// if (!UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(JsonObjects, AnimationMetadata))
-	// 	return;
+	CallMetadatasAvailableDelegates();
+}
+
+void FAccount::RegisterOrCallMetadatasAvailable(const FOnMetadatasAvailable& OnMetadatasAvailable)
+{
+	if (Metadatas.IsEmpty())
+	{
+		OnMetadatasAvailableDelegates.AddUnique(OnMetadatasAvailable);
+		return;
+	}
+
+	OnMetadatasAvailable.ExecuteIfBound(true, Metadatas.Array());
+}
+
+void FAccount::CallMetadatasAvailableDelegates()
+{
+	for (int i = 0; i < OnMetadatasAvailableDelegates.Num(); ++i)
+	{
+		OnMetadatasAvailableDelegates[i].ExecuteIfBound(!Metadatas.IsEmpty(), Metadatas.Array());
+	}
+
+	OnMetadatasAvailableDelegates.Empty();
 }

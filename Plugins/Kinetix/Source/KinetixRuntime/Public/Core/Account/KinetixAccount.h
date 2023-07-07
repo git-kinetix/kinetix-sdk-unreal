@@ -49,7 +49,7 @@ private:
 
 	UFUNCTION()
 	void AssociatedEmote();
-	
+
 public:
 
 	UPROPERTY(BlueprintAssignable)
@@ -61,7 +61,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnEmoteAssociated OnEmoteAssociated;
 
-private:
+public:
 
 	TUniquePtr<FAccountManager> AccountManager;
 

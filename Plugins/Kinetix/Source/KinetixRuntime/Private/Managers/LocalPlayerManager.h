@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Data/KinetixDataLibrary.h"
 
-class UKinetixComponent;
+class UKinetixCharacterComponent;
 
 /**
  * 
@@ -35,7 +35,17 @@ public:
 	void PlayAnimationQueue(TArray<FAnimationID> InAnimationIDs, bool bLoop, TDelegate<void(TArray<FAnimationID>)> OnPlayedAnimations);
 	void StopAnimation();
 
-	TObjectPtr<UKinetixComponent> GetLocalKinetixComponent() const;
+	TObjectPtr<UKinetixCharacterComponent> GetLocalKinetixComponent() const;
+
+#pragma region Loading
+
+	void LoadLocalPlayerAnimation(const FAnimationID& InAnimationID,
+		FString InLockID,
+		const TDelegate<void()>& OnSuccess = TDelegate<void()>(),
+		const TDelegate<void()>& OnFailure = TDelegate<void()>());
+		
+#pragma endregion
+
 	
 private:
 	void OnRegisterLocalPlayer();
@@ -43,7 +53,7 @@ private:
 private:
 	bool bPlayAutomatcallyOnAnimInstance;
 
-	TObjectPtr<UKinetixComponent> LocalKinetixComponent;
+	TObjectPtr<UKinetixCharacterComponent> LocalKinetixComponent;
 
 	TMap<FAnimationID, TList<TDelegate<void()>>> CallbacksOnRetargetedAnimationIDOnLocalPlayer;
 	TList<FAnimationID>* EmotesToPreload;

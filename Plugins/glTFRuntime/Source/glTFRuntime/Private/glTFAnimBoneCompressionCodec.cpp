@@ -1,7 +1,8 @@
-// Copyright 2020, Roberto De Ioris.
+// Copyright 2020-2023, Roberto De Ioris.
 
 
 #include "glTFAnimBoneCompressionCodec.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 void UglTFAnimBoneCompressionCodec::DecompressBone(FAnimSequenceDecompressionContext& DecompContext, int32 TrackIndex, FTransform& OutAtom) const
 {

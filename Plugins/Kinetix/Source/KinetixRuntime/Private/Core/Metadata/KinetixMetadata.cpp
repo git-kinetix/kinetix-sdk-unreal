@@ -5,8 +5,11 @@
 
 #include "KinetixRuntimeModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Core/KinetixCoreSubsystem.h"
+#include "Core/Account/KinetixAccount.h"
 #include "Data/AnimationMetadataAsset.h"
 #include "Engine/AssetManager.h"
+#include "Managers/AccountManager.h"
 #include "Managers/EmoteManager.h"
 
 DEFINE_LOG_CATEGORY(LogKinetixMetadata);
@@ -21,7 +24,24 @@ UKinetixMetadata::UKinetixMetadata(FVTableHelper& Helper)
 
 UKinetixMetadata::~UKinetixMetadata()
 {
-	EmoteManager = nullptr;
+	// EmoteManager = nullptr;
+}
+
+void UKinetixMetadata::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)
+{
+	TArray<FSoftObjectPath> MetadatasSoftObjectPaths;
+	GetMetadatasSoftObjectPaths(MetadatasSoftObjectPaths);
+
+	UAssetManager& AssetManager = UAssetManager::Get();
+	AssetManager.GetStreamableManager().RequestAsyncLoad(
+		MetadatasSoftObjectPaths,
+		FStreamableDelegate::CreateUObject(this,
+										   &UKinetixMetadata::InitializeEmoteManager, MetadatasSoftObjectPaths));
+
+
+	FEmoteManager::Get();
+
+	bResult = true;
 }
 
 void UKinetixMetadata::GetAnimationMetadataByAnimationIDs(FAnimationID InID, const FOnMetadataAvailable& Callback)
@@ -34,13 +54,26 @@ void UKinetixMetadata::IsAnimationOwnedByUser(FAnimationID InID, const FOnMetada
 
 void UKinetixMetadata::GetUserAnimationMetadatas(const FOnMetadatasAvailable& Callback)
 {
-	TArray<FSoftObjectPath> ObjectPaths;
-	if (!GetMetadatasSoftObjectPaths(ObjectPaths)) return;
+	UKinetixCoreSubsystem* KinetixCore =
+		UGameInstance::GetSubsystem<UKinetixCoreSubsystem>(
+			GetWorld()->GetGameInstance());
 
-	UAssetManager& AssetManager = UAssetManager::Get();
-	AssetManager.GetStreamableManager().RequestAsyncLoad(
-		ObjectPaths,
-		FStreamableDelegate::CreateUObject(this, &UKinetixMetadata::OnMetadatasAvailable, ObjectPaths, Callback));
+	if (!IsValid(KinetixCore))
+	{
+		UE_LOG(LogKinetixMetadata, Warning, TEXT("Unable to find Kinetix Core !"));
+		return;
+	}
+
+	KinetixCore->KinetixAccount->AccountManager->GetAllUserAnimationMetadatas(
+		Callback, TDelegate<void()>());
+	
+	// TArray<FSoftObjectPath> ObjectPaths;
+	// if (!GetMetadatasSoftObjectPaths(ObjectPaths)) return;
+	//
+	// UAssetManager& AssetManager = UAssetManager::Get();
+	// AssetManager.GetStreamableManager().RequestAsyncLoad(
+	// 	ObjectPaths,
+	// 	FStreamableDelegate::CreateUObject(this, &UKinetixMetadata::OnMetadatasAvailable, ObjectPaths, Callback));
 }
 
 void UKinetixMetadata::GetUserAnimationMetadatasByPage(int InCount, int InPageNumber,
@@ -51,22 +84,6 @@ void UKinetixMetadata::GetUserAnimationMetadatasByPage(int InCount, int InPageNu
 void UKinetixMetadata::GetUserAnimationMetadatasTotalPagesCount(int InCountPerPage,
                                                                 const FOnTotalNumberOfPagesAvailable& Callback)
 {
-}
-
-void UKinetixMetadata::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)
-{
-	EmoteManager = MakeUnique<FEmoteManager>();
-
-	TArray<FSoftObjectPath> MetadatasSoftObjectPaths;
-	GetMetadatasSoftObjectPaths(MetadatasSoftObjectPaths);
-
-	UAssetManager& AssetManager = UAssetManager::Get();
-	AssetManager.GetStreamableManager().RequestAsyncLoad(
-		MetadatasSoftObjectPaths,
-		FStreamableDelegate::CreateUObject(this,
-		                                   &UKinetixMetadata::InitializeEmoteManager, MetadatasSoftObjectPaths));
-
-	bResult = true;
 }
 
 void UKinetixMetadata::ResolveMetadatas(TArray<FSoftObjectPath>& SoftObjectPaths,
@@ -80,8 +97,10 @@ void UKinetixMetadata::ResolveMetadatas(TArray<FSoftObjectPath>& SoftObjectPaths
 	{
 		CurrentMetadata = Cast<UAnimationMetadataAsset>(SoftObjectPaths[i].ResolveObject());
 		UPackage* Package = CurrentMetadata->GetPackage();
-		OutLocalPaths[i] = IsValid(Package) ? FPackageName::GetLongPackagePath
-			 (Package->GetLoadedPath().GetLocalFullPath()) : FString();
+		OutLocalPaths[i] = IsValid(Package)
+			                   ? FPackageName::GetLongPackagePath
+			                   (Package->GetLoadedPath().GetLocalFullPath())
+			                   : FString();
 		Metadatas[i] = CurrentMetadata->AnimationMetadata;
 	}
 }
@@ -105,7 +124,7 @@ bool UKinetixMetadata::GetMetadatasSoftObjectPaths(TArray<FSoftObjectPath>& Obje
 
 	FString TopLevelObjectPath = GeneralPluginPath;
 	FPaths::MakePathRelativeTo(TopLevelObjectPath, *FPaths::ProjectPluginsDir());
-	UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(TopLevelObjectPath);
+	UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(TopLevelObjectPath, TEXT("/Kinetix"));
 	TopLevelObjectPath = FString::Printf(TEXT("/%s/"), *TopLevelObjectPath);
 
 	FARFilter Filter;
@@ -131,7 +150,9 @@ bool UKinetixMetadata::GetMetadatasSoftObjectPaths(TArray<FSoftObjectPath>& Obje
 void UKinetixMetadata::InitializeEmoteManager(TArray<FSoftObjectPath> SoftObjectPaths)
 {
 	if (SoftObjectPaths.IsEmpty())
+	{
 		return;
+	}
 
 	TArray<FAnimationMetadata> AnimationMetadatas;
 	TArray<FString> LocalPaths;
@@ -142,13 +163,13 @@ void UKinetixMetadata::InitializeEmoteManager(TArray<FSoftObjectPath> SoftObject
 	for (int i = 0; i < AnimationMetadatas.Num(); ++i)
 	{
 		CurrentMetadata = AnimationMetadatas[i];
-		CurrentEmote = EmoteManager.Get()->GetEmote(AnimationMetadatas[i].Id);
+		CurrentEmote = FEmoteManager::Get().GetEmote(AnimationMetadatas[i].Id);
 		if (!LocalPaths[i].IsEmpty())
 		{
 			CurrentEmote->SetLocalMetadata(CurrentMetadata, LocalPaths[i]);
 			continue;
 		}
-		
+
 		CurrentEmote->SetMetadata(CurrentMetadata);
 	}
 }

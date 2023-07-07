@@ -9,7 +9,7 @@
 #include "KinetixDataLibrary.generated.h"
 
 #if WITH_EDITOR
-static FString SDKAPIUrlBase = TEXT("https://sdk-api.staging.kinetix.tech"); 
+static FString SDKAPIUrlBase = TEXT("https://sdk-api.staging.kinetix.tech");
 #else
 static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech"); 
 #endif
@@ -17,6 +17,7 @@ static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech");
 static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define SDKAPIEmoteUsersUrl TEXT("/v1/users/%s/emotes")
 #define SDKAPIVirtualWorldEmoteUrl TEXT("/v1/virtual-world/emotes")
+#define KINETIXSLOTNAME TEXT("KinetixSlot")
 
 UENUM(Category="Kinetix|Animation")
 enum class EOwnership : uint8
@@ -102,7 +103,19 @@ struct FAnimationMetadata
 
 		return *this;
 	}
+
+	// Needed to be usable in TSet
+	const bool operator==(const FAnimationMetadata& Other) const
+	{
+		return Id == Other.Id;
+	}
 };
+
+// Needed to be able to use as key in TMap (2/2)
+FORCEINLINE uint32 GetTypeHash(const FAnimationMetadata& AnimationMetadata)
+{
+	return GetTypeHash(AnimationMetadata.Id);
+}
 
 USTRUCT(BlueprintType, Category="Kinetix|Animation")
 struct FAnimationMetadataTableRow : public FTableRowBase
@@ -153,6 +166,9 @@ struct FKinetixCoreConfiguration
 #pragma region Delagates
 
 #pragma region Animation
+
+DECLARE_DYNAMIC_DELEGATE_OneParam(FReferenceSkeletonLoadedDelegate, FAssetData, AssetData);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRegisterLocalPlayer);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayedKinetixAnimationLocalPlayer, const FAnimationID&, AnimationID);
@@ -166,16 +182,31 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationEndOnLocalPlayer,
 
 // Maybe adding a UEnum result for better understanding in case of error 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnKinetixLocalAnimationLoadingFinished, bool, Success);
+
+#pragma endregion
+
+#pragma region Core
+DECLARE_DYNAMIC_DELEGATE(FKinetixCoreInitializedDelegate);
 #pragma endregion
 
 #pragma region Account
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUpdatedAccount);
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAccountConnectedDelegate, bool, bInSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAccountConnected);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteAssociated);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAccountConnected);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteAssociated);
+#pragma endregion
+
+#pragma region Metadatas
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataAvailable, bool, bSuccess, FAnimationMetadata&, AnimationData);
+
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataOwnershipLoaded, bool, bSuccess, bool, bUserOwned);
+
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadatasAvailable, bool, bSuccess, const TArray<FAnimationMetadata>&, Metadatas);
+
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnTotalNumberOfPagesAvailable, int, NumberOfPages);
 #pragma endregion
 
 #pragma endregion
@@ -194,7 +225,7 @@ public:
 	static UPARAM(DisplayName="Success") bool GetPluginRelativePath(FString& RelativePath);
 
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data", meta = (Keywords = "data"))
-	static UPARAM(DisplayName="Success") bool RemoveContentFromPluginPath(FString& RelativePath);
+	static UPARAM(DisplayName="Success") bool RemoveContentFromPluginPath(FString& RelativePath, FString PathRoot);
 #pragma endregion
 
 #pragma region Metadatas
@@ -242,12 +273,32 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Kinetix|Data",
 		meta = (Keywords = "id"))
 	static UPARAM(DisplayName="Success") bool GetAnimationIDFromString(const FString& InAnimationID,
-	                                                              FAnimationID& OutAnimationID);
-	
+	                                                                   FAnimationID& OutAnimationID);
+
+	UFUNCTION(BlueprintCallable)
+	static UPARAM(DisplayName="bValid") bool GetIconURL(const FAnimationMetadata& InAnimationMetadata,
+	                                                    FString& OutIconURL);
+
+	/** Returns true if vector A is equal to vector B (A == B) within a specified error tolerance */
+	UFUNCTION(BlueprintPure,
+		meta=(DisplayName = "Equal (AnimationMetadata)", CompactNodeTitle = "==", ScriptOperator = "==", Keywords =
+			"== equal"), Category="Kinetix|Metadata")
+	static bool EqualEqual_AnimationMetadataAnimationMetadata(FAnimationMetadata A, FAnimationMetadata B);
+
+	/** Returns true if vector A is equal to vector B (A == B) within a specified error tolerance */
+	UFUNCTION(BlueprintPure,
+		meta=(DisplayName = "IsValid (AnimationMetadata)", CompactNodeTitle = "Valid", Keywords = "valid"),
+		Category="Kinetix|Metadata")
+	static bool IsValid(UPARAM(ref) FAnimationMetadata& InAnimationMetadata);
+
 #pragma endregion
 
 #pragma region General
 
+	static bool LoadReferenceSkeletonAsset(const TDelegate<void(FAssetData)>& Callback);
 
+	UFUNCTION(BlueprintPure, Category="Kinetix|Save")
+	static FString GetKinetixSlotName();
+	
 #pragma endregion
 };

@@ -6,7 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 
-#include "Components/KinetixComponent.h"
+#include "..\..\..\Public\Components\KinetixCharacterComponent.h"
 
 // Sets default values
 AKinetixPawn::AKinetixPawn()
@@ -21,7 +21,7 @@ AKinetixPawn::AKinetixPawn()
 	SkeletalMeshTarget = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMeshTarget"));
 	SkeletalMeshTarget->SetupAttachment(SkeletalMeshSource);
 
-	KinetixComponent = CreateDefaultSubobject<UKinetixComponent>(TEXT("KinetixComponent"));
+	KinetixComponent = CreateDefaultSubobject<UKinetixCharacterComponent>(TEXT("KinetixComponent"));
 }
 
 // Called when the game starts or when spawned
