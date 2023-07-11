@@ -1,7 +1,6 @@
 // Copyright Kinetix. All Rights Reserved.
 
-
-#include "..\..\Public\Components\KinetixCharacterComponent.h"
+#include "Components/KinetixCharacterComponent.h"
 
 #include "Components/SkeletalMeshComponent.h"
 

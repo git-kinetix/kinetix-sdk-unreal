@@ -8,7 +8,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "KinetixDataLibrary.generated.h"
 
-#if WITH_EDITOR
+#if WITH_EDITOR || UE_BUILD_DEVELOPMENT
 static FString SDKAPIUrlBase = TEXT("https://sdk-api.staging.kinetix.tech");
 #else
 static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech"); 
@@ -16,6 +16,7 @@ static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech");
 
 static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define SDKAPIEmoteUsersUrl TEXT("/v1/users/%s/emotes")
+#define SDKAPIEmoteUrl TEXT("/v1/emotes/%s")
 #define SDKAPIVirtualWorldEmoteUrl TEXT("/v1/virtual-world/emotes")
 #define KINETIXSLOTNAME TEXT("KinetixSlot")
 
@@ -200,7 +201,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteAssociated);
 #pragma endregion
 
 #pragma region Metadatas
-DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataAvailable, bool, bSuccess, FAnimationMetadata&, AnimationData);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataAvailable, bool, bSuccess, const FAnimationMetadata&, AnimationData);
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataOwnershipLoaded, bool, bSuccess, bool, bUserOwned);
 
@@ -243,6 +244,8 @@ public:
 	/** Helper function to retrieve animation metadata from a json object */
 	static bool GetAnimationMetadataFromJson(const TSharedPtr<FJsonObject>& JsonObject,
 	                                         FAnimationMetadata& AnimationMetadata);
+
+	static bool GetAnimationMetadataFromJson(const FString& JsonString, FAnimationMetadata& OutAnimationMetadata);
 
 	/**  */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
@@ -299,6 +302,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Kinetix|Save")
 	static FString GetKinetixSlotName();
-	
+
 #pragma endregion
 };

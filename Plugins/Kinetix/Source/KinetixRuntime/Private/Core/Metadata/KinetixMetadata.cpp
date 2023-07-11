@@ -11,6 +11,7 @@
 #include "Engine/AssetManager.h"
 #include "Managers/AccountManager.h"
 #include "Managers/EmoteManager.h"
+#include "Managers/MetadataOperationManager.h"
 
 DEFINE_LOG_CATEGORY(LogKinetixMetadata);
 
@@ -44,8 +45,20 @@ void UKinetixMetadata::Initialize_Implementation(const FKinetixCoreConfiguration
 	bResult = true;
 }
 
-void UKinetixMetadata::GetAnimationMetadataByAnimationIDs(FAnimationID InID, const FOnMetadataAvailable& Callback)
+void UKinetixMetadata::GetAnimationMetadataByAnimationID(const FAnimationID& InID, const FOnMetadataAvailable& Callback)
 {
+	if (!InID.UUID.IsValid())
+		return;
+
+	const FKinetixEmote* Emote = FEmoteManager::Get().GetEmote(InID);
+	if (Emote == nullptr)
+		return;
+
+	FMetadataOperationManager::GetAnimationMetadataOfEmote(Emote->GetAnimationMetadata(),
+		TDelegate<void(FAnimationMetadata)>::CreateLambda([Callback](const FAnimationMetadata& InAnimationMetadata)
+		{
+			Callback.ExecuteIfBound(true, InAnimationMetadata);
+		}));
 }
 
 void UKinetixMetadata::IsAnimationOwnedByUser(FAnimationID InID, const FOnMetadataOwnershipLoaded& Callback)
@@ -67,13 +80,6 @@ void UKinetixMetadata::GetUserAnimationMetadatas(const FOnMetadatasAvailable& Ca
 	KinetixCore->KinetixAccount->AccountManager->GetAllUserAnimationMetadatas(
 		Callback, TDelegate<void()>());
 	
-	// TArray<FSoftObjectPath> ObjectPaths;
-	// if (!GetMetadatasSoftObjectPaths(ObjectPaths)) return;
-	//
-	// UAssetManager& AssetManager = UAssetManager::Get();
-	// AssetManager.GetStreamableManager().RequestAsyncLoad(
-	// 	ObjectPaths,
-	// 	FStreamableDelegate::CreateUObject(this, &UKinetixMetadata::OnMetadatasAvailable, ObjectPaths, Callback));
 }
 
 void UKinetixMetadata::GetUserAnimationMetadatasByPage(int InCount, int InPageNumber,

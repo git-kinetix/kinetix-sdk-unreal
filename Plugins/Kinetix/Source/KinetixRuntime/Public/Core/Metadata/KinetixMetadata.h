@@ -30,7 +30,7 @@ public:
 	 * @param Callback Called with a boolean indicating success of the operation and filled metadata struct
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Metadata")
-	void GetAnimationMetadataByAnimationIDs(FAnimationID InID, const FOnMetadataAvailable& Callback);
+	void GetAnimationMetadataByAnimationID(const FAnimationID& InID, const FOnMetadataAvailable& Callback);
 
 	/**
 	 * @brief Giving an animation ID, tell if the animation is owned by the local user or not

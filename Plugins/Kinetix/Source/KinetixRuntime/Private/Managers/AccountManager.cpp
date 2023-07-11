@@ -18,7 +18,9 @@ FAccountManager::FAccountManager(const FString& InVirtualWorld)
 
 FAccountManager::~FAccountManager()
 {
-	check(AssociateEmoteEvent.IsValid());
+	if (!AssociateEmoteEvent.IsValid())
+		return;
+
 	AssociateEmoteEvent->Trigger();
 	AssociateEmoteEvent = nullptr;
 }
@@ -158,6 +160,8 @@ bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 					return;
 				}
 
+				UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Response->GetContentAsString());
+				
 				OnAssociatedEmoteDelegate.Broadcast();
 			});
 
@@ -312,6 +316,9 @@ void FAccountManager::OnGetHttpResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 		       *ErrorLog);
 		return;
 	}
+
+	FinishAccountConnection();
+
 }
 
 void FAccountManager::OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
@@ -324,6 +331,8 @@ void FAccountManager::OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 		);
 		return;
 	}
+
+	UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] OnGetUserResponse: %i"), HttpResponse->GetResponseCode());
 
 	if (HttpResponse->GetResponseCode() != 200)
 	{
@@ -355,6 +364,7 @@ void FAccountManager::OnGetEmotesToVirtualWorldResponse(
 		return;
 	}
 
+	check(AssociateEmoteEvent.IsValid());
 	AssociateEmoteEvent->Trigger();
-	AssociateEmoteEvent.Reset();
+	//AssociateEmoteEvent.Reset();
 }

@@ -19,6 +19,7 @@
 #include "Data/AnimationMetadataAsset.h"
 #include "Engine/AssetManager.h"
 #include "Interfaces/KinetixSubcoreInterface.h"
+#include "JsonUtils/JsonPointer.h"
 #include "Managers/EmoteManager.h"
 
 bool UKinetixDataBlueprintFunctionLibrary::GetPluginRelativePath(FString& RelativePath)
@@ -112,9 +113,9 @@ bool UKinetixDataBlueprintFunctionLibrary::GetDurationFromJson(float& OutDuratio
 }
 
 bool UKinetixDataBlueprintFunctionLibrary::GetAnimationIDFromString(const FString& InAnimationID,
-	FAnimationID& OutAnimationID)
+                                                                    FAnimationID& OutAnimationID)
 {
-	return FGuid::Parse(InAnimationID, OutAnimationID.UUID); 
+	return FGuid::Parse(InAnimationID, OutAnimationID.UUID);
 }
 
 bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromFile(UObject* WorldContextObject, FString File,
@@ -169,23 +170,116 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 		return false;
 	AnimationMetadata.Name = FName(Value);
 
-	if (!JsonObject->TryGetStringField(TEXT("ownership"), Value))
+	// if (!JsonObject->TryGetStringField(TEXT("ownership"), Value))
+	// 	return false;
+
+	// Value = FString::Printf(TEXT("o_%s"), *Value);
+	// AnimationMetadata.Ownership =
+	// 	static_cast<EOwnership>(StaticEnum<EOwnership>()->GetValueByNameString(Value));
+
+	// float Duration = 0.f;
+	// if (!JsonObject->TryGetNumberField(TEXT("duration"), Duration))
+	// 	return false;
+	// AnimationMetadata.Duration = Duration;
+
+	return true;
+}
+
+bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FString& JsonString,
+                                                                        FAnimationMetadata& OutAnimationMetadata)
+{
+	const TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonString);
+	TSharedPtr<FJsonObject> JsonObject;
+
+	const bool bDeserializationResult = FJsonSerializer::Deserialize(JsonReader, JsonObject);
+	if (!bDeserializationResult)
+	{
+		UE_LOG(LogKinetixRuntime, Warning,
+		       TEXT("GetAnimationMetadataFromJson(): Unable to deserialize response ! %s"),
+		       *JsonReader.Get().GetErrorMessage());
+		return false;
+	}
+
+	if (!GetAnimationMetadataFromJson(JsonObject, OutAnimationMetadata))
+	{
+		UE_LOG(LogKinetixRuntime, Warning,
+		       TEXT("GetAnimationMetadataFromJson(): Unable to get datas from Json object ! %s"),
+		       *JsonReader.Get().GetErrorMessage());
+		return false;
+	}
+
+	// for (int i = 0; i < JsonArray.Num(); ++i)
+	// {
+	// 	const TSharedPtr<FJsonObject> ResponseObject = JsonArray[i]->AsObject();
+	// 	if (!ResponseObject.IsValid())
+	// 		continue;
+	//
+	// 	// UUID field
+	// 	FString EmoteUUID;
+	// 	ResponseObject->TryGetStringField(TEXT("emoteUuid"), EmoteUUID);
+	// 	FGuid::Parse(EmoteUUID, OutAnimationMetadata.Id.UUID);
+	//
+	// 	const TSharedPtr<FJsonObject>* DataObject;
+	// 	ResponseObject->TryGetObjectField(TEXT("data"), DataObject);
+	// 	if (!(DataObject && DataObject->IsValid()))
+	// 		continue;
+	//
+	// 	// Name field
+	// 	FString StringField;
+	// 	(*DataObject).Get()->TryGetStringField(TEXT("name"), StringField);
+	// 	OutAnimationMetadata.Name = FName(StringField);
+	//
+
+	FString StringField;
+	const TSharedPtr<FJsonObject>* MetadataObject = nullptr;
+	JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject);
+	if (!(MetadataObject && MetadataObject->IsValid()))
 		return false;
 
-	Value = FString::Printf(TEXT("o_%s"), *Value);
-	AnimationMetadata.Ownership =
-		static_cast<EOwnership>(StaticEnum<EOwnership>()->GetValueByNameString(Value));
+	(*MetadataObject)->TryGetNumberField(TEXT("duration"), OutAnimationMetadata.Duration);
+	(*MetadataObject)->TryGetStringField(TEXT("description"), StringField);
+	OutAnimationMetadata.Description = FText::FromString(StringField);
 
-	float Duration = 0.f;
-	if (!JsonObject->TryGetNumberField(TEXT("duration"), Duration))
+	const TArray<TSharedPtr<FJsonValue>>* FilesObject;
+	JsonObject->TryGetArrayField(TEXT("files"), FilesObject);
+	if (!(FilesObject && FilesObject->Num()))
 		return false;
-	AnimationMetadata.Duration = Duration;
+
+	for (int j = 0; j < FilesObject->Num(); ++j)
+	{
+		TSharedPtr<FJsonObject> FileObject = (*FilesObject)[j]->AsObject();
+		if (!FileObject.IsValid())
+			continue;
+
+		FileObject->TryGetStringField(TEXT("name"), StringField);
+		if (StringField == TEXT("thumbnail"))
+		{
+			FileObject->TryGetStringField(TEXT("extension"), StringField);
+			if (StringField != TEXT("png"))
+				continue;
+			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.IconURL.Map);
+			continue;
+		}
+
+		if (StringField == TEXT("animation"))
+			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+	}
+
+	UE_LOG(LogKinetixRuntime, Warning,
+	       TEXT("[FAccount] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
+	       *OutAnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
+	       *OutAnimationMetadata.Name.ToString(),
+	       OutAnimationMetadata.Duration,
+	       *OutAnimationMetadata.IconURL.Map,
+	       *OutAnimationMetadata.AnimationURL.Map);
+
+	// }
 
 	return true;
 }
 
 bool UKinetixDataBlueprintFunctionLibrary::GetIconURL(const FAnimationMetadata& InAnimationMetadata,
-	FString& OutIconURL)
+                                                      FString& OutIconURL)
 {
 	if (InAnimationMetadata.IconURL.Map.IsEmpty())
 		return false;
@@ -211,7 +305,8 @@ bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDel
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
 	// Normalize path D:/Kinetix/kinetix-sdk-unreal/Plugins/ReadyPlayerMe/Content/Character/Fullbody/Mesh/RPM_Mixamo_SkeletalMesh.uasset
-	FString GeneralPath = IPluginManager::Get().FindPlugin(TEXT("ReadyPlayerMe"))->GetContentDir() + TEXT("/Character/Fullbody/Mesh");
+	FString GeneralPath = IPluginManager::Get().FindPlugin(TEXT("ReadyPlayerMe"))->GetContentDir() + TEXT(
+		"/Character/Fullbody/Mesh");
 	GeneralPath = FPaths::CreateStandardFilename(GeneralPath);
 	// GeneralPath = FPaths::GetPath(GeneralPath);
 
@@ -239,7 +334,7 @@ bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDel
 	if (!SkeletalMeshDatas[0].IsAssetLoaded())
 	{
 		UE_LOG(LogKinetixRuntime, Log, TEXT("%s not loaded yet, launch loading..."),
-			   *SkeletalMeshDatas[0].AssetName.ToString());
+		       *SkeletalMeshDatas[0].AssetName.ToString());
 
 		FStreamableDelegate TempDelegate = FStreamableDelegate::CreateLambda(
 			[Callback, SkeletalMeshDatas]()
