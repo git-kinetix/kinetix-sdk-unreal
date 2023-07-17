@@ -197,7 +197,7 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnAccountConnectedDelegate, bool, bInSuccess)
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAccountConnected);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEmoteAssociated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEmoteAssociated, const FString&, Response);
 #pragma endregion
 
 #pragma region Metadatas

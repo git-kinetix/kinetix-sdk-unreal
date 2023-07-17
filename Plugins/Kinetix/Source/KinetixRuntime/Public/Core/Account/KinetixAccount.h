@@ -48,7 +48,7 @@ private:
 	void ConnectedAccount();
 
 	UFUNCTION()
-	void AssociatedEmote();
+	void AssociatedEmote(const FString& Response);
 
 public:
 

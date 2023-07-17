@@ -74,34 +74,7 @@ void FEmoteManager::GetAnimSequence(const FAnimationID& InAnimationID, const TDe
 		return;
 
 	OnSuccess.ExecuteIfBound(Emote->GetAnimSequence());
-
-	FString PackagePath = Emote->GetPathToGlb();
-	FPaths::MakePathRelativeTo(PackagePath, *FPaths::ProjectPluginsDir());
-	UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(PackagePath, TEXT("/Kinetix"));
-	PackagePath = FString::Printf(TEXT("/%s"), *PackagePath);
-
-	FARFilter Filter;
-	Filter.ClassPaths.Add(UAnimSequence::StaticClass()->GetClassPathName());
-	Filter.PackagePaths.Add(FName(PackagePath));
-	Filter.bRecursivePaths = true;
-
-	TArray<FAssetData> AssetDatas;
-	if (!AssetRegistryModule.Get().GetAssets(Filter, AssetDatas))
-		return;
-
-	if (AssetDatas.Num() != 1)
-		return;
-
-	FStreamableDelegate Delegate = FStreamableDelegate::CreateRaw(
-		this,
-		&FEmoteManager::AnimSequenceAvailable,
-		AssetDatas[0].ToSoftObjectPath(),
-		OnSuccess);
-
-	UAssetManager::Get().GetStreamableManager().RequestAsyncLoad(
-		TArray{AssetDatas[0].ToSoftObjectPath()},
-		Delegate
-	);
+	
 }
 
 void FEmoteManager::AnimSequenceAvailable(FSoftObjectPath SoftObjectPath,

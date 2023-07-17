@@ -55,7 +55,7 @@ void UKinetixAccount::ConnectedAccount()
 	OnConnectedAccount.Broadcast();
 }
 
-void UKinetixAccount::AssociatedEmote()
+void UKinetixAccount::AssociatedEmote(const FString& Response)
 {
-	OnEmoteAssociated.Broadcast();
+	OnEmoteAssociated.Broadcast(Response);
 }

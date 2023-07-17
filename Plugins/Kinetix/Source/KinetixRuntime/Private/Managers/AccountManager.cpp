@@ -160,9 +160,29 @@ bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 					return;
 				}
 
-				UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Response->GetContentAsString());
-				
-				OnAssociatedEmoteDelegate.Broadcast();
+				TSharedPtr<FJsonObject> JsonObject;
+				if (!Response.IsValid())
+				{
+					UE_LOG(LogKinetixAccount, Warning,
+					       TEXT("[FAccountManager] OnGetHttpResponse: Failed to connect to service"));
+					return;
+				}
+
+				const FString RepsonseBody = Response->GetContentAsString();
+				TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(RepsonseBody);
+
+				if (!FJsonSerializer::Deserialize(JsonReader, JsonObject))
+				{
+					UE_LOG(LogKinetixAccount, Warning,
+					       TEXT("[FAccountManager] OnGetHttpResponse: Failed to deserialize Json %s"),
+					       *JsonReader->GetErrorMessage());
+					return;
+				}
+
+				FString Message;
+				JsonObject->TryGetStringField(TEXT("message"), Message);
+				OnAssociatedEmoteDelegate.Broadcast(Message);
+			
 			});
 
 		Request->SetURL(
@@ -172,8 +192,9 @@ bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 				*LoggedAccount->GetAccountID()) + "/" + Emotes[0].UUID.ToString(EGuidFormats::DigitsWithHyphensLower)
 		);
 
-		UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] AssociateEmotesToUser: Generated URL %s"), *Request->GetURL());
-		
+		UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] AssociateEmotesToUser: Generated URL %s"),
+		       *Request->GetURL());
+
 		Request->SetVerb(TEXT("POST"));
 		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 		Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -256,7 +277,7 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 	Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
-	
+
 	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
 	if (!Request->ProcessRequest())
 	{
@@ -318,7 +339,6 @@ void FAccountManager::OnGetHttpResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 	}
 
 	FinishAccountConnection();
-
 }
 
 void FAccountManager::OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,

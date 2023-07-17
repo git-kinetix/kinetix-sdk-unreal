@@ -43,7 +43,7 @@ public:
 	DECLARE_MULTICAST_DELEGATE(FOnConnectedAccount);
 	FOnConnectedAccount& OnConnectedAccount() { return OnConnectedAccountDelegate; }
 
-	DECLARE_MULTICAST_DELEGATE(FOnAssociatedEmote);
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnAssociatedEmote, const FString&);
 	FOnAssociatedEmote& OnAssociatedEmote() { return OnAssociatedEmoteDelegate; }
 
 private:
@@ -53,9 +53,11 @@ private:
 
 	void OnGetHttpResponse(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
 	                       TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> HttpResponse, bool bConnectedSuccessfully);
+
 	void OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
 	                       TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> HttpResponse,
 	                       bool bConnectedSuccessfully);
+	
 	void OnGetEmotesToVirtualWorldResponse(
 		TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request,
 		TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
