@@ -347,8 +347,7 @@ void FAccountManager::OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 {
 	if (!HttpResponse.IsValid())
 	{
-		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] OnGetUserResponse: Failed to connect to service"),
-		);
+		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] OnGetUserResponse: Failed to connect to service"));
 		return;
 	}
 

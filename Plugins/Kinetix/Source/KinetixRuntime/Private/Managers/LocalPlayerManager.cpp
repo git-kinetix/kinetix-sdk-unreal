@@ -4,7 +4,7 @@
 
 #include "EmoteManager.h"
 #include "KinetixRuntimeModule.h"
-#include "..\..\Public\Components\KinetixCharacterComponent.h"
+#include "Components/KinetixCharacterComponent.h"
 #include "Core/Animation/KinetixAnimation.h"
 
 FLocalPlayerManager::FLocalPlayerManager(bool bInPlayAutomaticallyOnAnimator)

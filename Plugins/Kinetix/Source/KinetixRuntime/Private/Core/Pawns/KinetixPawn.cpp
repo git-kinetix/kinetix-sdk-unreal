@@ -6,7 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 
-#include "..\..\..\Public\Components\KinetixCharacterComponent.h"
+#include "Components/KinetixCharacterComponent.h"
 
 // Sets default values
 AKinetixPawn::AKinetixPawn()
