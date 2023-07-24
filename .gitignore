@@ -79,3 +79,4 @@ Plugins/Developer/*
 
 # Remove package folder
 Builds/*
+Executables/*
