@@ -30,6 +30,16 @@ enum class EOwnership : uint8
 	O_MAX UMETA(Hidden)
 };
 
+UENUM(Category="Kinetix|Animation")
+enum class EBlendState : uint8
+{
+	BS_None = 0 UMETA(DisplayName = "None"),
+	BS_In		UMETA(DisplayNAme="Blend In"),
+	BS_Sample	UMETA(DisplayNAme="Sample"),
+	BS_Out		UMETA(DisplayName="Blend Out"),
+	BS_MAX		UMETA(Hidden)
+};
+
 USTRUCT(BlueprintType, Category="Kinetix|Animation")
 struct FAnimationID
 {
@@ -162,6 +172,32 @@ struct FKinetixCoreConfiguration
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString VirtualWorld;
+};
+
+USTRUCT(BlueprintType)
+struct FAnimationQueue
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FAnimationID> AnimationIDs;
+
+	UPROPERTY()
+	TArray<UAnimSequence*> AnimationSequences;
+
+	UPROPERTY()
+	bool bLoop;
+
+	FAnimationQueue(): bLoop(false)
+	{
+	}
+
+	FAnimationQueue(const TArray<FAnimationID>& InAnimationIDs, bool bInLoop = false)
+	{
+		bLoop = bInLoop;
+		AnimationIDs = InAnimationIDs;
+		AnimationSequences.SetNumZeroed(AnimationIDs.Num());
+	}
 };
 
 #pragma region Delagates

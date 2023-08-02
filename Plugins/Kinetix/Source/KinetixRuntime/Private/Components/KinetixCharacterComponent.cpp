@@ -10,6 +10,7 @@
 
 // For the logs
 #include "KinetixRuntimeModule.h"
+#include "Core/Animation/AnimSequenceSampler.h"
 #include "Core/KinetixCoreSubsystem.h"
 #include "Core/Animation/KinetixAnimation.h"
 #include "Core/Metadata/KinetixMetadata.h"
@@ -23,10 +24,12 @@ UKinetixCharacterComponent::UKinetixCharacterComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// ...
 	bRegisterPlayerOnLaunch = false;
 }
 
+UKinetixCharacterComponent::UKinetixCharacterComponent(FVTableHelper& Helper)
+{
+}
 
 // Called when the game starts
 void UKinetixCharacterComponent::BeginPlay()
@@ -34,6 +37,28 @@ void UKinetixCharacterComponent::BeginPlay()
 	Super::BeginPlay();
 
 	CheckSkeletalMeshComponent();
+
+	if (!RegisterClipSampler())
+	{
+		UE_LOG(LogKinetixRuntime, Warning,
+		       TEXT("[KinetixCharacterComponent] BeginPlay: ERROR! Unable to create Clip Sampler on %s !"),
+		       *GetOwner()->GetName());
+	}
+
+	UKismetSystemLibrary::PrintString(this,
+		FString::Printf(TEXT("BeginPlay on %s owned by %s"), *GetName(), *GetOwner()->GetName()),
+		true, true, FLinearColor::Green, 10.f);
+}
+
+bool UKinetixCharacterComponent::RegisterClipSampler()
+{
+	AActor* CurrentOwner = GetOwner();
+	if (!IsValid(CurrentOwner))
+		return false;
+
+	AnimSequenceSampler = MakeShared<FAnimSequenceSampler>(this);
+
+	return true;
 }
 
 void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
@@ -51,13 +76,15 @@ void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
 	{
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("%s's owner doesn't have SkeletalMeshComponent !"), *GetName());
 		CurrentOwner->GetWorldTimerManager().SetTimer(CheckSkeletalMeshTimer, this,
-		                                              &UKinetixCharacterComponent::CheckSkeletalMeshComponent, 0.1f, true);
+		                                              &UKinetixCharacterComponent::CheckSkeletalMeshComponent, 0.1f,
+		                                              true);
 		return;
 	}
 
 	if (!OwnerSkeletalMeshComponent->IsAnimBlueprintInstanced())
 	{
-		OwnerSkeletalMeshComponent->OnAnimInitialized.AddDynamic(this, &UKinetixCharacterComponent::OnOwnerAnimationInitialized);
+		OwnerSkeletalMeshComponent->OnAnimInitialized.AddDynamic(
+			this, &UKinetixCharacterComponent::OnOwnerAnimationInitialized);
 		return;
 	}
 
@@ -120,13 +147,13 @@ void UKinetixCharacterComponent::OnOwnerAnimationInitialized()
 }
 
 FString UKinetixCharacterComponent::RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path,
-                                      UObject* Context)
+                                               UObject* Context)
 {
 	return CurveName;
 }
 
 void UKinetixCharacterComponent::PlayAnimation(const FAnimationID& InAnimationID, bool bLoop,
-                                      const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate)
+                                               const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate)
 {
 	if (!InAnimationID.UUID.IsValid())
 	{
@@ -144,17 +171,27 @@ void UKinetixCharacterComponent::PlayAnimation(const FAnimationID& InAnimationID
 	}
 
 	FEmoteManager::Get().GetAnimSequence(InAnimationID,
-		TDelegate<void(UAnimSequence*)>::CreateLambda([&](UAnimSequence* AnimSequence)
-		{
-			if (!IsValid(AnimSequence))
-			{
-				UE_LOG(LogKinetixRuntime, Warning, TEXT("[UKinetixComponent] PlayAnimation: %s AnimSequence is null !"));
-				return;
-			}
-			
-			OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
-			OnPlayedAnimationDelegate.Broadcast(InAnimationID);
-		}));
+	                                     TDelegate<void(UAnimSequence*)>::CreateLambda([&](UAnimSequence* AnimSequence)
+	                                     {
+		                                     if (!IsValid(AnimSequence))
+		                                     {
+			                                     UE_LOG(LogKinetixRuntime, Warning,
+			                                            TEXT(
+				                                            "[UKinetixComponent] PlayAnimation: %s AnimSequence is null !"
+			                                            ), *GetName());
+			                                     return;
+		                                     }
+
+		                                     AnimSequenceSampler.Get()->Play(AnimSequence, InAnimationID);
+		                                     if (IsValid(DebugPoseableMeshComponent))
+		                                     {
+			                                     AnimSequenceSampler.Get()->SetDebugPoesable(
+				                                     DebugPoseableMeshComponent->GetComponentByClass<UPoseableMeshComponent>());
+		                                     }
+		                                     // OwnerClipSampler->Play(AnimSequence, InAnimationID);
+		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
+		                                     OnPlayedAnimationDelegate.Broadcast(InAnimationID);
+	                                     }));
 }
 
 void UKinetixCharacterComponent::LoadAnimationAndPlay(const FString& Url)
