@@ -28,8 +28,11 @@ public:
 	UKinetixCharacterComponent();
 	UKinetixCharacterComponent(FVTableHelper& Helper);
 
-	bool RegisterClipSampler();
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+	                           FActorComponentTickFunction* ThisTickFunction) override;
 
+	bool RegisterClipSampler();
+	
 	void PlayAnimation(const FAnimationID& InAnimationID, bool bLoop,
 	                   const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate);
 
@@ -45,9 +48,6 @@ protected:
 
 	UFUNCTION()
 	void OnOwnerAnimationInitialized();
-
-	UFUNCTION(BlueprintCallable)
-	void LoadAnimationAndPlay(const FString& Url);
 
 	UFUNCTION()
 	FString RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path, UObject* Context);
@@ -72,11 +72,9 @@ public:
 	FOnFramePlayed OnFramePlayed;
 
 private:
+
 	UPROPERTY(VisibleAnywhere, meta=(DisplayName = "Skeletal Mesh in use"))
 	USkeletalMeshComponent* OwnerSkeletalMeshComponent;
-
-	UPROPERTY(EditAnywhere, meta=(DisplayName = "[DEBUG] PoseableMeshComp"))
-	AActor* DebugPoseableMeshComponent;
 
 	UPROPERTY(EditAnywhere, Category="Kinetix|Animation", meta=(AllowPrivateAccess="true"))
 	bool bRegisterPlayerOnLaunch;

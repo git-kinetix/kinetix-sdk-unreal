@@ -25,8 +25,9 @@ FAnimSequenceSampler::FAnimSequenceSampler(UActorComponent* ActorComponent)
 	if (!ensure(IsValid(SkeletalMeshComponentToPause))) return;
 
 	SkeletalMeshComponentToPause->GetBoneNames(BoneNames);
-	if (BoneNames.Num() != RequiredBones.GetNumBones())
-		return;
+
+	RequiredBones =
+		SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
 }
 
 FAnimSequenceSampler::~FAnimSequenceSampler()
@@ -61,20 +62,20 @@ void FAnimSequenceSampler::Tick(float DeltaTime)
 	// CompactPose is in bone space, so CSPose is here to get it from bone space -> component space
 	FCSPose<FCompactPose> CSPose;
 	FCompactPose OutPose;
-	
+
 	OutPose.ResetToRefPose(RequiredBones);
 	FAnimationPoseData TickPose(OutPose, Curve, Attributes);
 	AnimSequenceToPlay->GetAnimationPose(TickPose, Context);
 	CSPose.InitPose(MoveTemp(OutPose));
 
 	// ReSharper disable once CppJoinDeclarationAndAssignment
-	FTransform BoneTransform;
-	
-	for (int i = 0; i < BoneNames.Num(); ++i)
-	{
-		BoneTransform = CSPose.GetComponentSpaceTransform(FCompactPoseBoneIndex(i));
-		PoseableMeshComp->SetBoneTransformByName(BoneNames[i], BoneTransform, EBoneSpaces::ComponentSpace);
-	}
+	// FTransform BoneTransform;
+
+	// for (int i = 0; i < BoneNames.Num(); ++i)
+	// {
+	// 	BoneTransform = CSPose.GetComponentSpaceTransform(FCompactPoseBoneIndex(i));
+	// 	PoseableMeshComp->SetBoneTransformByName(BoneNames[i], BoneTransform, EBoneSpaces::ComponentSpace);
+	// }
 
 	LastTickFrame = GFrameCounter;
 }
@@ -160,9 +161,9 @@ void FAnimSequenceSampler::StartAnimation()
 
 	// float AnimLength = AnimSequenceToPlay->GetPlayLength();
 	//
-	// RequiredBones =
-	// 	SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
-	//
+	RequiredBones =
+		SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
+
 	// CompactPose.ResetToRefPose(RequiredBones);	
 
 	// Curve.InitFrom(RequiredBones);

@@ -7,6 +7,7 @@
 #include "Components/SkeletalMeshComponent.h"
 
 #include "Components/KinetixCharacterComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AKinetixPawn::AKinetixPawn()
@@ -22,19 +23,18 @@ AKinetixPawn::AKinetixPawn()
 	SkeletalMeshTarget->SetupAttachment(SkeletalMeshSource);
 
 	KinetixComponent = CreateDefaultSubobject<UKinetixCharacterComponent>(TEXT("KinetixComponent"));
+	// KinetixComponent->SetIsReplicated(true);
+	// bReplicates = true;
 }
 
 // Called when the game starts or when spawned
 void AKinetixPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called to bind functionality to input
 void AKinetixPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
-

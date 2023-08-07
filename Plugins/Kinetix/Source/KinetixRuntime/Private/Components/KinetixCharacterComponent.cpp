@@ -22,13 +22,26 @@ UKinetixCharacterComponent::UKinetixCharacterComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	bRegisterPlayerOnLaunch = false;
+
+	SetIsReplicatedByDefault(true);
 }
 
 UKinetixCharacterComponent::UKinetixCharacterComponent(FVTableHelper& Helper)
 {
+}
+
+void UKinetixCharacterComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+                                               FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	UKismetSystemLibrary::PrintString(
+		this,
+		FString::Printf(TEXT("KCC Network Role: %s"), *UEnum::GetValueAsString(GetOwnerRole())),
+		true, false, FLinearColor::Yellow, 0.f);
 }
 
 // Called when the game starts
@@ -44,10 +57,6 @@ void UKinetixCharacterComponent::BeginPlay()
 		       TEXT("[KinetixCharacterComponent] BeginPlay: ERROR! Unable to create Clip Sampler on %s !"),
 		       *GetOwner()->GetName());
 	}
-
-	UKismetSystemLibrary::PrintString(this,
-		FString::Printf(TEXT("BeginPlay on %s owned by %s"), *GetName(), *GetOwner()->GetName()),
-		true, true, FLinearColor::Green, 10.f);
 }
 
 bool UKinetixCharacterComponent::RegisterClipSampler()
@@ -183,63 +192,8 @@ void UKinetixCharacterComponent::PlayAnimation(const FAnimationID& InAnimationID
 		                                     }
 
 		                                     AnimSequenceSampler.Get()->Play(AnimSequence, InAnimationID);
-		                                     if (IsValid(DebugPoseableMeshComponent))
-		                                     {
-			                                     AnimSequenceSampler.Get()->SetDebugPoesable(
-				                                     DebugPoseableMeshComponent->GetComponentByClass<UPoseableMeshComponent>());
-		                                     }
 		                                     // OwnerClipSampler->Play(AnimSequence, InAnimationID);
 		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
 		                                     OnPlayedAnimationDelegate.Broadcast(InAnimationID);
 	                                     }));
-}
-
-void UKinetixCharacterComponent::LoadAnimationAndPlay(const FString& Url)
-{
-	if (Url.IsEmpty())
-	{
-		UKismetSystemLibrary::PrintString(
-			this, FString::Printf(TEXT("%s LoadAnimationAndPlay: Url is empty ! Skipping..."),
-			                      *GetOwner()->GetName()),
-			true, true, FLinearColor::Yellow, 5.f);
-		return;
-	}
-
-	FglTFRuntimeConfig GltfLoadConfig;
-	GltfLoadConfig.TransformBaseType = EglTFRuntimeTransformBaseType::YForward;
-	GltfLoadConfig.RuntimeContextObject = this;
-
-	UglTFRuntimeAsset* LoadedGLB =
-		UglTFRuntimeFunctionLibrary::glTFLoadAssetFromFilename(
-			Url, true, GltfLoadConfig);
-
-	if (!IsValid(LoadedGLB))
-	{
-		UKismetSystemLibrary::PrintString(
-			this, FString::Printf(TEXT("%s LoadAnimationAndPlay: GLB is null !"), *GetOwner()->GetName()),
-			true, true, FLinearColor::Yellow, 5.f);;
-		return;
-	}
-
-	// From here we have a filled LoadedGLB
-	FglTFRuntimeSkeletalAnimationCurveRemapperHook RemapperHook;
-	RemapperHook.Remapper.BindUFunction(this, TEXT("RemapBones"));
-	AnimConfig.CurveRemapper = RemapperHook;
-	AnimConfig.bRemoveRootMotion = true;
-	AnimConfig.bRemoveMorphTargets = true;
-	AnimConfig.bRemoveScales = true;
-	UAnimSequence* AnimSequenceGLB = LoadedGLB->LoadSkeletalAnimation(
-		OwnerSkeletalMeshComponent->GetSkeletalMeshAsset(), 0, AnimConfig);
-
-	if (!IsValid(AnimSequenceGLB))
-	{
-		UKismetSystemLibrary::PrintString(
-			this, FString::Printf(
-				TEXT("%s LoadAnimationAndPlay: Loaded asset is NOT an animation !"),
-				*GetOwner()->GetName()),
-			true, true, FLinearColor::Yellow, 5.f);;
-		return;
-	}
-
-	OwnerSkeletalMeshComponent->PlayAnimation(AnimSequenceGLB, true);
 }

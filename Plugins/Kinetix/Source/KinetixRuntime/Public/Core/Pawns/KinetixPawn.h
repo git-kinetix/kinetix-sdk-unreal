@@ -18,7 +18,7 @@ class KINETIXRUNTIME_API AKinetixPawn : public APawn
 public:
 	// Sets default values for this pawn's properties
 	AKinetixPawn();
-
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -26,7 +26,7 @@ protected:
 public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess="true"))
 	UCapsuleComponent* CapsuleComponent;
