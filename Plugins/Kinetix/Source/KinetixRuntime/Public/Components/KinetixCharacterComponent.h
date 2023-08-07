@@ -6,6 +6,7 @@
 #include "glTFRuntimeParser.h"
 #include "Components/ActorComponent.h"
 #include "Data/KinetixDataLibrary.h"
+#include "Interfaces/KinetixAnimationInterface.h"
 #include "KinetixCharacterComponent.generated.h"
 
 class FAnimSequenceSampler;
@@ -32,7 +33,8 @@ public:
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 
 	bool RegisterClipSampler();
-	
+	void CheckAnimInstanceToNotify(AActor* CurrentOwner);
+
 	void PlayAnimation(const FAnimationID& InAnimationID, bool bLoop,
 	                   const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate);
 
@@ -81,6 +83,9 @@ private:
 
 	FTimerHandle CheckSkeletalMeshTimer;
 
+	UPROPERTY()
+	TScriptInterface<IKinetixAnimationInterface> AnimInstanceToNotify;
+	
 	UPROPERTY()
 	FglTFRuntimeSkeletalAnimationConfig AnimConfig;
 

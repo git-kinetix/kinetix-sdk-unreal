@@ -14,6 +14,7 @@
 #include "Core/KinetixCoreSubsystem.h"
 #include "Core/Animation/KinetixAnimation.h"
 #include "Core/Metadata/KinetixMetadata.h"
+#include "Interfaces/KinetixAnimationInterface.h"
 #include "Managers/EmoteManager.h"
 #include "Subsystems/SubsystemBlueprintLibrary.h"
 
@@ -22,7 +23,7 @@ UKinetixCharacterComponent::UKinetixCharacterComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	bRegisterPlayerOnLaunch = false;
 
@@ -37,11 +38,6 @@ void UKinetixCharacterComponent::TickComponent(float DeltaTime, ELevelTick TickT
                                                FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	UKismetSystemLibrary::PrintString(
-		this,
-		FString::Printf(TEXT("KCC Network Role: %s"), *UEnum::GetValueAsString(GetOwnerRole())),
-		true, false, FLinearColor::Yellow, 0.f);
 }
 
 // Called when the game starts
@@ -68,6 +64,25 @@ bool UKinetixCharacterComponent::RegisterClipSampler()
 	AnimSequenceSampler = MakeShared<FAnimSequenceSampler>(this);
 
 	return true;
+}
+
+void UKinetixCharacterComponent::CheckAnimInstanceToNotify(AActor* CurrentOwner)
+{
+	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	CurrentOwner->GetComponents<USkeletalMeshComponent>(SkeletalMeshComponents);
+	UAnimInstance* AnimInstance = nullptr;
+	for (int i = 0; i < SkeletalMeshComponents.Num(); ++i)
+	{
+		AnimInstance = SkeletalMeshComponents[i]->GetAnimInstance();
+		if (!IsValid(AnimInstance))
+			continue;
+
+		if (AnimInstance->Implements<UKinetixAnimationInterface>())
+		{
+			AnimInstanceToNotify.SetInterface(Cast<IKinetixAnimationInterface>(AnimInstance));
+			AnimInstanceToNotify.SetObject(AnimInstance);
+		}
+	}
 }
 
 void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
@@ -98,6 +113,8 @@ void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
 	}
 
 	OnOwnerAnimationInitialized();
+
+	CheckAnimInstanceToNotify(CurrentOwner);
 }
 
 void UKinetixCharacterComponent::SetSkeletalMeshComponent(USkeletalMeshComponent* InSkeletalMeshComponent)
@@ -192,8 +209,13 @@ void UKinetixCharacterComponent::PlayAnimation(const FAnimationID& InAnimationID
 		                                     }
 
 		                                     AnimSequenceSampler.Get()->Play(AnimSequence, InAnimationID);
-		                                     // OwnerClipSampler->Play(AnimSequence, InAnimationID);
 		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
 		                                     OnPlayedAnimationDelegate.Broadcast(InAnimationID);
+		                                     OnAnimationStart.Broadcast(InAnimationID);
+
+	                                     	if (!IsValid(AnimInstanceToNotify.GetObject()))
+			                                     return;
+		                                     AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(
+			                                     AnimInstanceToNotify.GetObject(), true);
 	                                     }));
 }
