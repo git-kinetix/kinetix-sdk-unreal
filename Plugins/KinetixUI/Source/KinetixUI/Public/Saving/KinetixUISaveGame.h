@@ -14,10 +14,12 @@ UCLASS()
 class KINETIXUI_API UKinetixUISaveGame : public USaveGame
 {
 	GENERATED_BODY()
-	
+
 public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI|Wheel")
+	FName UserName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI|Wheel")
 	TArray<FAnimationMetadata> AnimationMetadatas;
-	
 };

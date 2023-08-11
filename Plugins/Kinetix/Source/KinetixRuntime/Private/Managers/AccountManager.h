@@ -37,6 +37,8 @@ public:
 	                                     TDelegate<void(const TArray<FAnimationMetadata>&)>& OnMetadatasAvailable,
 	                                     const TDelegate<void()>& OnFailure);
 
+	FAccount* GetConnectedAccount() const;
+	
 	DECLARE_MULTICAST_DELEGATE(FOnUpdatedAccount);
 	FOnUpdatedAccount& OnUpdatedAccount() { return OnUpdatedAccountDelegate; }
 

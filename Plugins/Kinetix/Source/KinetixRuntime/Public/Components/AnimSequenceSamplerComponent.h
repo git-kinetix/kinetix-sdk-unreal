@@ -3,46 +3,66 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "KinetixCharacterComponent.h"
 #include "Components/PoseableMeshComponent.h"
+#include "Core/Network/KinetixNetworkedPose.h"
 #include "Data/KinetixDataLibrary.h"
+#include "Interfaces/KinetixSamplerInterface.h"
 #include "PoseSearch/PoseSearchAssetSampler.h"
+#include "AnimSequenceSamplerComponent.generated.h"
 
-class FAnimSequenceSampler
-	: public TSharedFromThis<FAnimSequenceSampler>, public FTickableGameObject
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent, DisplayName="AnimSequenceSamplerComponent"))
+class UAnimSequenceSamplerComponent
+	: public UActorComponent,
+	  public IKinetixSamplerInterface
 {
+	GENERATED_BODY()
+
 public:
+	UAnimSequenceSamplerComponent(const FObjectInitializer& ObjectInitializer);
 	// Sets default values for this component's properties
-	FAnimSequenceSampler(UActorComponent* ActorComponent);
+	UAnimSequenceSamplerComponent(UActorComponent* ActorComponent);
 
-	// Needs to be virtual to be TSharedPtr
-	virtual ~FAnimSequenceSampler();
+	virtual void BeginPlay() override;
 
-#pragma region FTickableGameObject inheritance
-	virtual bool IsTickable() const override;
-	virtual void Tick(float DeltaTime) override;
-	virtual TStatId GetStatId() const override;
-	virtual ETickableTickType GetTickableTickType() const override;
-#pragma endregion FTickableGameObject inheritance
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+	                           FActorComponentTickFunction* ThisTickFunction) override;
 
 	void SetAnimatorWasEnabled(const bool Value);
 	bool GetAnimInstanceWasEnabled() const;
 
 	void Play(UAnimSequence* InAnimSequence, const FAnimationID& InAnimationID);
 	void Play(FAnimationQueue& InAnimQueue);
-	
+
 	void SetDebugPoesable(UPoseableMeshComponent* InPoseableMeshComponent);
+	void SetContext(const AActor* InActor);
+
+#pragma region IKinetixSamplerInterface inheritance
+	virtual void PlayAnimation_Implementation(UAnimSequence* InAnimSequence) override;
+	virtual void StopAnimation_Implementation() override;
+#pragma endregion
 
 protected:
 	void EnableAnimInstance();
 	void DisableAnimInstance();
 
-private:
-	void StartAnimation();
+	UFUNCTION(Server, Unreliable, WithValidation)
+	void ServerSendFramePose(FKinetixNetworkedPose NetworkedPose);
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void AllDispatchPose(FKinetixNetworkedPose NetworkedPose);
+	
+	UFUNCTION()
+	void KinetixStartAnimation(const FAnimationID& AnimationID);
+
+	void StartAnimationTOCOPY();
+	void StopAnimationTOCOPY();
+
+private:
 	void OnBlendInEnded();
 	void OnBlendOutEnded();
 	void ComputeBlendTime();
-	void StopAnimation();
+
 	void ForceBlendOut();
 
 	void NextAnimation();
@@ -54,6 +74,7 @@ public:
 	uint64 LastTickFrame;
 
 private:
+	UPROPERTY(VisibleAnywhere, Category="Kinetix")
 	UPoseableMeshComponent* PoseableMeshComp;
 
 	UAnimSequence* AnimSequenceToPlay;
@@ -62,8 +83,13 @@ private:
 
 	USkeletalMeshComponent* SkeletalMeshComponentToPause;
 
+	UPROPERTY()
+	UKinetixCharacterComponent* KCC;
+
 	float Duration;
 	float Time;
+	float TimeSinceLastNetUpdate;
+	float TimeBetweenNetUpdates;
 	int AnimIndex;
 	bool bAnimInstanceWasEnabled;
 
@@ -81,7 +107,7 @@ private:
 	FCompactPose CompactPose;
 	FBlendedCurve Curve;
 	UE::Anim::FStackAttributeContainer Attributes;
-	FAnimationPoseData PoseData;
+
 	FAnimExtractContext Context;
 	UE::PoseSearch::FSequenceBaseSampler Sampler;
 
@@ -89,4 +115,6 @@ private:
 
 	TArray<FTransform> BoneSpaceTransforms;
 	TArray<FName> BoneNames;
+
+	FKinetixNetworkedPose CachePose;
 };

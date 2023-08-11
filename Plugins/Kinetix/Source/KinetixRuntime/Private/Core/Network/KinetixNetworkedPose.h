@@ -4,8 +4,43 @@
 
 #include "CoreMinimal.h"
 #include "Engine/NetSerialization.h"
-#include "Net/Serialization/FastArraySerializer.h"
 #include "KinetixNetworkedPose.generated.h"
+
+USTRUCT()
+struct FShortVector
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int16 X;
+	UPROPERTY()
+	int16 Y;
+	UPROPERTY()
+	int16 Z;
+
+	FShortVector& operator=(const FVector& Other);
+
+	FVector ToFVector() const;
+};
+
+USTRUCT()
+struct FShortQuat
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int16 X;
+	UPROPERTY()
+	int16 Y;
+	UPROPERTY()
+	int16 Z;
+	UPROPERTY()
+	int16 W;
+
+	FShortQuat& operator=(const FQuat& Other);
+
+	FQuat ToQuat() const;
+};
 
 USTRUCT()
 struct FBonePoseInfo
@@ -40,6 +75,37 @@ struct FBonePoseInfo
 };
 
 USTRUCT()
+struct FCompressedBonePoseInfo
+{
+	GENERATED_BODY()
+
+	// Position of the bone in component space
+	UPROPERTY()
+	FShortVector LocalPosition;
+
+	UPROPERTY()
+	FShortQuat LocalQuaternion;
+
+	UPROPERTY()
+	FShortVector LocalScale;
+
+	FCompressedBonePoseInfo()
+	{
+		LocalPosition = FVector::ZeroVector;
+		LocalQuaternion = FQuat::Identity;
+		LocalScale = FVector::OneVector;
+	}
+	
+	FCompressedBonePoseInfo(const FTransform& Transform)
+	{
+		LocalPosition = Transform.GetLocation();
+		LocalQuaternion = Transform.GetRotation();
+		LocalScale = Transform.GetScale3D();
+	}
+	
+};
+
+USTRUCT()
 struct FKinetixNetworkedPose
 {
 	GENERATED_BODY()
@@ -63,16 +129,17 @@ struct FKinetixNetworkedPose
 	bool bHasArmature;
 
 	UPROPERTY()
-	TArray<FBonePoseInfo> Bones; 
+	TArray<FCompressedBonePoseInfo> Bones; 
 
-	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
+	// bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
 };
 
-template<>
-struct TStructOpsTypeTraits<FKinetixNetworkedPose> : public TStructOpsTypeTraitsBase2<FKinetixNetworkedPose>
-{
-	enum
-	{
-		WithNetSerializer = true
-	};
-};
+// template<>
+// struct TStructOpsTypeTraits<FKinetixNetworkedPose> : public TStructOpsTypeTraitsBase2<FKinetixNetworkedPose>
+// {
+// 	enum
+// 	{
+// 		WithNetSerializer = true,
+// 		WithNetSharedSerialization = true
+// 	};
+// };

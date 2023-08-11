@@ -4,34 +4,61 @@
 
 #pragma region CustomHalf
 
-const int16 CUSTOM_HALF = 1000;
+const int16 CUSTOM_HALF = 100;
 
 // Available in NumericLimits.h
-static short DoubleToCustomHalf(double InValue)
+static int32 DoubleToCustomHalf(double InValue)
 {
-	InValue = FMath::Clamp(InValue, MIN_int16 / CUSTOM_HALF, MAX_int16 / CUSTOM_HALF);
-	return short(InValue * CUSTOM_HALF);
+	InValue = FMath::Clamp(InValue, MIN_int32 / CUSTOM_HALF, MAX_int32 / CUSTOM_HALF);
+	return int32(InValue * CUSTOM_HALF);
 }
 
-static short FloatToCustomHalf(float InValue)
+static int16 FloatToCustomHalf(float InValue)
 {
 	InValue = FMath::Clamp(InValue, MIN_int16 / CUSTOM_HALF, MAX_int16 / CUSTOM_HALF);
-	return short(InValue * CUSTOM_HALF);
+	return int16(InValue * CUSTOM_HALF);
 }
 
-static double CustomHalfToDouble(short InCustomHalf)
+static double CustomHalfToDouble(int32 InCustomHalf)
 {
 	const double returnValue = InCustomHalf;
-	return returnValue / CUSTOM_HALF;
+	return returnValue / (double)CUSTOM_HALF;
 }
 
-static float CustomHalfToFloat(short InCustomHalf)
+static float CustomHalfToFloat(int16 InCustomHalf)
 {
 	const float returnValue = InCustomHalf;
-	return returnValue / CUSTOM_HALF;
+	return returnValue / (float)CUSTOM_HALF;
 }
 
 #pragma endregion CustomHalf
+
+FShortVector& FShortVector::operator=(const FVector& Other)
+{
+	X = FloatToCustomHalf(Other.X);
+	Y = FloatToCustomHalf(Other.Y);
+	Z = FloatToCustomHalf(Other.Z);
+	return *this;
+}
+
+FVector FShortVector::ToFVector() const
+{
+	return FVector(CustomHalfToFloat(X), CustomHalfToFloat(Y), CustomHalfToFloat(Z));
+}
+
+FShortQuat& FShortQuat::operator=(const FQuat& Other)
+{
+	X = FloatToCustomHalf(Other.X);
+	Y = FloatToCustomHalf(Other.Y);
+	Z = FloatToCustomHalf(Other.Z);
+	W = FloatToCustomHalf(Other.W);
+	return *this;
+}
+
+FQuat FShortQuat::ToQuat() const
+{
+	return FQuat(CustomHalfToFloat(X), CustomHalfToFloat(Y), CustomHalfToFloat(Z), CustomHalfToFloat(W)).GetNormalized();
+}
 
 void FBonePoseInfo::SerializeCompressedShort(FArchive& Ar, uint8 Flags)
 {
@@ -63,7 +90,6 @@ void FBonePoseInfo::SerializeCompressedShort(FArchive& Ar, uint8 Flags)
 	{
 		if (true)
 		{
-			
 		}
 		ShortQX = DoubleToCustomHalf(LocalQuaternion.X);
 		ShortQY = DoubleToCustomHalf(LocalQuaternion.Y);
@@ -83,11 +109,11 @@ void FBonePoseInfo::SerializeCompressedShort(FArchive& Ar, uint8 Flags)
 	Ar << ShortQY;
 	Ar << ShortQZ;
 	Ar << ShortQW;
-	
+
 	Ar << ShortX;
 	Ar << ShortY;
 	Ar << ShortZ;
-	
+
 	Ar << ShortSX;
 	Ar << ShortSY;
 	Ar << ShortSZ;
@@ -109,21 +135,22 @@ void FBonePoseInfo::SerializeCompressedShort(FArchive& Ar, uint8 Flags)
 	}
 }
 
-bool FKinetixNetworkedPose::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
-{
-	Ar << Guid;
-	Ar << TimeStamp;
-	uint8 Flags = (bPosEnabled << 0)
-		| (bScaleEnabled << 1)
-		| (bHasBlendshapes << 2)
-		| (bHasArmature << 3);
+// bool FKinetixNetworkedPose::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
+// {
+// Ar << Guid;
+// Ar << TimeStamp;
+// uint8 Flags = (bPosEnabled << 0)
+// 	| (bScaleEnabled << 1)
+// 	| (bHasBlendshapes << 2)
+// 	| (bHasArmature << 3);
+//
+// Ar.SerializeBits(&Flags, 4);
 
-	Ar.SerializeBits(&Flags, 4);
+// for (int i = 0; i < Bones.Num(); ++i)
+// {
+// 	Bones[i].SerializeCompressedShort(Ar, Flags);
+// }
 
-	for (int i = 0; i < Bones.Num(); ++i)
-	{
-		Bones[i].SerializeCompressedShort(Ar, Flags);
-	}
-
-	return true;
-}
+// 	bOutSuccess = true;
+// 	return true;
+// }

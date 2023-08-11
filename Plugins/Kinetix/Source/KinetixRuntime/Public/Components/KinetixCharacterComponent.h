@@ -7,14 +7,15 @@
 #include "Components/ActorComponent.h"
 #include "Data/KinetixDataLibrary.h"
 #include "Interfaces/KinetixAnimationInterface.h"
+#include "Interfaces/KinetixSamplerInterface.h"
 #include "KinetixCharacterComponent.generated.h"
 
-class FAnimSequenceSampler;
+class UAnimSequenceSamplerComponent;
 class USkeletalMeshComponent;
 class UPoseableMeshComponent;
 class UAnimSamplerComponent;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAnimationStart, const FAnimationID&, AnimationID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAnimationStart, const FAnimationID&, AnimationID)	;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAnimationEnd, const FAnimationID&, AnimationID);
 
@@ -28,15 +29,19 @@ class KINETIXRUNTIME_API UKinetixCharacterComponent : public UActorComponent
 public:
 	UKinetixCharacterComponent();
 	UKinetixCharacterComponent(FVTableHelper& Helper);
-
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-	                           FActorComponentTickFunction* ThisTickFunction) override;
-
-	bool RegisterClipSampler();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	void CheckAnimInstanceToNotify(AActor* CurrentOwner);
 
+	UFUNCTION(Client, Reliable)
 	void PlayAnimation(const FAnimationID& InAnimationID, bool bLoop,
 	                   const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate);
+
+	UFUNCTION(Server, Reliable)
+	void ServerCalledFromClientWithData(const FString& DataToSend);
+
+	void RegisterSampler(IKinetixSamplerInterface* AnimSequenceSamplerComponent);
 
 protected:
 	// Called when the game starts
@@ -53,6 +58,12 @@ protected:
 
 	UFUNCTION()
 	FString RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path, UObject* Context);
+	void PlayAnimationOld(const FAnimationID& InAnimationID, bool bLoop,
+	                      const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate);
+
+private:
+	UFUNCTION()
+	void OnKinetixAnimationEnded();
 
 public:
 	/**
@@ -72,9 +83,10 @@ public:
 	 */
 	UPROPERTY(BlueprintAssignable, Category="Kinetix|Animation|Events")
 	FOnFramePlayed OnFramePlayed;
+	
+	IKinetixSamplerInterface* AnimSampler;
 
 private:
-
 	UPROPERTY(VisibleAnywhere, meta=(DisplayName = "Skeletal Mesh in use"))
 	USkeletalMeshComponent* OwnerSkeletalMeshComponent;
 
@@ -85,9 +97,14 @@ private:
 
 	UPROPERTY()
 	TScriptInterface<IKinetixAnimationInterface> AnimInstanceToNotify;
-	
+
 	UPROPERTY()
 	FglTFRuntimeSkeletalAnimationConfig AnimConfig;
 
-	TSharedPtr<FAnimSequenceSampler> AnimSequenceSampler;
+	UPROPERTY(Replicated)
+	TObjectPtr<UAnimSequenceSamplerComponent> AnimSequenceSamplerComponent;
+
+	FAnimationID CurrentAnimationIDBeingPlayed;
+
+	FTimerHandle EndAnimationHandle;
 };

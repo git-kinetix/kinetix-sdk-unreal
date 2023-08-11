@@ -45,6 +45,15 @@ void UKinetixAccount::AssociateEmoteToUser(const FAnimationID& InAnimationID)
 	AccountManager.Get()->AssociateEmoteToUser(InAnimationID);
 }
 
+void UKinetixAccount::GetConnectedAccount(FName& OutUserName)
+{
+	FAccount* LoggedAccount = AccountManager.Get()->GetConnectedAccount();
+	if (LoggedAccount == nullptr)
+		return;
+
+	OutUserName = *LoggedAccount->GetAccountID();
+}
+
 void UKinetixAccount::UpdatedAccount()
 {
 	OnUpdatedAccount.Broadcast();

@@ -2,6 +2,7 @@
 
 #include "Core/Animation/KinetixAnimation.h"
 
+#include "Kismet/KismetSystemLibrary.h"
 #include "Managers/LocalPlayerManager.h"
 #include "Tasks/Task.h"
 #include "Utils/Animation/RootMotionConfig.h"

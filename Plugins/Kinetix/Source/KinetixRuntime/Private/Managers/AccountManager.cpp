@@ -239,6 +239,11 @@ void FAccountManager::GetUserAnimationMetadatasByPage(int InCount, int InPage,
 {
 }
 
+FAccount* FAccountManager::GetConnectedAccount() const
+{
+	return LoggedAccount;
+}
+
 bool FAccountManager::TryCreateAccount(const FString& InUserID)
 {
 	FHttpModule& HttpModule = FHttpModule::Get();
