@@ -20,7 +20,9 @@ FKinetixEmote::~FKinetixEmote()
 
 bool FKinetixEmote::HasMetadata() const
 {
-	return AnimationMetadata.Id.UUID.IsValid();
+	return AnimationMetadata.Id.UUID.IsValid()
+		&& !AnimationMetadata.AnimationURL.Map.IsEmpty()
+		&& !AnimationMetadata.IconURL.Map.IsEmpty();
 }
 
 void FKinetixEmote::SetMetadata(const FAnimationMetadata& InAnimationMetadata)

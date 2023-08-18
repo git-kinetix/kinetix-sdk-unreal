@@ -9,7 +9,7 @@
 #include "KinetixDataLibrary.generated.h"
 
 #if WITH_EDITOR || UE_BUILD_DEVELOPMENT
-static FString SDKAPIUrlBase = TEXT("https://sdk-api.staging.kinetix.tech");
+static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech");
 #else
 static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech"); 
 #endif
@@ -244,6 +244,11 @@ DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadataOwnershipLoaded, bool, bSuccess, b
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnMetadatasAvailable, bool, bSuccess, const TArray<FAnimationMetadata>&, Metadatas);
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnTotalNumberOfPagesAvailable, int, NumberOfPages);
+
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnIconAvailable, UTexture2DDynamic*, Icon);
+
+DECLARE_DYNAMIC_DELEGATE(FOnIconFail);
+
 #pragma endregion
 
 #pragma endregion

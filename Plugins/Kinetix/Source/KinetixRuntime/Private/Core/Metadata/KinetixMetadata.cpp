@@ -5,13 +5,16 @@
 
 #include "KinetixRuntimeModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Blueprint/AsyncTaskDownloadImage.h"
 #include "Core/KinetixCoreSubsystem.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Data/AnimationMetadataAsset.h"
 #include "Engine/AssetManager.h"
 #include "Managers/AccountManager.h"
 #include "Managers/EmoteManager.h"
+#include "Managers/IconManager.h"
 #include "Managers/MetadataOperationManager.h"
+#include "Engine/Texture2DDynamic.h"
 
 DEFINE_LOG_CATEGORY(LogKinetixMetadata);
 
@@ -37,7 +40,7 @@ void UKinetixMetadata::Initialize_Implementation(const FKinetixCoreConfiguration
 	AssetManager.GetStreamableManager().RequestAsyncLoad(
 		MetadatasSoftObjectPaths,
 		FStreamableDelegate::CreateUObject(this,
-										   &UKinetixMetadata::InitializeEmoteManager, MetadatasSoftObjectPaths));
+		                                   &UKinetixMetadata::InitializeEmoteManager, MetadatasSoftObjectPaths));
 
 
 	FEmoteManager::Get();
@@ -54,11 +57,18 @@ void UKinetixMetadata::GetAnimationMetadataByAnimationID(const FAnimationID& InI
 	if (Emote == nullptr)
 		return;
 
+	if (Emote->HasMetadata())
+	{
+		Callback.ExecuteIfBound(true, Emote->GetAnimationMetadata());
+		return;
+	}
+
 	FMetadataOperationManager::GetAnimationMetadataOfEmote(Emote->GetAnimationMetadata(),
-		TDelegate<void(FAnimationMetadata)>::CreateLambda([Callback](const FAnimationMetadata& InAnimationMetadata)
-		{
-			Callback.ExecuteIfBound(true, InAnimationMetadata);
-		}));
+	                                                       TDelegate<void(FAnimationMetadata)>::CreateLambda(
+		                                                       [Callback](const FAnimationMetadata& InAnimationMetadata)
+		                                                       {
+			                                                       Callback.ExecuteIfBound(true, InAnimationMetadata);
+		                                                       }));
 }
 
 void UKinetixMetadata::IsAnimationOwnedByUser(FAnimationID InID, const FOnMetadataOwnershipLoaded& Callback)
@@ -79,7 +89,6 @@ void UKinetixMetadata::GetUserAnimationMetadatas(const FOnMetadatasAvailable& Ca
 
 	KinetixCore->KinetixAccount->AccountManager->GetAllUserAnimationMetadatas(
 		Callback, TDelegate<void()>());
-	
 }
 
 void UKinetixMetadata::GetUserAnimationMetadatasByPage(int InCount, int InPageNumber,
@@ -90,6 +99,19 @@ void UKinetixMetadata::GetUserAnimationMetadatasByPage(int InCount, int InPageNu
 void UKinetixMetadata::GetUserAnimationMetadatasTotalPagesCount(int InCountPerPage,
                                                                 const FOnTotalNumberOfPagesAvailable& Callback)
 {
+}
+
+void UKinetixMetadata::LoadIconByAnimationID(const FAnimationID& InID, const FOnIconAvailable& OnIconAvailableDelegate)
+{
+	if (!InID.UUID.IsValid())
+		return;
+
+	UTexture2DDynamic* Icon = FIconManager::Get().GetIcon(InID, OnIconAvailableDelegate);
+	if (IsValid(Icon))
+	{
+		OnIconAvailableDelegate.ExecuteIfBound(Icon);
+		return;
+	}
 }
 
 void UKinetixMetadata::ResolveMetadatas(TArray<FSoftObjectPath>& SoftObjectPaths,

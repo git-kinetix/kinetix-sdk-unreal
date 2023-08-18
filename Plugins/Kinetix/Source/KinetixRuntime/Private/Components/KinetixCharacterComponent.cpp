@@ -66,7 +66,6 @@ void UKinetixCharacterComponent::BeginPlay()
 	Super::BeginPlay();
 
 	CheckSkeletalMeshComponent();
-
 }
 
 void UKinetixCharacterComponent::CheckAnimInstanceToNotify(AActor* CurrentOwner)
@@ -123,7 +122,10 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
 		                                     OnPlayedAnimationDelegate.Broadcast(InAnimationID);
 		                                     OnAnimationStart.Broadcast(InAnimationID);
-		                                     AnimSampler->Execute_PlayAnimation(AnimSampler->_getUObject(), AnimSequence);
+		                                     if (AnimSampler)
+			                                     AnimSampler->Execute_PlayAnimation(
+				                                     AnimSampler->_getUObject(), AnimSequence);
+
 		                                     GetWorld()->GetTimerManager().SetTimer(
 			                                     EndAnimationHandle, this,
 			                                     &UKinetixCharacterComponent::OnKinetixAnimationEnded,
@@ -165,7 +167,7 @@ void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
 
 	OnOwnerAnimationInitialized();
 
-	if (GetOwnerRole() != ROLE_AutonomousProxy)
+	if (GetOwnerRole() != ROLE_AutonomousProxy && GetNetMode() != NM_Standalone)
 	{
 		OwnerSkeletalMeshComponent->SetHiddenInGame(true, true);
 	}
@@ -247,8 +249,8 @@ void UKinetixCharacterComponent::OnKinetixAnimationEnded()
 		World->GetTimerManager().ClearTimer(EndAnimationHandle);
 
 	OwnerSkeletalMeshComponent->GetAnimInstance()->OnMontageEnded.RemoveAll(this);
-	AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(AnimInstanceToNotify.GetObject(), false);
 	OnAnimationEnd.Broadcast(CurrentAnimationIDBeingPlayed);
-	UKismetSystemLibrary::PrintString(
-		this, FString::Printf(TEXT("OnAnimationEnded %s"), *CurrentAnimationIDBeingPlayed.UUID.ToString()));
+	if (!IsValid(AnimInstanceToNotify.GetObject()))
+		return;
+	AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(AnimInstanceToNotify.GetObject(), false);
 }

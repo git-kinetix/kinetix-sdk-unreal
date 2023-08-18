@@ -9,8 +9,7 @@
 
 FLocalPlayerManager::FLocalPlayerManager(bool bInPlayAutomaticallyOnAnimator)
 	: bPlayAutomatcallyOnAnimInstance(bInPlayAutomaticallyOnAnimator),
-	  EmotesToPreload(nullptr),
-	  DownloadedEmotesReadyToPlay(nullptr)
+	  EmotesToPreload(nullptr)
 {
 	UE_LOG(LogKinetixRuntime, Log, TEXT("LocalPlayerManager instanciated"));
 }
@@ -138,16 +137,21 @@ void FLocalPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimati
 		return;
 	}
 
-	Async(EAsyncExecution::Thread, [Emote, OnSuccess, OnFailure]()
+	if (DownloadedEmotesReadyToPlay.Contains(InAnimationID))
+		OnSuccess.ExecuteIfBound();
+
+	Async(EAsyncExecution::Thread, [InAnimationID, Emote, OnSuccess, OnFailure, this]()
 	{
-		FEmoteManager::Get().LoadAnimation(Emote,
-		                                   TDelegate<void()>::CreateLambda(
-			                                   [OnSuccess]()
+		FEmoteManager::Get().LoadAnimation(Emote, TDelegate<void()>::CreateLambda(
+			                                   [InAnimationID, Emote, OnSuccess, this]()
 			                                   {
+				                                   DownloadedEmotesReadyToPlay.Add(
+					                                   InAnimationID, Emote->GetAnimSequence());
 				                                   UE_LOG(LogKinetixAnimation, Warning,
 				                                          TEXT(
 					                                          "[LocalPlayerManager] LodLocalPlayerAnimation: AnimationLoaded"
 				                                          ));
+
 				                                   OnSuccess.ExecuteIfBound();
 			                                   }));
 	});

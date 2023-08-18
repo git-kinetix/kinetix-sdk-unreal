@@ -19,7 +19,7 @@ UAnimSequenceSamplerComponent::UAnimSequenceSamplerComponent(const FObjectInitia
 	  BlendTime(0.f)
 {
 	TimeSinceLastNetUpdate = 0.f;
-	TimeBetweenNetUpdates = 0.2f;
+	TimeBetweenNetUpdates = 1.f/30.f;
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 	SetIsReplicatedByDefault(true);

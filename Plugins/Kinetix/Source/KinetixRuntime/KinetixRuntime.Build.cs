@@ -46,7 +46,8 @@ public class KinetixRuntime : ModuleRules
 				"JsonUtilities",
 				"JsonBlueprintUtilities",
 				"DeveloperSettings",
-				"PoseSearch"
+				"PoseSearch",
+				"RenderCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

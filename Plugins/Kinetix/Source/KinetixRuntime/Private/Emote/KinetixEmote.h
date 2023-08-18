@@ -47,7 +47,7 @@ public:
 	 * @param InAnimSequence The AnimSequence loaded with the Reference Skeleton
 	 */
 	void SetAnimSequence(UAnimSequence* InAnimSequence);
-	
+
 	/**
 	 * @brief Check if the GLB file is used (e.g. Import Retargeting)
 	 * @return True if currently used
@@ -62,7 +62,7 @@ public:
 	bool HasAnimationRetargeted(UAnimInstance* InAnimInstance);
 
 	bool IsLocal() const;
-	
+
 	FString GetPathToGlb() const;
 
 	const FAnimationMetadata& GetAnimationMetadata() const;
@@ -70,7 +70,6 @@ public:
 	UAnimSequence* GetAnimSequence() const;
 
 private:
-	
 	/**
 	 * @brief Check if the GLB path points to a valid GLB file
 	 * @return True if the GLB file exists
@@ -85,7 +84,6 @@ private:
 	bool IsRetargeting(UAnimInstance* InAnimInstance);
 
 private:
-
 	FAnimationID AnimationID;
 
 	bool bIsLocal;
@@ -95,5 +93,4 @@ private:
 	FString PathToGLB;
 
 	UAnimSequence* AnimSequence;
-
 };

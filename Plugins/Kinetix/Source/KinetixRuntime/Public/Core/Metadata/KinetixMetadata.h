@@ -64,6 +64,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Metadata")
 	void GetUserAnimationMetadatasTotalPagesCount(int InCountPerPage, const FOnTotalNumberOfPagesAvailable& Callback);
 
+	/**
+	 * @brief Load the icon associated to the AnimationID
+	 * @param InID AnimationID used to load the icon
+	 * @param OnIconAvailableDelegate Called when the loading is finished
+	 */
+	UFUNCTION(BlueprintCallable, Category="Kinetix|Metadata")
+	void LoadIconByAnimationID(const FAnimationID& InID, const FOnIconAvailable& OnIconAvailableDelegate);
+	
 #pragma region IKinetixSubcoreInterface
 	virtual void Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult) override;
 #pragma endregion

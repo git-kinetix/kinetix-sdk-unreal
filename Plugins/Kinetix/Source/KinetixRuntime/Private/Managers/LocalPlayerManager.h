@@ -57,5 +57,5 @@ private:
 
 	TMap<FAnimationID, TList<TDelegate<void()>>> CallbacksOnRetargetedAnimationIDOnLocalPlayer;
 	TList<FAnimationID>* EmotesToPreload;
-	TList<FAnimationID>* DownloadedEmotesReadyToPlay;
+	TMap<FAnimationID, UAnimSequence*> DownloadedEmotesReadyToPlay;
 };
