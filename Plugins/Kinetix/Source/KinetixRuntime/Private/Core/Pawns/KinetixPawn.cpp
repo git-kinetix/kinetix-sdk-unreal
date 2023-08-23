@@ -3,6 +3,8 @@
 
 #include "Core/Pawns/KinetixPawn.h"
 
+#include "InputMappingContext.h"
+#include "EnhancedInputSubsystems.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 
@@ -12,7 +14,7 @@
 // Sets default values
 AKinetixPawn::AKinetixPawn()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
@@ -37,4 +39,20 @@ void AKinetixPawn::BeginPlay()
 void AKinetixPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	APlayerController* PC = GetController<APlayerController>();
+	if (!IsValid(PC))
+		return;
+
+	if (!IsValid(InputMapping))
+		return;
+
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>
+		(PC->GetLocalPlayer());
+
+	if (!IsValid(InputSubsystem))
+		return;
+
+	InputSubsystem->ClearAllMappings();
+	InputSubsystem->AddMappingContext(InputMapping, 0);
 }

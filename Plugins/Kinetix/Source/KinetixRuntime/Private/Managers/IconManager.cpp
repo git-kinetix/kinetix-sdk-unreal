@@ -7,8 +7,6 @@
 #include "HttpModule.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
-#include "KinetixRuntimeModule.h"
-#include "Blueprint/AsyncTaskDownloadImage.h"
 #include "Engine/Texture2DDynamic.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Loaders/KinetixIconDownloader.h"

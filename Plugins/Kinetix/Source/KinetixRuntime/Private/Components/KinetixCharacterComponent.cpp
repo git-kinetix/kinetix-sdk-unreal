@@ -118,7 +118,6 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 			                                     return;
 		                                     }
 
-		                                     // AnimSequenceSamplerComponent.Get()->Play(AnimSequence, InAnimationID);
 		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
 		                                     OnPlayedAnimationDelegate.Broadcast(InAnimationID);
 		                                     OnAnimationStart.Broadcast(InAnimationID);
@@ -245,11 +244,15 @@ void UKinetixCharacterComponent::OnKinetixAnimationEnded()
 {
 	UWorld* World = GetWorld();
 	if (!IsValid(World))
-
 		World->GetTimerManager().ClearTimer(EndAnimationHandle);
 
 	OwnerSkeletalMeshComponent->GetAnimInstance()->OnMontageEnded.RemoveAll(this);
 	OnAnimationEnd.Broadcast(CurrentAnimationIDBeingPlayed);
+
+	if (AnimSampler)
+		AnimSampler->Execute_StopAnimation(
+			AnimSampler->_getUObject());
+	
 	if (!IsValid(AnimInstanceToNotify.GetObject()))
 		return;
 	AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(AnimInstanceToNotify.GetObject(), false);

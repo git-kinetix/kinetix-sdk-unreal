@@ -9,6 +9,7 @@
 class UCapsuleComponent;
 class USkeletalMeshComponent;
 class UKinetixCharacterComponent;
+class UInputMappingContext;
 
 UCLASS()
 class KINETIXRUNTIME_API AKinetixPawn : public APawn
@@ -39,4 +40,8 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess="true"))
 	UKinetixCharacterComponent* KinetixComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input", meta=(AllowPrivateAccess="true"))
+	UInputMappingContext* InputMapping;
+
 };

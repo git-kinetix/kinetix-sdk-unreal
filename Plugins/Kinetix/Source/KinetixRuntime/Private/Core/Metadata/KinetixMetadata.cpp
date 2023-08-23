@@ -5,7 +5,6 @@
 
 #include "KinetixRuntimeModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "Blueprint/AsyncTaskDownloadImage.h"
 #include "Core/KinetixCoreSubsystem.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Data/AnimationMetadataAsset.h"

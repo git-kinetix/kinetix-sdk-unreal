@@ -19,7 +19,7 @@ UAnimSequenceSamplerComponent::UAnimSequenceSamplerComponent(const FObjectInitia
 	  BlendTime(0.f)
 {
 	TimeSinceLastNetUpdate = 0.f;
-	TimeBetweenNetUpdates = 1.f/30.f;
+	TimeBetweenNetUpdates = 1.f / 30.f;
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 	SetIsReplicatedByDefault(true);
@@ -175,6 +175,8 @@ void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 		SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
 
 	PoseableMeshComp = InActor->GetComponentByClass<UPoseableMeshComponent>();
+	if (!IsValid(PoseableMeshComp))
+		return;
 	if (GetOwnerRole() == ROLE_AutonomousProxy)
 		PoseableMeshComp->SetHiddenInGame(true, true);
 }
@@ -193,9 +195,8 @@ void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* 
 	                                  CurrentOwner->HasAuthority() == true ? FLinearColor::Red : FLinearColor::Blue,
 	                                  20.f);
 
-	if (IsValid(AnimSequenceToPlay))
-		EnableAnimInstance();
-
+	// if (IsValid(AnimSequenceToPlay))
+	// 	EnableAnimInstance();
 
 	// if (!IsValid(AnimQueue.AnimationSequences[AnimIndex]))
 	// 	return;
@@ -233,6 +234,8 @@ void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* 
 
 	SetComponentTickEnabled(true);
 
+	Time = 0.f;
+	
 	// Sampler.ExtractPose(Context, PoseData);
 
 	// if (!IsComponentTickEnabled() || FMath::IsNearlyZero(AnimLength, 0.01f))
@@ -264,6 +267,11 @@ void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* 
 void UAnimSequenceSamplerComponent::StopAnimation_Implementation()
 {
 	IKinetixSamplerInterface::StopAnimation_Implementation();
+
+	SetComponentTickEnabled(false);
+
+	AnimSequenceToPlay = nullptr;
+	Time = 0.f;
 }
 
 void UAnimSequenceSamplerComponent::EnableAnimInstance()
@@ -272,7 +280,6 @@ void UAnimSequenceSamplerComponent::EnableAnimInstance()
 		return;
 
 	SkeletalMeshComponentToPause->SetAnimationMode(CachedAnimationMode);
-	// SkeletalMeshComponentToPause->Play();
 }
 
 void UAnimSequenceSamplerComponent::DisableAnimInstance()
