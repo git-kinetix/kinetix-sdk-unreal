@@ -82,3 +82,10 @@ Builds/*
 Executables/*
 
 # Remove everything except Plugins
+Platforms/*
+Config/*
+Content/*
+Source/*
+.vsconfig
+KinetixSDKUnreal.png
+KinetixSDKUnreal.uproject
