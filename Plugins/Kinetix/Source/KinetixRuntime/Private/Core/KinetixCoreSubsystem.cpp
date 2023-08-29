@@ -5,6 +5,7 @@
 
 #include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
+#include "Core/KinetixUGC.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Core/Animation/KinetixAnimation.h"
 #include "Core/Metadata/KinetixMetadata.h"
@@ -76,6 +77,14 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 		return false;
 	}
 	KinetixAccount = Cast<UKinetixAccount>(SubcoreObject);
+
+	SubcoreObject = nullptr;
+	if (!InitializeSubcore(UKinetixUGC::StaticClass(), &SubcoreObject))
+	{
+		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixAccount failed to initialize !"));
+		return false;
+	}
+	KinetixUGC = Cast<UKinetixUGC>(SubcoreObject);
 	
 	bCoreInitialized = true;
 	

@@ -13,6 +13,7 @@
 class FAccount
 {
 public:
+	
 	FAccount(const FString& InUserID, bool bPreFetch = true);
 	~FAccount();
 

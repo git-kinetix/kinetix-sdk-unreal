@@ -85,6 +85,8 @@ public:
 	FOnFramePlayed OnFramePlayed;
 	
 	IKinetixSamplerInterface* AnimSampler;
+	
+	FKinetixCoreInitializedDelegate Callback;
 
 private:
 	UPROPERTY(VisibleAnywhere, meta=(DisplayName = "Skeletal Mesh in use"))

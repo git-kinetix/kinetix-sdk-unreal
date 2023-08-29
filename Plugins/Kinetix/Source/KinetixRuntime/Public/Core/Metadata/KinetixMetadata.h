@@ -38,7 +38,7 @@ public:
 	 * @param Callback Called with 2 booleans indicating the success of the operation and if the user owned the animation
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Metadata")
-	void IsAnimationOwnedByUser(FAnimationID InID, const FOnMetadataOwnershipLoaded& Callback);
+	void IsAnimationOwnedByUser(const FAnimationID& InID, const FOnMetadataOwnershipLoaded& Callback);
 
 	/**
 	 * @brief Get all animation metadatas for the local user

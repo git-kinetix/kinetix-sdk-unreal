@@ -29,11 +29,6 @@ void UKinetixAnimation::Initialize_Implementation(const FKinetixCoreConfiguratio
 	bResult = true;
 }
 
-void UKinetixAnimation::Initialize(bool bInPlayAutomaticallyOnAnimInstance)
-{
-	LocalPlayerManager = MakeUnique<FLocalPlayerManager>(bInPlayAutomaticallyOnAnimInstance);
-}
-
 void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimInstance)
 {
 	if (!IsValid(InAnimInstance))
@@ -49,15 +44,15 @@ void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimIns
 	OnRegisterLocalPlayer.Broadcast();
 }
 
-void UKinetixAnimation::RegisterLocalPlayerAnimInstanceWithRootMotionConfig(
-	UAnimInstance* InAnimInstance, FRootMotionConfig InConfig)
-{
-}
+// void UKinetixAnimation::RegisterLocalPlayerAnimInstanceWithRootMotionConfig(
+// 	UAnimInstance* InAnimInstance, FRootMotionConfig InConfig)
+// {
+// }
 
-void UKinetixAnimation::RegisterLocalPlayerCustomAnimInstance(UAnimInstance* InAnimInstance, FTransform InRootTransform,
-                                                              EExportType InExportType)
-{
-}
+// void UKinetixAnimation::RegisterLocalPlayerCustomAnimInstance(UAnimInstance* InAnimInstance, FTransform InRootTransform,
+//                                                               EExportType InExportType)
+// {
+// }
 
 void UKinetixAnimation::UnregisterLocalPlayer()
 {
@@ -87,20 +82,20 @@ void UKinetixAnimation::LoadLocalPlayerAnimation(const FAnimationID& InAnimation
 		}));
 }
 
-void UKinetixAnimation::LoadLocalPlayerAnimations(TArray<FAnimationID> InAnimationIDs,
+void UKinetixAnimation::LoadLocalPlayerAnimations(TArray<FAnimationID>& InAnimationIDs,
                                                   const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate)
 {
 }
 
-void UKinetixAnimation::UnloadLocalPlayerAnimation(FAnimationID AnimationID)
+void UKinetixAnimation::UnloadLocalPlayerAnimation(const FAnimationID& InAnimationID)
 {
 }
 
-void UKinetixAnimation::UnloadLocalPlayerAnimations(TArray<FAnimationID> AnimationIDs)
+void UKinetixAnimation::UnloadLocalPlayerAnimations(TArray<FAnimationID>& AnimationIDs)
 {
 }
 
-bool UKinetixAnimation::IsAnimationAvailableOnLocalPlayer(FAnimationID InAnimationID)
+bool UKinetixAnimation::IsAnimationAvailableOnLocalPlayer(const FAnimationID& InAnimationID)
 {
 	return false;
 }

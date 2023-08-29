@@ -30,6 +30,7 @@ UKinetixCharacterComponent::UKinetixCharacterComponent()
 	bRegisterPlayerOnLaunch = false;
 
 	SetIsReplicatedByDefault(true);
+	
 }
 
 UKinetixCharacterComponent::UKinetixCharacterComponent(FVTableHelper& Helper)

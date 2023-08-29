@@ -42,6 +42,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
 	void GetConnectedAccount(FName& OutUserName);
 	
+	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
+	void DisconnectAccount();
+
 private:
 
 	UFUNCTION()

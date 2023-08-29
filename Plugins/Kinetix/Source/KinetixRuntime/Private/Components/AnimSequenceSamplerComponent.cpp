@@ -272,6 +272,11 @@ void UAnimSequenceSamplerComponent::StopAnimation_Implementation()
 
 	AnimSequenceToPlay = nullptr;
 	Time = 0.f;
+
+	// if (BlendState == EBlendState::BS_None || BlendState == EBlendState::BS_Out)
+	// 	return;
+	//
+	// ForceBlendOut();
 }
 
 void UAnimSequenceSamplerComponent::EnableAnimInstance()
@@ -333,71 +338,6 @@ void UAnimSequenceSamplerComponent::KinetixStartAnimation(const FAnimationID& An
 {
 }
 
-void UAnimSequenceSamplerComponent::StartAnimationTOCOPY()
-{
-	if (IsValid(AnimSequenceToPlay))
-		EnableAnimInstance();
-
-	if (!IsValid(AnimQueue.AnimationSequences[AnimIndex]))
-		return;
-
-	AnimSequenceToPlay = AnimQueue.AnimationSequences[AnimIndex];
-
-	RequiredBones =
-		SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
-
-	// CompactPose.ResetToRefPose(RequiredBones);	
-
-	// Curve.InitFrom(RequiredBones);
-	// SkeletalMeshComponentToPause->SetAnimationMode(EAnimationMode::AnimationCustomMode);
-	// SkeletalMeshComponentToPause->SetComponentTickEnabled(false);
-
-	// UE::PoseSearch::FSequenceBaseSampler::FInput Input;
-	// Input.SequenceBase = AnimSequenceToPlay;
-	// Sampler.Init(Input);
-
-	Context.CurrentTime = 0.f;
-	for (int i = 0; i < RequiredBones.GetNumBones(); ++i)
-	{
-		Context.BonesRequired.Add(true);
-	}
-
-	CachePose.Guid = FGuid::NewGuid();
-	CachePose.bHasArmature = true;
-	CachePose.bHasBlendshapes = false;
-	CachePose.bPosEnabled = true;
-	CachePose.bScaleEnabled = false;
-	CachePose.TimeStamp = FApp::GetCurrentTime();
-	CachePose.Bones.SetNumZeroed(RequiredBones.GetNumBones());
-
-	// Sampler.ExtractPose(Context, PoseData);
-
-	// if (!IsComponentTickEnabled() || FMath::IsNearlyZero(AnimLength, 0.01f))
-
-	// GetOwnerSkeletalMeshComponent();
-
-	// if (!FMath::IsNearlyZero(Duration, 0.01f))
-	// {
-	// RootMotionUtils.RevertToOffsets();
-	// }
-	//
-	// DisableAnimInstance();
-	//
-	// Time = BlendTime;
-	// Duration = AnimLength;
-	// BlendState = EBlendState::BS_In;
-	//
-	// // RootMotionUtil.SaveOffsets();
-	//
-	// float BlendDuration = Duration >= BlendInTime ? BlendInTime : Duration;
-	// if (AnimQueue.AnimationIDs.Num() >= AnimIndex
-	// 	&& AnimQueue.AnimationIDs[AnimIndex].UUID.IsValid())
-	// 	OnAnimationStart.ExecuteIfBound(AnimQueue.AnimationIDs[AnimIndex]);
-
-	// BlendAnimations.BlendAnim(AnimSequenceToPlay, BlendDuration, BlendDuration);
-	// BlendAnimations.OnBlendEnded.AddUObject(OnBlendInEnded);
-}
-
 void UAnimSequenceSamplerComponent::OnBlendInEnded()
 {
 }
@@ -408,17 +348,6 @@ void UAnimSequenceSamplerComponent::OnBlendOutEnded()
 
 void UAnimSequenceSamplerComponent::ComputeBlendTime()
 {
-}
-
-void UAnimSequenceSamplerComponent::StopAnimationTOCOPY()
-{
-	if (/*IsValid(BlendAnimations) && */!IsValid(SkeletalMeshComponentToPause)/* || AnimInstanceStatesInfo*/)
-		return;
-
-	if (BlendState == EBlendState::BS_None || BlendState == EBlendState::BS_Out)
-		return;
-
-	ForceBlendOut();
 }
 
 void UAnimSequenceSamplerComponent::ForceBlendOut()

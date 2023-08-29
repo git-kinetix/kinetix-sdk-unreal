@@ -54,6 +54,11 @@ void UKinetixAccount::GetConnectedAccount(FName& OutUserName)
 	OutUserName = *LoggedAccount->GetAccountID();
 }
 
+void UKinetixAccount::DisconnectAccount()
+{
+	AccountManager.Get()->DisconnectAccount();
+}
+
 void UKinetixAccount::UpdatedAccount()
 {
 	OnUpdatedAccount.Broadcast();

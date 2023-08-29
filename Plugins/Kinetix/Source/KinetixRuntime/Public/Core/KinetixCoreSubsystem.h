@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "KinetixUGC.h"
 #include "Data/KinetixDataLibrary.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "KinetixCoreSubsystem.generated.h"
@@ -55,6 +56,8 @@ public:
 	UKinetixMetadata* KinetixMetadata;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UKinetixAccount* KinetixAccount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UKinetixUGC* KinetixUGC;
 	
 private:
 	UPROPERTY()

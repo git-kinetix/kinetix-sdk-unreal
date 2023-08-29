@@ -55,9 +55,6 @@ protected:
 	UFUNCTION()
 	void KinetixStartAnimation(const FAnimationID& AnimationID);
 
-	void StartAnimationTOCOPY();
-	void StopAnimationTOCOPY();
-
 private:
 	void OnBlendInEnded();
 	void OnBlendOutEnded();

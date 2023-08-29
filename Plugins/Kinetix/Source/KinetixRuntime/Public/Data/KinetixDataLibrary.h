@@ -142,8 +142,6 @@ struct FKinetixCoreConfiguration
 {
 	FKinetixCoreConfiguration()
 		: bPlayAutomaticallyAnimationOnAnimInstances(true),
-		  MaxPersistentDataStorageInMB(50),
-		  MaxRAMCacheInMB(50),
 		  bEnableAnalytics(true),
 		  bShowLogs(false),
 		  VirtualWorld(FString())
@@ -154,12 +152,6 @@ struct FKinetixCoreConfiguration
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bPlayAutomaticallyAnimationOnAnimInstances;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int MaxPersistentDataStorageInMB;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int MaxRAMCacheInMB;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bEnableAnalytics;

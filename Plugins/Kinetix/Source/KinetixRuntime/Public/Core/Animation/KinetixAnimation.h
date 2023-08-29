@@ -33,8 +33,6 @@ public:
 	virtual void Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult) override;
 #pragma endregion
 
-	void Initialize(bool bInPlayAutomaticallyOnAnimInstance);
-
 	void SetReferenceSkeletalMesh(USkeletalMesh* InSkeletalMesh);
 
 	/**
@@ -45,21 +43,13 @@ public:
 	void RegisterLocalPlayerAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance);
 
 	/**
-	 * @brief Register the local player AnimInstance with Skeletal setup to play animation on it
-	 * @param InAnimInstance AnimInstance of your local character
-	 * @param InConfig Configuration of the root motion
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void RegisterLocalPlayerAnimInstanceWithRootMotionConfig(UPARAM(ref) UAnimInstance* InAnimInstance, FRootMotionConfig InConfig);
-
-	/**
 	 * @brief Register the local player configuration for custom animation system.
 	 * @param InAnimInstance AnimInstance of your character
 	 * @param InRootTransform Root transform of your character
 	 * @param InExportType The type of file for animations to export
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void RegisterLocalPlayerCustomAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance, FTransform InRootTransform, EExportType InExportType);
+	// UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
+	// void RegisterLocalPlayerCustomAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance, FTransform InRootTransform, EExportType InExportType);
 
 	/**
 	 * @brief Unregister the local player AnimInstance
@@ -102,21 +92,21 @@ public:
 	 * @param OnSuccessDelegate Callback with loading result
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void LoadLocalPlayerAnimations(TArray<FAnimationID> InAnimationIDs, const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
+	void LoadLocalPlayerAnimations(TArray<FAnimationID>& InAnimationIDs, const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
 
 	/**
 	 * @brief Unload a local player animation
 	 * @param InAnimationID ID of the animation to unload
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void UnloadLocalPlayerAnimation(FAnimationID InAnimationID);
+	void UnloadLocalPlayerAnimation(const FAnimationID& InAnimationID);
 
 	/**
 	 * @brief Unload local player animations
 	 * @param AnimationIDs IDs of the animations to unload
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void UnloadLocalPlayerAnimations(TArray<FAnimationID> AnimationIDs);
+	void UnloadLocalPlayerAnimations(TArray<FAnimationID>& AnimationIDs);
 
 	/**
 	 * @brief Check if an animation is available on local player
@@ -124,7 +114,7 @@ public:
 	 * @return True if animation available on local player
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	UPARAM(DisplayName="Available") bool IsAnimationAvailableOnLocalPlayer(FAnimationID InAnimationID);
+	UPARAM(DisplayName="Available") bool IsAnimationAvailableOnLocalPlayer(const FAnimationID& InAnimationID);
 
 	/**
 	 * @brief Getter for the register Kinetix Component

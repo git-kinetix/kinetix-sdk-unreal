@@ -6,25 +6,3 @@
 void UKinetixNetwork::SetConfiguration(FKinetixNetworkConfiguration& InNetworkConfiguration)
 {
 }
-
-// const FKinetixNetworkConfiguration& UKinetixNetwork::GetConfiguration()
-// {
-// 	return NetworkConfiguration;
-// }
-
-UKinetixCharacterComponent* UKinetixNetwork::GetRemoteKCC(FString InRemotePeerID)
-{
-	return nullptr;
-}
-
-void UKinetixNetwork::RegisterRemotePeerAnimInstance(FString InRemotePeerID, UAnimInstance* InAnimInstance)
-{
-}
-
-void UKinetixNetwork::UnregisterRemotePeer(FString InRemotePeer)
-{
-}
-
-void UKinetixNetwork::UnregisterAllRemotePeers()
-{
-}

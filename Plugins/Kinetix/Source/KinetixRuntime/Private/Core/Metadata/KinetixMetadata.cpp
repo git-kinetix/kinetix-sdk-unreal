@@ -70,7 +70,7 @@ void UKinetixMetadata::GetAnimationMetadataByAnimationID(const FAnimationID& InI
 		                                                       }));
 }
 
-void UKinetixMetadata::IsAnimationOwnedByUser(FAnimationID InID, const FOnMetadataOwnershipLoaded& Callback)
+void UKinetixMetadata::IsAnimationOwnedByUser(const FAnimationID& InID, const FOnMetadataOwnershipLoaded& Callback)
 {
 }
 
