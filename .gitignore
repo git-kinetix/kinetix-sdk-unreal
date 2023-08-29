@@ -89,3 +89,5 @@ Source/*
 .vsconfig
 KinetixSDKUnreal.png
 KinetixSDKUnreal.uproject
+ReadyPlayerMe/*
+glTFRuntime/*
