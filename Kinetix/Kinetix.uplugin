@@ -22,7 +22,8 @@
 		},
 		{
 			"Name": "KinetixEditor",
-			"Type": "Editor"
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

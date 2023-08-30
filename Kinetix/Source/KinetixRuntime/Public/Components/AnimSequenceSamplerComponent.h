@@ -11,6 +11,8 @@
 #include "PoseSearch/PoseSearchAssetSampler.h"
 #include "AnimSequenceSamplerComponent.generated.h"
 
+class UKinetixAnimInstance;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent, DisplayName="AnimSequenceSamplerComponent"))
 class UAnimSequenceSamplerComponent
 	: public UActorComponent,
@@ -71,14 +73,16 @@ public:
 	uint64 LastTickFrame;
 
 private:
-	UPROPERTY(VisibleAnywhere, Category="Kinetix")
-	UPoseableMeshComponent* PoseableMeshComp;
 
 	UAnimSequence* AnimSequenceToPlay;
 
 	FAnimationQueue AnimQueue;
 
+	UPROPERTY()
 	USkeletalMeshComponent* SkeletalMeshComponentToPause;
+
+	UPROPERTY()
+	UKinetixAnimInstance* KinetixSkeletalMeshComponentSource;
 
 	UPROPERTY()
 	UKinetixCharacterComponent* KCC;
@@ -89,6 +93,8 @@ private:
 	float TimeBetweenNetUpdates;
 	int AnimIndex;
 	bool bAnimInstanceWasEnabled;
+
+	bool bKinetixSkeletalMeshFound;
 
 	EBlendState BlendState;
 
@@ -112,6 +118,7 @@ private:
 
 	TArray<FTransform> BoneSpaceTransforms;
 	TArray<FName> BoneNames;
+	TArray<FTransform> BoneTransforms;
 
 	FKinetixNetworkedPose CachePose;
 };

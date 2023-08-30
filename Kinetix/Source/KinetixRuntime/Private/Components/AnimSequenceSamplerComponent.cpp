@@ -4,13 +4,13 @@
 
 #include "KinetixRuntimeModule.h"
 #include "Animation/AnimationPoseData.h"
+#include "AnimInstances/KinetixAnimInstance.h"
 #include "Components/KinetixCharacterComponent.h"
 #include "Components/PoseableMeshComponent.h"
 #include "Core/Network/KinetixNetworkedPose.h"
-#include "Kismet/KismetSystemLibrary.h"
 
 UAnimSequenceSamplerComponent::UAnimSequenceSamplerComponent(const FObjectInitializer& ObjectInitializer)
-	: LastTickFrame(0), PoseableMeshComp(nullptr), AnimSequenceToPlay(nullptr),
+	: LastTickFrame(0), AnimSequenceToPlay(nullptr),
 	  SkeletalMeshComponentToPause(nullptr), KCC(nullptr),
 	  Duration(0), Time(0), AnimIndex(0),
 	  bAnimInstanceWasEnabled(false),
@@ -27,7 +27,7 @@ UAnimSequenceSamplerComponent::UAnimSequenceSamplerComponent(const FObjectInitia
 
 // Sets default values for this component's properties
 UAnimSequenceSamplerComponent::UAnimSequenceSamplerComponent(UActorComponent* ActorComponent)
-	: LastTickFrame(0), PoseableMeshComp(nullptr), AnimSequenceToPlay(nullptr),
+	: LastTickFrame(0), AnimSequenceToPlay(nullptr),
 	  SkeletalMeshComponentToPause(nullptr), KCC(nullptr),
 	  Duration(0), Time(0), AnimIndex(0),
 	  bAnimInstanceWasEnabled(false),
@@ -149,7 +149,7 @@ void UAnimSequenceSamplerComponent::Play(FAnimationQueue& InAnimQueue)
 
 void UAnimSequenceSamplerComponent::SetDebugPoesable(UPoseableMeshComponent* InPoseableMeshComponent)
 {
-	PoseableMeshComp = InPoseableMeshComponent;
+	// PoseableMeshComp = InPoseableMeshComponent;
 }
 
 void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
@@ -157,28 +157,55 @@ void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 	if (!IsValid(InActor))
 		return;
 
-	SkeletalMeshComponentToPause =
-		InActor->GetComponentByClass<USkeletalMeshComponent>();
+	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	InActor->GetComponents<USkeletalMeshComponent>(SkeletalMeshComponents);
 
-	if (!ensure(IsValid(SkeletalMeshComponentToPause))) return;
+	// We are supposed to find a skeletal mesh source and its target
+	if (SkeletalMeshComponents.Num() < 1)
+		return;
 
-	SkeletalMeshComponentToPause->GetBoneNames(BoneNames);
-
-	UAnimInstance* AnimInstance = SkeletalMeshComponentToPause->GetAnimInstance();
-	if (!IsValid(AnimInstance))
+	UAnimInstance* AnimInstance = nullptr;
+	for (int i = 0; i < SkeletalMeshComponents.Num(); ++i)
 	{
-		UE_LOG(LogKinetixRuntime, Warning, TEXT("ERROR: No AnimInstance on %s"),
-		       *SkeletalMeshComponentToPause->GetName());
+		AnimInstance = SkeletalMeshComponents[i]->GetAnimInstance();
+		if (!IsValid(AnimInstance))
+			continue;
+
+		KinetixSkeletalMeshComponentSource = Cast<UKinetixAnimInstance>(
+			SkeletalMeshComponents[i]->AnimScriptInstance);
+		if (!IsValid(KinetixSkeletalMeshComponentSource))
+			continue;
+
+		SkeletalMeshComponents[i]->GetBoneNames(BoneNames);
+		BoneTransforms.SetNumZeroed(BoneNames.Num());
+		bKinetixSkeletalMeshFound = true;
+		i = 255;
 	}
 
-	RequiredBones =
-		SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
+	return;
 
-	PoseableMeshComp = InActor->GetComponentByClass<UPoseableMeshComponent>();
-	if (!IsValid(PoseableMeshComp))
-		return;
-	if (GetOwnerRole() == ROLE_AutonomousProxy)
-		PoseableMeshComp->SetHiddenInGame(true, true);
+	// SkeletalMeshComponentToPause =
+	// 	InActor->GetComponentByClass<USkeletalMeshComponent>();
+	//
+	// if (!ensure(IsValid(SkeletalMeshComponentToPause))) return;
+	//
+	// SkeletalMeshComponentToPause->GetBoneNames(BoneNames);
+	//
+	// // UAnimInstance* AnimInstance = SkeletalMeshComponentToPause->GetAnimInstance();
+	// // if (!IsValid(AnimInstance))
+	// // {
+	// // 	UE_LOG(LogKinetixRuntime, Warning, TEXT("ERROR: No AnimInstance on %s"),
+	// // 	       *SkeletalMeshComponentToPause->GetName());
+	// // }
+	//
+	// RequiredBones =
+	// 	SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
+
+	// PoseableMeshComp = InActor->GetComponentByClass<UPoseableMeshComponent>();
+	// if (!IsValid(PoseableMeshComp))
+	// 	return;
+	// if (GetOwnerRole() == ROLE_AutonomousProxy)
+	// 	PoseableMeshComp->SetHiddenInGame(true, true);
 }
 
 void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* InAnimSequence)
@@ -186,14 +213,17 @@ void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* 
 	if (!IsValid(InAnimSequence))
 		return;
 
-	auto CurrentOwner = SkeletalMeshComponentToPause->GetOwner();
-	UKismetSystemLibrary::PrintString(this,
-	                                  FString::Printf(TEXT("%s %s PlayAnimation"),
-	                                                  *UEnum::GetValueAsString(CurrentOwner->GetLocalRole()),
-	                                                  *UEnum::GetValueAsString(CurrentOwner->GetRemoteRole())),
-	                                  true, true,
-	                                  CurrentOwner->HasAuthority() == true ? FLinearColor::Red : FLinearColor::Blue,
-	                                  20.f);
+	if (!IsValid(KinetixSkeletalMeshComponentSource))
+		return;
+
+	// auto CurrentOwner = SkeletalMeshComponentToPause->GetOwner();
+	// UKismetSystemLibrary::PrintString(this,
+	//                                   FString::Printf(TEXT("%s %s PlayAnimation"),
+	//                                                   *UEnum::GetValueAsString(CurrentOwner->GetLocalRole()),
+	//                                                   *UEnum::GetValueAsString(CurrentOwner->GetRemoteRole())),
+	//                                   true, true,
+	//                                   CurrentOwner->HasAuthority() == true ? FLinearColor::Red : FLinearColor::Blue,
+	//                                   20.f);
 
 	// if (IsValid(AnimSequenceToPlay))
 	// 	EnableAnimInstance();
@@ -206,7 +236,7 @@ void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* 
 	// float AnimLength = AnimSequenceToPlay->GetPlayLength();
 
 	RequiredBones =
-		SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
+		KinetixSkeletalMeshComponentSource->GetRequiredBones();
 
 	// CompactPose.ResetToRefPose(RequiredBones);	
 
@@ -235,7 +265,7 @@ void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* 
 	SetComponentTickEnabled(true);
 
 	Time = 0.f;
-	
+
 	// Sampler.ExtractPose(Context, PoseData);
 
 	// if (!IsComponentTickEnabled() || FMath::IsNearlyZero(AnimLength, 0.01f))
@@ -311,7 +341,7 @@ bool UAnimSequenceSamplerComponent::ServerSendFramePose_Validate(FKinetixNetwork
 
 void UAnimSequenceSamplerComponent::ServerSendFramePose_Implementation(FKinetixNetworkedPose NetworkedPose)
 {
-	if (!IsValid(PoseableMeshComp))
+	if (!bKinetixSkeletalMeshFound)
 		return;
 
 	AllDispatchPose(NetworkedPose);
@@ -319,19 +349,25 @@ void UAnimSequenceSamplerComponent::ServerSendFramePose_Implementation(FKinetixN
 
 void UAnimSequenceSamplerComponent::AllDispatchPose_Implementation(FKinetixNetworkedPose NetworkedPose)
 {
-	if (!IsValid(PoseableMeshComp))
+	if (!bKinetixSkeletalMeshFound)
 		return;
 
 	FTransform BoneTransform;
 	FVector TempVector = FVector::ZeroVector;
+
+	TArray<FName> Copy;
 	for (int i = 0; i < BoneNames.Num(); ++i)
 	{
 		TempVector = NetworkedPose.Bones[i].LocalPosition.ToFVector();
-		BoneTransform.SetLocation(TempVector);
-		BoneTransform.SetRotation(NetworkedPose.Bones[i].LocalQuaternion.ToQuat());
-		BoneTransform.SetScale3D(NetworkedPose.Bones[i].LocalScale.ToFVector());
-		PoseableMeshComp->SetBoneTransformByName(BoneNames[i], BoneTransform, EBoneSpaces::ComponentSpace);
+		BoneTransforms[i].SetLocation(TempVector);
+		BoneTransforms[i].SetRotation(NetworkedPose.Bones[i].LocalQuaternion.ToQuat());
+		BoneTransforms[i].SetScale3D(NetworkedPose.Bones[i].LocalScale.ToFVector());
+		// PoseableMeshComp->SetBoneTransformByName(BoneNames[i], BoneTransform, EBoneSpaces::ComponentSpace);
 	}
+
+	KinetixSkeletalMeshComponentSource->NativeSendNetworkedPose();
+	// IKinetixSamplerAnimationInterface::Execute_SendNetworkedPose(
+	// 	KinetixSkeletalMeshComponentSource/*, TEXT("TEST"), BoneTransforms*/);
 }
 
 void UAnimSequenceSamplerComponent::KinetixStartAnimation(const FAnimationID& AnimationID)

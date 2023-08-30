@@ -157,6 +157,12 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 
 	FglTFRuntimeSkeletalAnimationConfig SkeletalAnimConfig;
 	USkeletalMesh* RefSkeletalMesh = GetReferenceSkeleton();
+	if (!IsValid(RefSkeletalMesh))
+	{
+		UE_LOG(LogKinetixAnimation, Warning,
+		       TEXT("[FAccount] AnimationRequestComplete(): RefSekeletalMesh is null !"));
+		return;
+	}
 
 	UAnimSequence* AnimSequence = GlTFAsset->LoadSkeletalAnimation(RefSkeletalMesh, 0,
 	                                                               SkeletalAnimConfig);
@@ -164,10 +170,10 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 	if (!IsValid(AnimSequence))
 	{
 		UE_LOG(LogKinetixAnimation, Warning,
-		       TEXT("[FAccount] AnimationRequestComplete(): AnimSequence is null !"));
+			   TEXT("[FAccount] AnimationRequestComplete(): AnimSequence is null !"));
 		return;
 	}
-
+	
 	FKinetixEmote* Emote = GetEmote(InAnimationMetadata.Id);
 	if (Emote != nullptr)
 	{

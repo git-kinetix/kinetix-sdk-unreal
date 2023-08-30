@@ -304,16 +304,17 @@ bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDel
 	FAssetRegistryModule& AssetRegistryModule =
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
+	// /Script/Engine.Skeleton'/ReadyPlayerMe/Character/Fullbody/Mesh/RPM_Mixamo_Skeleton.RPM_Mixamo_Skeleton'
 	// Normalize path D:/Kinetix/kinetix-sdk-unreal/Plugins/ReadyPlayerMe/Content/Character/Fullbody/Mesh/RPM_Mixamo_SkeletalMesh.uasset
-	FString GeneralPath = IPluginManager::Get().FindPlugin(TEXT("ReadyPlayerMe"))->GetContentDir() + TEXT(
+	FString GeneralPath = IPluginManager::Get().FindPlugin(TEXT("Kinetix"))->GetContentDir() + TEXT(
 		"/Character/Fullbody/Mesh");
 	GeneralPath = FPaths::CreateStandardFilename(GeneralPath);
 	// GeneralPath = FPaths::GetPath(GeneralPath);
 
 	// Format package path
 	FString SkeletalMeshPackagePath = GeneralPath;
-	RemoveContentFromPluginPath(SkeletalMeshPackagePath, TEXT("/ReadyPlayerMe"));
 	FPaths::MakePathRelativeTo(SkeletalMeshPackagePath, *FPaths::ProjectPluginsDir());
+	RemoveContentFromPluginPath(SkeletalMeshPackagePath, TEXT("Kinetix"));
 	SkeletalMeshPackagePath = FString::Printf(TEXT("/%s"), *SkeletalMeshPackagePath);
 
 	FARFilter Filter;
