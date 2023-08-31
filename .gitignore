@@ -85,3 +85,5 @@ Executables/*
 */Binaries/*
 ReadyPlayerMe/*
 glTFRuntime/*
+glTFRuntime/
+rpm-unreal-sdk/
