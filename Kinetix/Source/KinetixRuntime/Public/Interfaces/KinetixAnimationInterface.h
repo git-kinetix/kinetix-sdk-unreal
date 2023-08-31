@@ -26,4 +26,6 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category="Kinetix|Animation")
 	void SetKinetixAnimationPlaying(bool bInEmoteMode);
 	
+	UFUNCTION(BlueprintNativeEvent, Category="Kinetix|Animation")
+	bool IsKinetixAnimationPlaying();
 };

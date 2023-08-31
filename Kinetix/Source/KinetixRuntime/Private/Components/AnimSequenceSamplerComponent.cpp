@@ -62,6 +62,8 @@ void UAnimSequenceSamplerComponent::BeginPlay()
 
 	KCC->RegisterSampler(this);
 
+	AnimInstanceToNotify = KCC->GetAnimInstanceToNotify();
+
 	SetContext(CurrentOwner);
 }
 
@@ -303,6 +305,8 @@ void UAnimSequenceSamplerComponent::StopAnimation_Implementation()
 	AnimSequenceToPlay = nullptr;
 	Time = 0.f;
 
+	ServerSendStopAnimation();
+
 	// if (BlendState == EBlendState::BS_None || BlendState == EBlendState::BS_Out)
 	// 	return;
 	//
@@ -365,13 +369,36 @@ void UAnimSequenceSamplerComponent::AllDispatchPose_Implementation(FKinetixNetwo
 		// PoseableMeshComp->SetBoneTransformByName(BoneNames[i], BoneTransform, EBoneSpaces::ComponentSpace);
 	}
 
-	KinetixSkeletalMeshComponentSource->NativeSendNetworkedPose();
+	KinetixSkeletalMeshComponentSource->NativeSendNetworkedPose(BoneNames, BoneTransforms);
 	// IKinetixSamplerAnimationInterface::Execute_SendNetworkedPose(
 	// 	KinetixSkeletalMeshComponentSource/*, TEXT("TEST"), BoneTransforms*/);
+	if (!IsValid(AnimInstanceToNotify.GetObject()))
+		return;
+
+	if (AnimInstanceToNotify->Execute_IsKinetixAnimationPlaying(AnimInstanceToNotify.GetObject()))
+		return;
+
+	AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(
+		AnimInstanceToNotify.GetObject(), true);
 }
 
 void UAnimSequenceSamplerComponent::KinetixStartAnimation(const FAnimationID& AnimationID)
 {
+}
+
+void UAnimSequenceSamplerComponent::ServerSendStopAnimation_Implementation()
+{
+	AllSendStopAnimation();
+}
+
+void UAnimSequenceSamplerComponent::AllSendStopAnimation_Implementation()
+{
+	KinetixSkeletalMeshComponentSource->NativeSetNetworkMode(false);
+
+	if (!IsValid(AnimInstanceToNotify.GetObject()))
+		return;
+	AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(
+		AnimInstanceToNotify.GetObject(), false);
 }
 
 void UAnimSequenceSamplerComponent::OnBlendInEnded()

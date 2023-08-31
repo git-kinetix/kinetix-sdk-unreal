@@ -61,6 +61,11 @@ void UKinetixCharacterComponent::RegisterSampler(IKinetixSamplerInterface* InAni
 	AnimSampler = InAnimSequenceSamplerComponent;
 }
 
+TScriptInterface<IKinetixAnimationInterface> UKinetixCharacterComponent::GetAnimInstanceToNotify() const
+{
+	return AnimInstanceToNotify;
+}
+
 // Called when the game starts
 void UKinetixCharacterComponent::BeginPlay()
 {
@@ -167,10 +172,10 @@ void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
 
 	OnOwnerAnimationInitialized();
 
-	if (GetOwnerRole() != ROLE_AutonomousProxy && GetNetMode() != NM_Standalone)
-	{
-		OwnerSkeletalMeshComponent->SetHiddenInGame(true, true);
-	}
+	// if (GetOwnerRole() != ROLE_AutonomousProxy && GetNetMode() != NM_Standalone)
+	// {
+	// 	OwnerSkeletalMeshComponent->SetHiddenInGame(true, true);
+	// }
 
 	CheckAnimInstanceToNotify(CurrentOwner);
 }

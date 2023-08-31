@@ -43,6 +43,8 @@ public:
 
 	void RegisterSampler(IKinetixSamplerInterface* AnimSequenceSamplerComponent);
 
+	TScriptInterface<IKinetixAnimationInterface> GetAnimInstanceToNotify() const;
+	
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

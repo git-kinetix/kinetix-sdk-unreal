@@ -53,9 +53,15 @@ protected:
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void AllDispatchPose(FKinetixNetworkedPose NetworkedPose);
-	
+
 	UFUNCTION()
 	void KinetixStartAnimation(const FAnimationID& AnimationID);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSendStopAnimation();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void AllSendStopAnimation();
 
 private:
 	void OnBlendInEnded();
@@ -121,4 +127,6 @@ private:
 	TArray<FTransform> BoneTransforms;
 
 	FKinetixNetworkedPose CachePose;
+	
+	TScriptInterface<IKinetixAnimationInterface> AnimInstanceToNotify;
 };
