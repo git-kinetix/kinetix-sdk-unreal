@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "KinetixUGC.h"
+#include "Core/UGC/KinetixUGC.h"
 #include "Data/KinetixDataLibrary.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "KinetixCoreSubsystem.generated.h"

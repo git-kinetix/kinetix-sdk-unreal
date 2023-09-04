@@ -27,7 +27,7 @@ UKinetixCharacterComponent::UKinetixCharacterComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
 
-	bRegisterPlayerOnLaunch = false;
+	// bRegisterPlayerOnLaunch = false;
 
 	SetIsReplicatedByDefault(true);
 	

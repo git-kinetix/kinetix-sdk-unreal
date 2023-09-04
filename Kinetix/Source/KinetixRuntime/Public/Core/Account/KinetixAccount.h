@@ -23,7 +23,6 @@ class KINETIXRUNTIME_API UKinetixAccount
 	GENERATED_BODY()
 
 public:
-	
 	UKinetixAccount();
 	// Needed to be able to use TUniquePtr<> with forward declared classes
 	UKinetixAccount(FVTableHelper& Helper);
@@ -35,18 +34,17 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
 	void ConnectAccount(const FString& InUserID);
-		
+
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
 	void AssociateEmoteToUser(const FAnimationID& InAnimationID);
 
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
 	void GetConnectedAccount(FName& OutUserName);
-	
+
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
 	void DisconnectAccount();
 
 private:
-
 	UFUNCTION()
 	void UpdatedAccount();
 
@@ -57,18 +55,13 @@ private:
 	void AssociatedEmote(const FString& Response);
 
 public:
-
 	UPROPERTY(BlueprintAssignable)
 	FOnUpdatedAccount OnUpdatedAccount;
-	
+
 	UPROPERTY(BlueprintAssignable)
 	FOnAccountConnected OnConnectedAccount;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnEmoteAssociated OnEmoteAssociated;
-
-public:
-
-	TUniquePtr<FAccountManager> AccountManager;
 
 };

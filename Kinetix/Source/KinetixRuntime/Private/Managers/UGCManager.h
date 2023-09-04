@@ -8,17 +8,31 @@
 /**
  * 
  */
-class KINETIXRUNTIME_API FUGCManager
+class FUGCManager
 {
 public:
-	
 	FUGCManager();
 	~FUGCManager();
 
-	static FUGCManager& Get();
-	
-private:
+	void StartPollingUGC();
 
+	void StartPollingForNewUGCToken();
+
+	void GetUgcUrl(const TDelegate<void(FString)>& UrlFetchedCallback);
+
+	bool IsUGCAvailable();
+
+	static FUGCManager& Get()
+	{
+		if (!Instance.IsValid())
+		{
+			Instance = MakeUnique<FUGCManager>();
+		}
+		return *Instance;
+	}
+
+private:
+	
 	static TUniquePtr<FUGCManager> Instance;
 
 };

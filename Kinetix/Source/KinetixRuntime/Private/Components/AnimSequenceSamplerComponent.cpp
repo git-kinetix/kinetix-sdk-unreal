@@ -172,7 +172,7 @@ void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 		AnimInstance = SkeletalMeshComponents[i]->GetAnimInstance();
 		if (!IsValid(AnimInstance))
 			continue;
-
+		
 		KinetixSkeletalMeshComponentSource = Cast<UKinetixAnimInstance>(
 			SkeletalMeshComponents[i]->AnimScriptInstance);
 		if (!IsValid(KinetixSkeletalMeshComponentSource))

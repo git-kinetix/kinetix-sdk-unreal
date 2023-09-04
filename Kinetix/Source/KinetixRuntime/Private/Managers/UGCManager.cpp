@@ -2,8 +2,9 @@
 
 #include "Managers/UGCManager.h"
 
-// Otherwise there is no exports of static symbols
-TUniquePtr<FUGCManager> FUGCManager::Instance(nullptr);
+#include "AccountManager.h"
+
+TUniquePtr<FUGCManager> FUGCManager::Instance = nullptr;
 
 FUGCManager::FUGCManager()
 {
@@ -11,14 +12,27 @@ FUGCManager::FUGCManager()
 
 FUGCManager::~FUGCManager()
 {
-	Instance = nullptr;
 }
 
-FUGCManager& FUGCManager::Get()
+void FUGCManager::StartPollingUGC()
 {
-	if (!Instance.IsValid())
-	{
-		Instance = MakeUnique<FUGCManager>();
-	}
-	return *Instance;
+	FAccount* ConnectedAccount =
+		FAccountManager::Get().GetConnectedAccount();
+
+	if (ConnectedAccount == nullptr)
+		return;
+
+}
+
+void FUGCManager::StartPollingForNewUGCToken()
+{
+}
+
+void FUGCManager::GetUgcUrl(const TDelegate<void(FString)>& UrlFetchedCallback)
+{
+}
+
+bool FUGCManager::IsUGCAvailable()
+{
+	return false;
 }
