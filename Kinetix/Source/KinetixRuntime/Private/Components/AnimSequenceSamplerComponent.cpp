@@ -348,6 +348,8 @@ void UAnimSequenceSamplerComponent::ServerSendFramePose_Implementation(FKinetixN
 	if (!bKinetixSkeletalMeshFound)
 		return;
 
+	OnServerReceivedPose.Broadcast(NetworkedPose, this);
+	
 	AllDispatchPose(NetworkedPose);
 }
 

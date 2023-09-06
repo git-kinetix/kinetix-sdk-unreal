@@ -21,6 +21,11 @@ struct FShortVector
 	FShortVector& operator=(const FVector& Other);
 
 	FVector ToFVector() const;
+
+	FShortVector()
+	{
+		X = Y = Z = 0;
+	}
 };
 
 USTRUCT()
@@ -40,6 +45,11 @@ struct FShortQuat
 	FShortQuat& operator=(const FQuat& Other);
 
 	FQuat ToQuat() const;
+
+	FShortQuat()
+	{
+		X = Y = Z = W = 0;
+	}
 };
 
 USTRUCT()
@@ -105,7 +115,7 @@ struct FCompressedBonePoseInfo
 	
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FKinetixNetworkedPose
 {
 	GENERATED_BODY()
@@ -131,6 +141,15 @@ struct FKinetixNetworkedPose
 	UPROPERTY()
 	TArray<FCompressedBonePoseInfo> Bones; 
 
+	FKinetixNetworkedPose()
+	{
+		Guid.Invalidate();
+		TimeStamp = 0.f;
+		bPosEnabled = true;
+		bScaleEnabled = false;
+		bHasBlendshapes = false;
+		bHasArmature = true;
+	}
 	// bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
 };
 

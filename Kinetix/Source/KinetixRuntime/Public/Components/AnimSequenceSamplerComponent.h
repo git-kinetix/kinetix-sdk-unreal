@@ -13,6 +13,8 @@
 
 class UKinetixAnimInstance;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnServerReceivedPose, const FKinetixNetworkedPose&, ReceivedNetworkedPose, UAnimSequenceSamplerComponent*, From);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent, DisplayName="AnimSequenceSamplerComponent"))
 class UAnimSequenceSamplerComponent
 	: public UActorComponent,
@@ -51,7 +53,7 @@ protected:
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void ServerSendFramePose(FKinetixNetworkedPose NetworkedPose);
 
-	UFUNCTION(NetMulticast, Unreliable)
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
 	void AllDispatchPose(FKinetixNetworkedPose NetworkedPose);
 
 	UFUNCTION()
@@ -78,6 +80,9 @@ public:
 
 	uint64 LastTickFrame;
 
+	UPROPERTY(BlueprintAssignable)
+	FOnServerReceivedPose OnServerReceivedPose;
+	
 private:
 
 	UAnimSequence* AnimSequenceToPlay;

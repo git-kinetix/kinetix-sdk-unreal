@@ -192,6 +192,18 @@ struct FAnimationQueue
 	}
 };
 
+USTRUCT(BlueprintType)
+struct FPlayerAnimSequenceMap
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	class UAnimSequenceSamplerComponent* PlayerAnimSequenceSampler;
+
+	UPROPERTY(BlueprintReadWrite)
+	TArray<UAnimSequenceSamplerComponent*> FakeAnimSequenceSampler;
+};
+
 #pragma region Delagates
 
 #pragma region Animation
