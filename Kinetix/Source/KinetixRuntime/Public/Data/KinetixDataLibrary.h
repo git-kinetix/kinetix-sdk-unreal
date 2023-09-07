@@ -150,7 +150,7 @@ struct FKinetixCoreConfiguration
 
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY()
 	bool bPlayAutomaticallyAnimationOnAnimInstances;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
