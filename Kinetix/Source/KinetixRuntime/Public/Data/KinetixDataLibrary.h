@@ -162,7 +162,7 @@ struct FKinetixCoreConfiguration
 	// TODO: Implement network structure
 	// FKinetixNetworkConfiguration NetworkConfiguration
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(DisplayName="Game API Key"))
 	FString VirtualWorld;
 };
 

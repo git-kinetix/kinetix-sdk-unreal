@@ -5,9 +5,7 @@
 #include "Core/Account/KinetixAccount.h"
 
 UKinetixUGC::UKinetixUGC()
-{
-	
-}
+{}
 
 UKinetixUGC::UKinetixUGC(FVTableHelper& Helper)
 {}
@@ -22,12 +20,10 @@ void UKinetixUGC::Initialize_Implementation(const FKinetixCoreConfiguration& Cor
 	bResult = true;
 }
 
-
 bool UKinetixUGC::IsUGCAvailable() const
 {
 	return FUGCManager::Get().IsUGCAvailable();
 }
-
 
 void UKinetixUGC::StartPollingForUGC() const
 {

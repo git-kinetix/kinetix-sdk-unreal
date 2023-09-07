@@ -35,6 +35,8 @@ public:
 	void RegisterOrCallMetadatasAvailable(
 		const FOnMetadatasAvailable& OnMetadatasAvailable);
 
+	const TSet<FKinetixEmote*> GetEmotes() const;
+	
 protected:
 	
 	void AnimationRequestComplete(

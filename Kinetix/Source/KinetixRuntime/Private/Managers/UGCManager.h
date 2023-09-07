@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
 #include "Templates/UniquePtr.h"
 
 /**
@@ -21,6 +23,8 @@ public:
 	void GetUgcUrl(const TDelegate<void(FString)>& UrlFetchedCallback);
 
 	bool IsUGCAvailable();
+
+	void OnPollingResponse(TSharedPtr<IHttpRequest> Shared, TSharedPtr<IHttpResponse> SharedPtr, bool bArg);
 
 	static FUGCManager& Get()
 	{
