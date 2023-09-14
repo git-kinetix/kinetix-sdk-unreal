@@ -10,7 +10,6 @@
 
 // For the logs
 #include "KinetixRuntimeModule.h"
-#include "Components/AnimSequenceSamplerComponent.h"
 #include "Core/KinetixCoreSubsystem.h"
 #include "Core/Animation/KinetixAnimation.h"
 #include "Core/Metadata/KinetixMetadata.h"
