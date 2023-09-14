@@ -16,7 +16,7 @@ class UKinetixAnimInstance;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnServerReceivedPose, const FKinetixNetworkedPose&, ReceivedNetworkedPose, UAnimSequenceSamplerComponent*, From);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent, DisplayName="AnimSequenceSamplerComponent"))
-class UAnimSequenceSamplerComponent
+class KINETIXRUNTIME_API UAnimSequenceSamplerComponent
 	: public UActorComponent,
 	  public IKinetixSamplerInterface
 {
