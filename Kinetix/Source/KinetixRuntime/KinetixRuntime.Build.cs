@@ -25,7 +25,7 @@ public class KinetixRuntime : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
+				"Core",
 				"glTFRuntime",
 				"PoseSearch"
 				// ... add other public dependencies that you statically link with here ...
