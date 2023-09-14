@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "KinetixCharacterComponent.h"
-#include "Components/PoseableMeshComponent.h"
 #include "Core/Network/KinetixNetworkedPose.h"
 #include "Data/KinetixDataLibrary.h"
 #include "Interfaces/KinetixSamplerInterface.h"
