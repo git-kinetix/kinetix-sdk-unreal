@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Core/Account/Account.h"
 #include "Data/KinetixDataLibrary.h"
+#include "Templates/UniquePtr.h"
 #include "Tasks/Pipe.h"
 
 class IHttpRequest;
@@ -15,8 +16,11 @@ class IHttpResponse;
 class FAccountManager
 {
 public:
-	FAccountManager(const FString& InVirtualWorld);
+	FAccountManager();
 	~FAccountManager();
+
+	void SetVirtualWorldID(const FString& InVirtualWorldID);
+
 	void FinishAccountConnection();
 
 	bool ConnectAccount(const FString& InUserID);
@@ -38,7 +42,7 @@ public:
 	                                     const TDelegate<void()>& OnFailure);
 
 	FAccount* GetConnectedAccount() const;
-	
+
 	DECLARE_MULTICAST_DELEGATE(FOnUpdatedAccount);
 	FOnUpdatedAccount& OnUpdatedAccount() { return OnUpdatedAccountDelegate; }
 
@@ -47,6 +51,8 @@ public:
 
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnAssociatedEmote, const FString&);
 	FOnAssociatedEmote& OnAssociatedEmote() { return OnAssociatedEmoteDelegate; }
+
+	static FAccountManager& Get();
 
 private:
 	bool AccountExists(const FString& InUserID);
@@ -59,13 +65,16 @@ private:
 	void OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
 	                       TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> HttpResponse,
 	                       bool bConnectedSuccessfully);
-	
+
 	void OnGetEmotesToVirtualWorldResponse(
 		TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request,
 		TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
 		bool bSuccess);
 
 private:
+	
+	static TUniquePtr<FAccountManager> Instance;
+
 	FString VirtualWorldID;
 
 	// Cache the currently trying to connect ID
@@ -79,7 +88,7 @@ private:
 
 	UE::Tasks::FPipe AssignEmotePipe;
 	TUniquePtr<UE::Tasks::FTaskEvent> AssociateEmoteEvent;
-	
+
 	FOnUpdatedAccount OnUpdatedAccountDelegate;
 	FOnConnectedAccount OnConnectedAccountDelegate;
 	FOnAssociatedEmote OnAssociatedEmoteDelegate;

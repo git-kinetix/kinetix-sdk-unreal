@@ -4,7 +4,7 @@
 #include "KinetixDeveloperSettings.h"
 
 UKinetixDeveloperSettings::UKinetixDeveloperSettings()
-	: bLoadAtStartup(true)
+	: bLoadAtStartup(false)
 {
 	SectionName = TEXT("Kinetix Section");
 }

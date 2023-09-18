@@ -151,7 +151,7 @@ struct FKinetixCoreConfiguration
 
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY()
 	bool bPlayAutomaticallyAnimationOnAnimInstances;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -163,7 +163,7 @@ struct FKinetixCoreConfiguration
 	// TODO: Implement network structure
 	// FKinetixNetworkConfiguration NetworkConfiguration
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(DisplayName="Game API Key"))
 	FString VirtualWorld;
 };
 
@@ -191,6 +191,18 @@ struct FAnimationQueue
 		AnimationIDs = InAnimationIDs;
 		AnimationSequences.SetNumZeroed(AnimationIDs.Num());
 	}
+};
+
+USTRUCT(BlueprintType)
+struct FPlayerAnimSequenceMap
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite)
+	class UAnimSequenceSamplerComponent* PlayerAnimSequenceSampler;
+
+	UPROPERTY(BlueprintReadWrite)
+	TArray<UAnimSequenceSamplerComponent*> FakeAnimSequenceSampler;
 };
 
 #pragma region Delagates

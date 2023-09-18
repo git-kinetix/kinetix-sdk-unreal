@@ -94,8 +94,8 @@ private:
 	UPROPERTY(VisibleAnywhere, meta=(DisplayName = "Skeletal Mesh in use"))
 	USkeletalMeshComponent* OwnerSkeletalMeshComponent;
 
-	UPROPERTY(EditAnywhere, Category="Kinetix|Animation", meta=(AllowPrivateAccess="true"))
-	bool bRegisterPlayerOnLaunch;
+	// UPROPERTY(EditAnywhere, Category="Kinetix|Animation", meta=(AllowPrivateAccess="true"))
+	// bool bRegisterPlayerOnLaunch;
 
 	FTimerHandle CheckSkeletalMeshTimer;
 

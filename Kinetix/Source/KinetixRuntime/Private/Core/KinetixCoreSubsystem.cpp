@@ -5,7 +5,6 @@
 
 #include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
-#include "Core/KinetixUGC.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Core/Animation/KinetixAnimation.h"
 #include "Core/Metadata/KinetixMetadata.h"

@@ -4,13 +4,16 @@
 
 #include "HttpModule.h"
 #include "JsonObjectConverter.h"
+#include "UGCManager.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Tasks/Pipe.h"
 #include "Tasks/Task.h"
 
-FAccountManager::FAccountManager(const FString& InVirtualWorld)
-	: VirtualWorldID(InVirtualWorld), LoggedAccount(nullptr), AssignEmotePipe(TEXT("AssignEmotePipe"))
+TUniquePtr<FAccountManager> FAccountManager::Instance = nullptr;
+
+FAccountManager::FAccountManager()
+	: LoggedAccount(nullptr), AssignEmotePipe(TEXT("AssignEmotePipe"))
 {
 	check(!AssociateEmoteEvent.IsValid());
 	AssociateEmoteEvent = MakeUnique<UE::Tasks::FTaskEvent>(UE_SOURCE_LOCATION);
@@ -23,6 +26,13 @@ FAccountManager::~FAccountManager()
 
 	AssociateEmoteEvent->Trigger();
 	AssociateEmoteEvent = nullptr;
+
+	Instance = nullptr;
+}
+
+void FAccountManager::SetVirtualWorldID(const FString& InVirtualWorldID)
+{
+	VirtualWorldID = InVirtualWorldID;
 }
 
 bool FAccountManager::ConnectAccount(const FString& InUserID)
@@ -268,6 +278,18 @@ bool FAccountManager::TryCreateAccount(const FString& InUserID)
 
 	UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] TryCreateAccount: %s"), *InUserID);
 	return false;
+}
+
+FAccountManager& FAccountManager::Get()
+{
+	{
+		if (!Instance.IsValid())
+		{
+			Instance = MakeUnique<FAccountManager>();
+		}
+		return *Instance;
+	}
+
 }
 
 bool FAccountManager::AccountExists(const FString& InUserID)

@@ -186,6 +186,11 @@ void FAccount::RegisterOrCallMetadatasAvailable(const FOnMetadatasAvailable& OnM
 	OnMetadatasAvailable.ExecuteIfBound(true, Metadatas.Array());
 }
 
+const TSet<FKinetixEmote*> FAccount::GetEmotes() const
+{
+	return Emotes;
+}
+
 void FAccount::CallMetadatasAvailableDelegates()
 {
 	for (int i = 0; i < OnMetadatasAvailableDelegates.Num(); ++i)

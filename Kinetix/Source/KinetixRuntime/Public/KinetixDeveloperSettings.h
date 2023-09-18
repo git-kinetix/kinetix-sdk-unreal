@@ -24,7 +24,7 @@ public:
 
 public:
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", meta = (DisplayName="Load At Startup"))
+	UPROPERTY(Config, BlueprintReadOnly, Category = "General", meta = (DisplayName="Load At Startup"))
 	bool bLoadAtStartup;
 	
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", meta = (DisplayName="Core Configuration"))

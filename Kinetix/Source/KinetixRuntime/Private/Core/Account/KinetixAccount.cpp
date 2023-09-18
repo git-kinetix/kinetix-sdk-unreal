@@ -16,15 +16,14 @@ UKinetixAccount::UKinetixAccount(FVTableHelper& Helper)
 
 UKinetixAccount::~UKinetixAccount()
 {
-	AccountManager = nullptr;
 }
 
 void UKinetixAccount::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)
 {
-	AccountManager = MakeUnique<FAccountManager>(CoreConfiguration.VirtualWorld);
-	AccountManager.Get()->OnConnectedAccount().AddUObject(this, &UKinetixAccount::ConnectedAccount);
-	AccountManager.Get()->OnUpdatedAccount().AddUObject(this, &UKinetixAccount::UpdatedAccount);
-	AccountManager.Get()->OnAssociatedEmote().AddUObject(this, &UKinetixAccount::AssociatedEmote);
+	FAccountManager::Get().SetVirtualWorldID(CoreConfiguration.VirtualWorld);
+	FAccountManager::Get().OnConnectedAccount().AddUObject(this, &UKinetixAccount::ConnectedAccount);
+	FAccountManager::Get().OnUpdatedAccount().AddUObject(this, &UKinetixAccount::UpdatedAccount);
+	FAccountManager::Get().OnAssociatedEmote().AddUObject(this, &UKinetixAccount::AssociatedEmote);
 
 	bResult = true;
 }
@@ -37,17 +36,17 @@ void UKinetixAccount::ConnectAccount(const FString& InUserID)
 		return ;
 	}
 
-	AccountManager.Get()->ConnectAccount(InUserID);
+	FAccountManager::Get().ConnectAccount(InUserID);
 }
 
 void UKinetixAccount::AssociateEmoteToUser(const FAnimationID& InAnimationID)
 {
-	AccountManager.Get()->AssociateEmoteToUser(InAnimationID);
+	FAccountManager::Get().AssociateEmoteToUser(InAnimationID);
 }
 
 void UKinetixAccount::GetConnectedAccount(FName& OutUserName)
 {
-	FAccount* LoggedAccount = AccountManager.Get()->GetConnectedAccount();
+	FAccount* LoggedAccount = FAccountManager::Get().GetConnectedAccount();
 	if (LoggedAccount == nullptr)
 		return;
 
@@ -56,7 +55,7 @@ void UKinetixAccount::GetConnectedAccount(FName& OutUserName)
 
 void UKinetixAccount::DisconnectAccount()
 {
-	AccountManager.Get()->DisconnectAccount();
+	FAccountManager::Get().DisconnectAccount();
 }
 
 void UKinetixAccount::UpdatedAccount()

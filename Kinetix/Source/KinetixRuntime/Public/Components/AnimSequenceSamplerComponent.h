@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "KinetixCharacterComponent.h"
-#include "Components/PoseableMeshComponent.h"
 #include "Core/Network/KinetixNetworkedPose.h"
 #include "Data/KinetixDataLibrary.h"
 #include "Interfaces/KinetixSamplerInterface.h"
@@ -13,8 +12,10 @@
 
 class UKinetixAnimInstance;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnServerReceivedPose, const FKinetixNetworkedPose&, ReceivedNetworkedPose, UAnimSequenceSamplerComponent*, From);
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent, DisplayName="AnimSequenceSamplerComponent"))
-class UAnimSequenceSamplerComponent
+class KINETIXRUNTIME_API UAnimSequenceSamplerComponent
 	: public UActorComponent,
 	  public IKinetixSamplerInterface
 {
@@ -51,7 +52,7 @@ protected:
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void ServerSendFramePose(FKinetixNetworkedPose NetworkedPose);
 
-	UFUNCTION(NetMulticast, Unreliable)
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
 	void AllDispatchPose(FKinetixNetworkedPose NetworkedPose);
 
 	UFUNCTION()
@@ -78,6 +79,9 @@ public:
 
 	uint64 LastTickFrame;
 
+	UPROPERTY(BlueprintAssignable)
+	FOnServerReceivedPose OnServerReceivedPose;
+	
 private:
 
 	UAnimSequence* AnimSequenceToPlay;

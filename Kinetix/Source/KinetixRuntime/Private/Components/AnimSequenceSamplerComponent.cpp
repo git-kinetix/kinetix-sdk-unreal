@@ -172,7 +172,7 @@ void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 		AnimInstance = SkeletalMeshComponents[i]->GetAnimInstance();
 		if (!IsValid(AnimInstance))
 			continue;
-
+		
 		KinetixSkeletalMeshComponentSource = Cast<UKinetixAnimInstance>(
 			SkeletalMeshComponents[i]->AnimScriptInstance);
 		if (!IsValid(KinetixSkeletalMeshComponentSource))
@@ -348,6 +348,8 @@ void UAnimSequenceSamplerComponent::ServerSendFramePose_Implementation(FKinetixN
 	if (!bKinetixSkeletalMeshFound)
 		return;
 
+	OnServerReceivedPose.Broadcast(NetworkedPose, this);
+	
 	AllDispatchPose(NetworkedPose);
 }
 

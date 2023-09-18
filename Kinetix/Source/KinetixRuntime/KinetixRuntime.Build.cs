@@ -25,7 +25,9 @@ public class KinetixRuntime : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
+				"Core",
+				"glTFRuntime",
+				"PoseSearch"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -39,16 +41,13 @@ public class KinetixRuntime : ModuleRules
 				"Slate",
 				"SlateCore",
 				"EnhancedInput",
-				"glTFRuntime",
 				"Projects",
 				"HTTP",
 				"Json",
 				"JsonUtilities",
 				"JsonBlueprintUtilities",
 				"DeveloperSettings",
-				"PoseSearch",
-				"RenderCore",
-				"AnimGraph"
+				"RenderCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
