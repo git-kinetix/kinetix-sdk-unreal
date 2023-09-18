@@ -19,7 +19,8 @@ static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define SDKAPIEmoteUrl TEXT("/v1/emotes/%s")
 #define SDKAPIVirtualWorldEmoteUrl TEXT("/v1/virtual-world/emotes")
 #define KINETIXSLOTNAME TEXT("KinetixSlot")
-
+#define KINETIXUGCURL TEXT("/v1/process/token?userId=%s")
+#define KINETIXUGCTOKEN TEXT("/v1/process/token/%s")
 UENUM(Category="Kinetix|Animation")
 enum class EOwnership : uint8
 {
