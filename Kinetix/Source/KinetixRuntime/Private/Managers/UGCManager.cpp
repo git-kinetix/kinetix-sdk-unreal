@@ -2,18 +2,15 @@
 
 #include "Managers/UGCManager.h"
 
-<<<<<<< Updated upstream
-// Otherwise there is no exports of static symbols
-TUniquePtr<FUGCManager> FUGCManager::Instance(nullptr);
-=======
 #include "AccountManager.h"
 #include "EmoteManager.h"
 #include "HttpModule.h"
 #include "KinetixDeveloperSettings.h"
 #include "Core/UGC/KinetixUGC.h"
+#include "Interfaces/IHttpResponse.h"
 
-TUniquePtr<FUGCManager> FUGCManager::Instance = nullptr;
->>>>>>> Stashed changes
+// Otherwise there is no exports of static symbols
+TUniquePtr<FUGCManager> FUGCManager::Instance(nullptr);
 
 FUGCManager::FUGCManager()
 {
@@ -29,15 +26,6 @@ FUGCManager::~FUGCManager()
 	Instance = nullptr;
 }
 
-<<<<<<< Updated upstream
-FUGCManager& FUGCManager::Get()
-{
-	if (!Instance.IsValid())
-	{
-		Instance = MakeUnique<FUGCManager>();
-	}
-	return *Instance;
-=======
 void FUGCManager::StartPollingUGC()
 {
 	FAccount* ConnectedAccount =
@@ -274,5 +262,4 @@ void FUGCManager::OnUGCTokenResponse(TSharedPtr<IHttpRequest> Request, TSharedPt
 		TokenUUID.Empty();
 		UgcUrl.Empty();
 	}
->>>>>>> Stashed changes
 }

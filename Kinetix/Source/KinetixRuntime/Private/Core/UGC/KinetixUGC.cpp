@@ -9,15 +9,6 @@
 
 DEFINE_LOG_CATEGORY(LogKinetixUGC);
 
-UKinetixUGC::UKinetixUGC()
-{}
-
-UKinetixUGC::UKinetixUGC(FVTableHelper& Helper)
-{}
-
-UKinetixUGC::~UKinetixUGC()
-{}
-
 void UKinetixUGC::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)
 {
 	IKinetixSubcoreInterface::Initialize_Implementation(CoreConfiguration, bResult);

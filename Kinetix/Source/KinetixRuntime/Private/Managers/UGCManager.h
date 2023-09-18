@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Interfaces/IHttpRequest.h"
 #include "Templates/UniquePtr.h"
 
 /**
@@ -15,9 +16,6 @@ public:
 	FUGCManager();
 	~FUGCManager();
 
-<<<<<<< Updated upstream
-	static FUGCManager& Get();
-=======
 	void StartPollingUGC();
 
 	void StartPollingForNewUGCToken();
@@ -42,15 +40,9 @@ public:
 	}
 
 private:
->>>>>>> Stashed changes
 	
-private:
-
 	static TUniquePtr<FUGCManager> Instance;
 
-<<<<<<< Updated upstream
-};
-=======
 	bool bEnableUGC;
 
 	FString UgcUrl;
@@ -61,4 +53,3 @@ private:
 	
 	TDelegate<void(FString)> UgCUrlFetchedCallback;
 };
->>>>>>> Stashed changes
