@@ -16,6 +16,8 @@ UKinetixAccount::UKinetixAccount(FVTableHelper& Helper)
 
 UKinetixAccount::~UKinetixAccount()
 {
+	UE_LOG(LogKinetixAccount, Warning, TEXT("[UKinetixAccount] ~UKinetixAccount"));
+	FAccountManager::Get().StopPolling();
 }
 
 void UKinetixAccount::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)

@@ -53,4 +53,6 @@ private:
 	TSet<FAnimationMetadata> Metadatas;
 	
 	TArray<FOnMetadatasAvailable> OnMetadatasAvailableDelegates;
+	
+	bool bPendingRequest;
 };

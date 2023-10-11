@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/Account/Account.h"
+#include "Core/Account/AccountPoller.h"
 #include "Data/KinetixDataLibrary.h"
 #include "Templates/UniquePtr.h"
 #include "Tasks/Pipe.h"
@@ -54,6 +55,8 @@ public:
 
 	static FAccountManager& Get();
 
+	void StopPolling();
+	
 private:
 	bool AccountExists(const FString& InUserID);
 	bool TryCreateAccount(const FString& InUserID);
@@ -92,4 +95,6 @@ private:
 	FOnUpdatedAccount OnUpdatedAccountDelegate;
 	FOnConnectedAccount OnConnectedAccountDelegate;
 	FOnAssociatedEmote OnAssociatedEmoteDelegate;
+
+	FAccountPoller AccountPoller;
 };

@@ -28,6 +28,8 @@ FAccountManager::~FAccountManager()
 	AssociateEmoteEvent = nullptr;
 
 	Instance = nullptr;
+
+	AccountPoller.StopPolling();
 }
 
 void FAccountManager::SetVirtualWorldID(const FString& InVirtualWorldID)
@@ -73,12 +75,12 @@ void FAccountManager::FinishAccountConnection()
 	LoggedAccount = new FAccount(UserID, false);
 	UserID.Empty();
 
-	LoggedAccount->FetchMetadatas();
-
 	Accounts.Add(LoggedAccount);
 
 	OnUpdatedAccountDelegate.Broadcast();
 	OnConnectedAccountDelegate.Broadcast();
+
+	AccountPoller.StartPolling();
 }
 
 void FAccountManager::DisconnectAccount()
@@ -133,16 +135,22 @@ bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 		return false;
 	}
 
+	if (!InEmote.UUID.IsValid())
+	{
+		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AssociateEmoteToUser: InEmote ID Invalid !"));
+		return false;
+	}
+
 	if (LoggedAccount->HasEmote(InEmote))
 		return true;
 
 	Emotes.Empty();
 	Emotes.Add(InEmote);
 
-	AssignEmotePipe.Launch(UE_SOURCE_LOCATION, [&]
-	{
-		AssociateEmotesToVirtualWorld(Emotes);
-	});
+	// AssignEmotePipe.Launch(UE_SOURCE_LOCATION, [&]
+	// {
+	// 	AssociateEmotesToVirtualWorld(Emotes);
+	// });
 
 	AssignEmotePipe.Launch(UE_SOURCE_LOCATION, [&]
 	{
@@ -192,7 +200,7 @@ bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 				FString Message;
 				JsonObject->TryGetStringField(TEXT("message"), Message);
 				OnAssociatedEmoteDelegate.Broadcast(Message);
-			
+				LoggedAccount->FetchMetadatas();
 			});
 
 		Request->SetURL(
@@ -219,7 +227,7 @@ bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
 		}
 
 		return true;
-	}, *AssociateEmoteEvent);
+	}/*, *AssociateEmoteEvent*/);
 
 	return false;
 }
@@ -234,8 +242,8 @@ void FAccountManager::GetAllUserAnimationMetadatas(
 {
 	if (!LoggedAccount)
 		return;
-	LoggedAccount->RegisterOrCallMetadatasAvailable(OnMetadatasAvailable);
 	LoggedAccount->FetchMetadatas();
+	LoggedAccount->RegisterOrCallMetadatasAvailable(OnMetadatasAvailable);
 }
 
 void FAccountManager::IsAnimationOwnedByUser(const FAnimationID& InAnimationID, const TDelegate<bool()>& OnSuccess,
@@ -282,14 +290,16 @@ bool FAccountManager::TryCreateAccount(const FString& InUserID)
 
 FAccountManager& FAccountManager::Get()
 {
+	if (!Instance.IsValid())
 	{
-		if (!Instance.IsValid())
-		{
-			Instance = MakeUnique<FAccountManager>();
-		}
-		return *Instance;
+		Instance = MakeUnique<FAccountManager>();
 	}
+	return *Instance;
+}
 
+void FAccountManager::StopPolling()
+{
+	AccountPoller.StopPolling();
 }
 
 bool FAccountManager::AccountExists(const FString& InUserID)

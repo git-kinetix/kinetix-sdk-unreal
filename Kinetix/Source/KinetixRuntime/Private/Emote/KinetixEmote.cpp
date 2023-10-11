@@ -12,6 +12,7 @@ FKinetixEmote::FKinetixEmote(): bIsLocal(false), AnimSequence(nullptr)
 FKinetixEmote::FKinetixEmote(const FAnimationID& InAnimationID)
 	: AnimationID(InAnimationID), bIsLocal(false), AnimSequence(nullptr)
 {
+	AnimationMetadata.Id = InAnimationID;
 }
 
 FKinetixEmote::~FKinetixEmote()
@@ -21,6 +22,8 @@ FKinetixEmote::~FKinetixEmote()
 bool FKinetixEmote::HasMetadata() const
 {
 	return AnimationMetadata.Id.UUID.IsValid()
+		&& AnimationMetadata.Name.IsValid()
+		&& AnimationMetadata.Duration != -1.f
 		&& !AnimationMetadata.AnimationURL.Map.IsEmpty()
 		&& !AnimationMetadata.IconURL.Map.IsEmpty();
 }

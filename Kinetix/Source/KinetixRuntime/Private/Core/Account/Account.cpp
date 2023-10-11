@@ -3,6 +3,7 @@
 
 #include "Core/Account/Account.h"
 
+#include "AccountPoller.h"
 #include "glTFRuntimeFunctionLibrary.h"
 #include "HttpModule.h"
 #include "KinetixDeveloperSettings.h"
@@ -12,11 +13,12 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Kismet/BlueprintPlatformLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Managers/EmoteManager.h"
 #include "Tasks/Task.h"
 
 FAccount::FAccount(const FString& InUserID, bool bPreFetch)
-	: AccountID(InUserID)
+	: AccountID(InUserID), bPendingRequest(false)
 {
 	if (bPreFetch)
 		FetchMetadatas();
@@ -28,11 +30,7 @@ FAccount::~FAccount()
 
 const TArray<FKinetixEmote*> FAccount::FetchMetadatas()
 {
-	if (!Emotes.IsEmpty())
-	{
-		CallMetadatasAvailableDelegates();
-		return Emotes.Array();
-	}
+	bPendingRequest = true;
 
 	UE::Tasks::FTask FetchTask = UE::Tasks::Launch(
 		UE_SOURCE_LOCATION, [&]()
@@ -57,6 +55,9 @@ const TArray<FKinetixEmote*> FAccount::FetchMetadatas()
 void FAccount::AddEmoteFromMetadata(const FAnimationMetadata& InAnimationMetadata)
 {
 	FKinetixEmote* NewlyEmote = FEmoteManager::Get().GetEmote(InAnimationMetadata.Id);
+	if (NewlyEmote == nullptr)
+		return;
+
 	NewlyEmote->SetMetadata(InAnimationMetadata);
 
 	Emotes.Add(NewlyEmote);
@@ -105,6 +106,9 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 		return;
 	}
 
+	Emotes.Empty();
+	Metadatas.Empty();
+	
 	FAnimationMetadata AnimationMetadata;
 	for (int i = 0; i < JsonArray.Num(); ++i)
 	{
@@ -127,6 +131,13 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 		(*DataObject).Get()->TryGetStringField(TEXT("name"), StringField);
 		AnimationMetadata.Name = FName(StringField);
 
+		// Source field, mandatory for knowing if the emote is UGC or normal
+		(*DataObject).Get()->TryGetStringField(TEXT("source"), StringField);
+		AnimationMetadata.Type = StringField.Equals(TEXT("backOffice")) ? EEmoteType::ET_BackOffice : EEmoteType::ET_UGC;
+
+		(*DataObject).Get()->TryGetStringField(TEXT("createdAt"), StringField);
+		UKismetMathLibrary::DateTimeFromIsoString(StringField, AnimationMetadata.CreatedAt);
+		
 		const TSharedPtr<FJsonObject>* MetadataObject = nullptr;
 		(*DataObject)->TryGetObjectField(TEXT("metadata"), MetadataObject);
 		if (!(MetadataObject && MetadataObject->IsValid()))
@@ -172,6 +183,7 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 		AddEmoteFromMetadata(AnimationMetadata);
 	}
 
+	bPendingRequest = false;
 	CallMetadatasAvailableDelegates();
 }
 
@@ -182,6 +194,9 @@ void FAccount::RegisterOrCallMetadatasAvailable(const FOnMetadatasAvailable& OnM
 		OnMetadatasAvailableDelegates.AddUnique(OnMetadatasAvailable);
 		return;
 	}
+
+	if (bPendingRequest)
+		return;
 
 	OnMetadatasAvailable.ExecuteIfBound(true, Metadatas.Array());
 }
@@ -198,5 +213,4 @@ void FAccount::CallMetadatasAvailableDelegates()
 		OnMetadatasAvailableDelegates[i].ExecuteIfBound(!Metadatas.IsEmpty(), Metadatas.Array());
 	}
 
-	OnMetadatasAvailableDelegates.Empty();
 }
