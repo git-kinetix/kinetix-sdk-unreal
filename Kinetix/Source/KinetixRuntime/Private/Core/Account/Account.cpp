@@ -83,7 +83,7 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 		return;
 	}
 
-	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()) && !(Response->GetResponseCode() == 208))
 	{
 		UE_LOG(LogKinetixAccount, Warning,
 		       TEXT("[FAccount] MetadataRequestComplete(): Wrong response from server %i !"),
