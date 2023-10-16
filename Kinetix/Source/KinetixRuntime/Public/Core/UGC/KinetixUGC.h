@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Interfaces/KinetixSubcoreInterface.h"
-#include "Managers/UGCManager.h"
 #include "Templates/UniquePtr.h"
 #include "KinetixUGC.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogKinetixUGC, Log, All);
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnUGCUrlFetched, FString, Url);
 
@@ -20,10 +21,6 @@ class KINETIXRUNTIME_API UKinetixUGC
 	GENERATED_BODY()
 
 public:
-
-	UKinetixUGC();
-	UKinetixUGC(FVTableHelper& Helper);
-	~UKinetixUGC();
 	
 #pragma region IKinetixSubcoreInterface
 	virtual void Initialize_Implementation(
@@ -44,6 +41,10 @@ public:
 
 	UFUNCTION()
 	void OnUrlFetched(FString String);
+
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|UGC", meta=(WorldContext="WorldContextObject"))
+	UTexture2D* GetQRCode(UObject* WorldContextObject, const FString& QrCodeContent);
+		
 private:
 
 	UPROPERTY()

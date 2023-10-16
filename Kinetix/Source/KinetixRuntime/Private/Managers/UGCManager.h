@@ -4,15 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Interfaces/IHttpRequest.h"
-#include "Interfaces/IHttpResponse.h"
 #include "Templates/UniquePtr.h"
 
 /**
  * 
  */
-class FUGCManager
+class KINETIXRUNTIME_API FUGCManager
 {
 public:
+	
 	FUGCManager();
 	~FUGCManager();
 
@@ -20,12 +20,16 @@ public:
 
 	void StartPollingForNewUGCToken();
 
-	void GetUgcUrl(const TDelegate<void(FString)>& UrlFetchedCallback);
+	void GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback);
 
 	bool IsUGCAvailable();
 
-	void OnPollingResponse(TSharedPtr<IHttpRequest> Shared, TSharedPtr<IHttpResponse> SharedPtr, bool bArg);
+	void OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr<IHttpResponse> Response, bool bSuccess);
 
+	void OnUGCUrlResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr<IHttpResponse> Response, bool bSuccess);
+
+	void OnUGCTokenResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr<IHttpResponse> Response, bool bSuccess);
+	
 	static FUGCManager& Get()
 	{
 		if (!Instance.IsValid())
@@ -39,4 +43,13 @@ private:
 	
 	static TUniquePtr<FUGCManager> Instance;
 
+	bool bEnableUGC;
+
+	FString UgcUrl;
+	FString TokenUUID;
+
+	int FetchTimeOutInMinutes;
+	FDateTime LastFetchedDate;
+	
+	TDelegate<void(FString)> UgCUrlFetchedCallback;
 };

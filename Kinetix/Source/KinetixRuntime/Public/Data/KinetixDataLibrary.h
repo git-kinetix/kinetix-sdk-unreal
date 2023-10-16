@@ -19,6 +19,8 @@ static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define SDKAPIEmoteUrl TEXT("/v1/emotes/%s")
 #define SDKAPIVirtualWorldEmoteUrl TEXT("/v1/virtual-world/emotes")
 #define KINETIXSLOTNAME TEXT("KinetixSlot")
+#define KINETIXUGCURL TEXT("/v1/process/token?userId=%s")
+#define KINETIXUGCTOKEN TEXT("/v1/process/token/%s")
 
 UENUM(Category="Kinetix|Animation")
 enum class EOwnership : uint8
@@ -28,6 +30,14 @@ enum class EOwnership : uint8
 	O_Owner UMETA(DisplayNAme="Owner"),
 	O_Premium UMETA(DisplayName="Premium"),
 	O_MAX UMETA(Hidden)
+};
+
+UENUM(Category="Kinetix|Animation")
+enum class EEmoteType : uint8
+{
+	ET_None = 0		UMETA(DisplayName = "None"),
+	ET_BackOffice	UMETA(DisplayName = "Back Office"),
+	ET_UGC	UMETA(DisplayName = "User Generated")
 };
 
 UENUM(Category="Kinetix|Animation")
@@ -83,6 +93,12 @@ struct FAnimationMetadata
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float Duration;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EEmoteType Type;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FDateTime CreatedAt;
+	
 #pragma region URLs
 
 	UPROPERTY(VisibleAnywhere)
@@ -109,6 +125,8 @@ struct FAnimationMetadata
 		Name = Other.Name;
 		Description = Other.Description;
 		Duration = Other.Duration;
+		Type = Other.Type;
+		CreatedAt = Other.CreatedAt;
 		AnimationURL = Other.AnimationURL;
 		IconURL = Other.IconURL;
 
@@ -327,13 +345,13 @@ public:
 	static UPARAM(DisplayName="bValid") bool GetIconURL(const FAnimationMetadata& InAnimationMetadata,
 	                                                    FString& OutIconURL);
 
-	/** Returns true if vector A is equal to vector B (A == B) within a specified error tolerance */
+	/** Returns true if Animation Metadata A refers to the same animation than B */
 	UFUNCTION(BlueprintPure,
 		meta=(DisplayName = "Equal (AnimationMetadata)", CompactNodeTitle = "==", ScriptOperator = "==", Keywords =
 			"== equal"), Category="Kinetix|Metadata")
 	static bool EqualEqual_AnimationMetadataAnimationMetadata(FAnimationMetadata A, FAnimationMetadata B);
 
-	/** Returns true if vector A is equal to vector B (A == B) within a specified error tolerance */
+	/** Returns true if the Metadata as a valid ID */
 	UFUNCTION(BlueprintPure,
 		meta=(DisplayName = "IsValid (AnimationMetadata)", CompactNodeTitle = "Valid", Keywords = "valid"),
 		Category="Kinetix|Metadata")

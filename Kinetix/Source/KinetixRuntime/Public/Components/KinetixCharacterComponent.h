@@ -31,7 +31,8 @@ public:
 	UKinetixCharacterComponent(FVTableHelper& Helper);
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
+
+	UFUNCTION(BlueprintCallable)
 	void CheckAnimInstanceToNotify(AActor* CurrentOwner);
 
 	UFUNCTION(Client, Reliable)

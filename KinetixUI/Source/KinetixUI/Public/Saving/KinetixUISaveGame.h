@@ -7,6 +7,19 @@
 #include "Data/KinetixDataLibrary.h"
 #include "KinetixUISaveGame.generated.h"
 
+USTRUCT(BlueprintType)
+struct FWheelEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI|WheelEntry")
+	FAnimationMetadata AnimationMetadata;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI|WheelEntry")
+	uint8 WheelPosition;
+
+};
+
 /**
  * 
  */
@@ -21,5 +34,6 @@ public:
 	FName UserName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI|Wheel")
-	TArray<FAnimationMetadata> AnimationMetadatas;
+	TArray<FWheelEntry> Entries;
+	
 };

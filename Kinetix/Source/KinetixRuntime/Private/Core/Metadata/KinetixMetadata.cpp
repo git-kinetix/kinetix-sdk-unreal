@@ -103,13 +103,19 @@ void UKinetixMetadata::GetUserAnimationMetadatasTotalPagesCount(int InCountPerPa
 void UKinetixMetadata::LoadIconByAnimationID(const FAnimationID& InID, const FOnIconAvailable& OnIconAvailableDelegate)
 {
 	if (!InID.UUID.IsValid())
+	{
+		UE_LOG(LogKinetixMetadata, Warning, TEXT("LoadIconByAnimationID(): UUID is invalid !"));
 		return;
+	}
+
+	UE_LOG(LogKinetixMetadata,
+	       Warning,
+	       TEXT("LoadIconByAnimationID(): Try get local icon or download it"));
 
 	UTexture2DDynamic* Icon = FIconManager::Get().GetIcon(InID, OnIconAvailableDelegate);
 	if (IsValid(Icon))
 	{
 		OnIconAvailableDelegate.ExecuteIfBound(Icon);
-		return;
 	}
 }
 
