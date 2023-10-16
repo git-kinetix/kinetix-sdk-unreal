@@ -9,7 +9,7 @@
 #include "KinetixDataLibrary.generated.h"
 
 #if WITH_EDITOR || UE_BUILD_DEVELOPMENT
-static FString SDKAPIUrlBase = TEXT("https://sdk-api.staging.kinetix.tech");
+static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech");
 #else
 static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech"); 
 #endif
@@ -125,6 +125,8 @@ struct FAnimationMetadata
 		Name = Other.Name;
 		Description = Other.Description;
 		Duration = Other.Duration;
+		Type = Other.Type;
+		CreatedAt = Other.CreatedAt;
 		AnimationURL = Other.AnimationURL;
 		IconURL = Other.IconURL;
 

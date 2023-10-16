@@ -55,7 +55,7 @@ void FAccountPoller::StartPolling()
 									return;
 								}
 
-								if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+								if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()) && !(Response->GetResponseCode() == 208))
 								{
 									UE_LOG(LogKinetixAccount, Warning,
 									       TEXT("[FAccountPoller] StartPolling(): Wrong response from server %i !"),
