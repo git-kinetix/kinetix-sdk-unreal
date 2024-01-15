@@ -11,6 +11,7 @@
 class UKinetixAccount;
 class UKinetixMetadata;
 class UKinetixAnimation;
+class UKinetixAlias;
 
 /**
  * 
@@ -58,6 +59,8 @@ public:
 	UKinetixAccount* KinetixAccount;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UKinetixUGC* KinetixUGC;
+	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	// UKinetixAlias* KinetixAlias;
 	
 private:
 	UPROPERTY()

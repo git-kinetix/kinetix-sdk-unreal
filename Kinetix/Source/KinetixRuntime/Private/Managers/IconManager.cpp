@@ -125,18 +125,6 @@ UTexture2DDynamic* FIconManager::GetIcon(const FAnimationID& ID, const FOnIconAv
 		IconDownloader->DownloadIcon(FEmoteManager::Get().GetEmote(ID));
 	return nullptr;
 
-	// UTexture2DDynamic* Result = nullptr;
-	// UE::Tasks::FTask DownloadTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, FDownloadIconFunctor{Emote, &Result});
-
-	// UE::Tasks::TTask DownloadTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, [&Emote, &DownloadCompleteEvent]
-	// {
-	//
-	// });
-
-	// UE::Tasks::AddNested(DownloadTask);
-	// DownloadTask.BusyWait();
-	// return Result;
-	// });
 }
 
 void FIconManager::AddIcon(const FAnimationID& InID, UTexture2DDynamic* Texture)

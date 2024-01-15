@@ -4,11 +4,14 @@
 
 #include "HttpModule.h"
 #include "JsonObjectConverter.h"
+#include "KinetixDeveloperSettings.h"
+#include "KinetixRuntimeModule.h"
 #include "UGCManager.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Tasks/Pipe.h"
 #include "Tasks/Task.h"
+#include "Data/KinetixDataLibrary.h"
 
 TUniquePtr<FAccountManager> FAccountManager::Instance = nullptr;
 
@@ -96,7 +99,7 @@ bool FAccountManager::AssociateEmotesToVirtualWorld(const TArray<FAnimationID>& 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 	Request->OnProcessRequestComplete().BindRaw(this, &FAccountManager::OnGetEmotesToVirtualWorldResponse);
 
-	Request->SetURL(SDKAPIUrlBase + SDKAPIVirtualWorldEmoteUrl);
+	Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + SDKAPIVirtualWorldEmoteUrl);
 	Request->SetVerb(TEXT("POST"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -125,111 +128,6 @@ bool FAccountManager::AssociateEmotesToVirtualWorld(const TArray<FAnimationID>& 
 		return false;
 	}
 	return true;
-}
-
-bool FAccountManager::AssociateEmoteToUser(const FAnimationID& InEmote)
-{
-	if (LoggedAccount == nullptr)
-	{
-		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AssociateEmoteToUser: No acount connected !"));
-		return false;
-	}
-
-	if (!InEmote.UUID.IsValid())
-	{
-		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AssociateEmoteToUser: InEmote ID Invalid !"));
-		return false;
-	}
-
-	if (LoggedAccount->HasEmote(InEmote))
-		return true;
-
-	Emotes.Empty();
-	Emotes.Add(InEmote);
-
-	// AssignEmotePipe.Launch(UE_SOURCE_LOCATION, [&]
-	// {
-	// 	AssociateEmotesToVirtualWorld(Emotes);
-	// });
-
-	AssignEmotePipe.Launch(UE_SOURCE_LOCATION, [&]
-	{
-		FHttpModule& HttpModule = FHttpModule::Get();
-		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
-
-		Request->OnProcessRequestComplete().BindLambda([&](
-			TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> OldRequest,
-			TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
-			bool bSuccess)
-			{
-				if (!Response.IsValid())
-				{
-					UE_LOG(LogKinetixAccount, Warning,
-					       TEXT("[FAccountManager] OnGetEmotesToVirtualWorldResponse: Failed to connect to service"));
-					return;
-				}
-
-				if (Response->GetResponseCode() == EHttpResponseCodes::Denied)
-				{
-					UE_LOG(LogKinetixAccount, Warning,
-					       TEXT(
-						       "[FAccountManager] OnGetEmotesToVirtualWorldResponse: Emote is already registered or there is an error in the request : %s!"
-					       ), *Response->GetContentAsString());
-					return;
-				}
-
-				TSharedPtr<FJsonObject> JsonObject;
-				if (!Response.IsValid())
-				{
-					UE_LOG(LogKinetixAccount, Warning,
-					       TEXT("[FAccountManager] OnGetHttpResponse: Failed to connect to service"));
-					return;
-				}
-
-				const FString RepsonseBody = Response->GetContentAsString();
-				TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(RepsonseBody);
-
-				if (!FJsonSerializer::Deserialize(JsonReader, JsonObject))
-				{
-					UE_LOG(LogKinetixAccount, Warning,
-					       TEXT("[FAccountManager] OnGetHttpResponse: Failed to deserialize Json %s"),
-					       *JsonReader->GetErrorMessage());
-					return;
-				}
-
-				FString Message;
-				JsonObject->TryGetStringField(TEXT("message"), Message);
-				OnAssociatedEmoteDelegate.Broadcast(Message);
-				LoggedAccount->FetchMetadatas();
-			});
-
-		Request->SetURL(
-			SDKAPIUrlBase +
-			FString::Printf(
-				SDKAPIEmoteUsersUrl,
-				*LoggedAccount->GetAccountID()) + "/" + Emotes[0].UUID.ToString(EGuidFormats::DigitsWithHyphensLower)
-		);
-
-		UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] AssociateEmotesToUser: Generated URL %s"),
-		       *Request->GetURL());
-
-		Request->SetVerb(TEXT("POST"));
-		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-		Request->SetHeader(TEXT("accept"), TEXT("application/json"));
-		Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
-
-		if (!Request->ProcessRequest())
-		{
-			UE_LOG(LogKinetixAccount, Warning,
-			       TEXT("[FAccountManager] AssociateEmotesToUser: %s Error in Http request"),
-			       *LoggedAccount->GetAccountID());
-			return false;
-		}
-
-		return true;
-	}/*, *AssociateEmoteEvent*/);
-
-	return false;
 }
 
 bool FAccountManager::IsAccountConnected(const FString& InUserID)
@@ -269,7 +167,7 @@ bool FAccountManager::TryCreateAccount(const FString& InUserID)
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 	Request->OnProcessRequestComplete().BindRaw(this, &FAccountManager::OnGetHttpResponse);
 
-	Request->SetURL(SDKAPIUrlBase + SDKAPIUsersUrl);
+	Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + SDKAPIUsersUrl);
 	Request->SetVerb(TEXT("POST"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -309,7 +207,9 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 	Request->OnProcessRequestComplete().BindRaw(this, &FAccountManager::OnGetUserResponse);
 
-	Request->SetURL(SDKAPIUrlBase + SDKAPIUsersUrl + "/" + InUserID);
+	UE_LOG(LogKinetixRuntime, Warning, TEXT("SDKAPIUrlBase %s"),
+		*GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase);
+	Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + SDKAPIUsersUrl + "/" + InUserID);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));

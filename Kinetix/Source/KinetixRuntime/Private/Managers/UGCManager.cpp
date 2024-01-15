@@ -37,7 +37,7 @@ void FUGCManager::StartPollingUGC()
 
 	TSet<FKinetixEmote*> Emotes = ConnectedAccount->GetEmotes();
 
-	FString Url = SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID());
+	FString Url = GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID());
 
 	FHttpModule& HttpModule = FHttpModule::Get();
 	TSharedRef<IHttpRequest> Request = HttpModule.CreateRequest();
@@ -46,7 +46,7 @@ void FUGCManager::StartPollingUGC()
 		this, &FUGCManager::OnPollingResponse);
 
 	Request->SetURL(
-		SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID()));
+		GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID()));
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -68,7 +68,7 @@ void FUGCManager::StartPollingForNewUGCToken()
 		return;
 	}
 
-	FString Url = SDKAPIUrlBase + FString::Printf(KINETIXUGCTOKEN, *TokenUUID);
+	FString Url = GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(KINETIXUGCTOKEN, *TokenUUID);
 
 	FHttpModule& HttpModule = FHttpModule::Get();
 	TSharedRef<IHttpRequest> Request = HttpModule.CreateRequest();
@@ -77,7 +77,7 @@ void FUGCManager::StartPollingForNewUGCToken()
 		this, &FUGCManager::OnUGCTokenResponse);
 
 	Request->SetURL(
-		SDKAPIUrlBase + FString::Printf(KINETIXUGCTOKEN, *TokenUUID));
+		GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(KINETIXUGCTOKEN, *TokenUUID));
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -99,7 +99,7 @@ void FUGCManager::GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback
 		if (ConnectedAccount == nullptr)
 			return;
 
-		FString Uri = SDKAPIUrlBase + FString::Printf(KINETIXUGCURL, *ConnectedAccount->GetAccountID());
+		FString Uri = GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(KINETIXUGCURL, *ConnectedAccount->GetAccountID());
 
 		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 		Request->OnProcessRequestComplete().BindRaw(this, &FUGCManager::OnUGCUrlResponse);

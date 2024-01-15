@@ -36,9 +36,6 @@ public:
 	void ConnectAccount(const FString& InUserID);
 
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
-	void AssociateEmoteToUser(const FAnimationID& InAnimationID);
-
-	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")
 	void GetConnectedAccount(FName& OutUserName);
 
 	UFUNCTION(BlueprintCallable, Category="Kinetix|Account")

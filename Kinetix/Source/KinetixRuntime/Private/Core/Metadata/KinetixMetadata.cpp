@@ -14,6 +14,7 @@
 #include "Managers/IconManager.h"
 #include "Managers/MetadataOperationManager.h"
 #include "Engine/Texture2DDynamic.h"
+#include "Managers/MemoryManager.h"
 
 DEFINE_LOG_CATEGORY(LogKinetixMetadata);
 
@@ -43,7 +44,8 @@ void UKinetixMetadata::Initialize_Implementation(const FKinetixCoreConfiguration
 
 
 	FEmoteManager::Get();
-
+	FMemoryManager::Get();
+	
 	bResult = true;
 }
 

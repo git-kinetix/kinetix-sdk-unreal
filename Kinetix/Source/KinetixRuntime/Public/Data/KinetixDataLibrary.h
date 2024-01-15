@@ -8,11 +8,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "KinetixDataLibrary.generated.h"
 
-#if WITH_EDITOR || UE_BUILD_DEVELOPMENT
-static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech");
-#else
-static FString SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech"); 
-#endif
+// static FString* SDKAPIUrlBase;
 
 static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define SDKAPIEmoteUsersUrl TEXT("/v1/users/%s/emotes")
@@ -21,6 +17,9 @@ static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define KINETIXSLOTNAME TEXT("KinetixSlot")
 #define KINETIXUGCURL TEXT("/v1/process/token?userId=%s")
 #define KINETIXUGCTOKEN TEXT("/v1/process/token/%s")
+#define KINETIXALIASURL TEXT("/v1/virtual-world/alias/")
+
+#define KINETIXSMARTCACHESLOT TEXT("KinetixSmartCacheSlot")
 
 UENUM(Category="Kinetix|Animation")
 enum class EOwnership : uint8
@@ -35,19 +34,19 @@ enum class EOwnership : uint8
 UENUM(Category="Kinetix|Animation")
 enum class EEmoteType : uint8
 {
-	ET_None = 0		UMETA(DisplayName = "None"),
-	ET_BackOffice	UMETA(DisplayName = "Back Office"),
-	ET_UGC	UMETA(DisplayName = "User Generated")
+	ET_None = 0 UMETA(DisplayName = "None"),
+	ET_BackOffice UMETA(DisplayName = "Back Office"),
+	ET_UGC UMETA(DisplayName = "User Generated")
 };
 
 UENUM(Category="Kinetix|Animation")
 enum class EBlendState : uint8
 {
 	BS_None = 0 UMETA(DisplayName = "None"),
-	BS_In		UMETA(DisplayNAme="Blend In"),
-	BS_Sample	UMETA(DisplayNAme="Sample"),
-	BS_Out		UMETA(DisplayName="Blend Out"),
-	BS_MAX		UMETA(Hidden)
+	BS_In UMETA(DisplayNAme="Blend In"),
+	BS_Sample UMETA(DisplayNAme="Sample"),
+	BS_Out UMETA(DisplayName="Blend Out"),
+	BS_MAX UMETA(Hidden)
 };
 
 USTRUCT(BlueprintType, Category="Kinetix|Animation")
@@ -67,6 +66,11 @@ struct FAnimationID
 	bool operator==(const FAnimationID& Other) const
 	{
 		return UUID == Other.UUID;
+	}
+
+	bool operator!=(const FAnimationID& Other) const
+	{
+		return UUID != Other.UUID;
 	}
 };
 
@@ -98,7 +102,7 @@ struct FAnimationMetadata
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FDateTime CreatedAt;
-	
+
 #pragma region URLs
 
 	UPROPERTY(VisibleAnywhere)
@@ -177,6 +181,9 @@ struct FKinetixCoreConfiguration
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bShowLogs;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	uint8 CachedEmotes;
+	
 	// TODO: Implement network structure
 	// FKinetixNetworkConfiguration NetworkConfiguration
 
@@ -227,6 +234,8 @@ struct FPlayerAnimSequenceMap
 #pragma region Animation
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FReferenceSkeletonLoadedDelegate, FAssetData, AssetData);
+
+DECLARE_DYNAMIC_DELEGATE(FOnKinetixAnimationPlayed);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRegisterLocalPlayer);
 
@@ -283,6 +292,8 @@ class KINETIXRUNTIME_API UKinetixDataBlueprintFunctionLibrary : public UBlueprin
 {
 	GENERATED_BODY()
 
+	UKinetixDataBlueprintFunctionLibrary();
+
 public:
 #pragma region Paths
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data", meta = (Keywords = "data"))
@@ -290,6 +301,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data", meta = (Keywords = "data"))
 	static UPARAM(DisplayName="Success") bool RemoveContentFromPluginPath(FString& RelativePath, FString PathRoot);
+
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data", meta = (Keywords = "data"))
+	static UPARAM(DisplayName="Success") bool GetCacheAnimationPath(FString& AbsolutePath, const FAnimationID& InAnimationMetadata);
+	
 #pragma endregion
 
 #pragma region Metadatas
@@ -341,6 +356,11 @@ public:
 	static UPARAM(DisplayName="Success") bool GetAnimationIDFromString(const FString& InAnimationID,
 	                                                                   FAnimationID& OutAnimationID);
 
+	UFUNCTION(BlueprintPure, Category = "Kinetix|Data",
+		meta = (Keywords = "id"))
+	static UPARAM(DisplayName="Success") bool GetStringFromAnimationID(const FAnimationID& InAnimationID,
+	                                                                   FString& OutAnimationID);
+
 	UFUNCTION(BlueprintCallable)
 	static UPARAM(DisplayName="bValid") bool GetIconURL(const FAnimationMetadata& InAnimationMetadata,
 	                                                    FString& OutIconURL);
@@ -367,4 +387,5 @@ public:
 	static FString GetKinetixSlotName();
 
 #pragma endregion
+
 };

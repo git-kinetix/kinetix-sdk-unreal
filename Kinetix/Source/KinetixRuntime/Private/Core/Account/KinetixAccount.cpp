@@ -41,11 +41,6 @@ void UKinetixAccount::ConnectAccount(const FString& InUserID)
 	FAccountManager::Get().ConnectAccount(InUserID);
 }
 
-void UKinetixAccount::AssociateEmoteToUser(const FAnimationID& InAnimationID)
-{
-	FAccountManager::Get().AssociateEmoteToUser(InAnimationID);
-}
-
 void UKinetixAccount::GetConnectedAccount(FName& OutUserName)
 {
 	FAccount* LoggedAccount = FAccountManager::Get().GetConnectedAccount();

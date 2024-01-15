@@ -21,7 +21,7 @@ class KINETIXEDITOR_API UKinetixAssetsFunctionLibrary : public UBlueprintFunctio
 
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data",
 		meta = (WorldContext = "WorldContextObject", Keywords = "data|skeleton"))
-	static UPARAM(DisplayName="Animations created") bool GenerateAnimationAssets(
+	static UPARAM(DisplayName="Animations created") bool FindGLBandGenerateAnimationAssets(
 		UObject* WorldContextObject, USkeletalMesh* InSkeletalMesh);
 	
 };

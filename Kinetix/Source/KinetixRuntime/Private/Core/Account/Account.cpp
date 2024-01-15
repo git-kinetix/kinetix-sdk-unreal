@@ -38,7 +38,7 @@ const TArray<FKinetixEmote*> FAccount::FetchMetadatas()
 			TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 			Request->OnProcessRequestComplete().BindRaw(this, &FAccount::MetadataRequestComplete);
 
-			Request->SetURL(SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *AccountID));
+			Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *AccountID));
 			Request->SetVerb(TEXT("GET"));
 			Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 			Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -108,7 +108,7 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 
 	Emotes.Empty();
 	Metadatas.Empty();
-	
+
 	FAnimationMetadata AnimationMetadata;
 	for (int i = 0; i < JsonArray.Num(); ++i)
 	{
@@ -133,11 +133,13 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 
 		// Source field, mandatory for knowing if the emote is UGC or normal
 		(*DataObject).Get()->TryGetStringField(TEXT("source"), StringField);
-		AnimationMetadata.Type = StringField.Equals(TEXT("backOffice")) ? EEmoteType::ET_BackOffice : EEmoteType::ET_UGC;
+		AnimationMetadata.Type = StringField.Equals(TEXT("backOffice"))
+			                         ? EEmoteType::ET_BackOffice
+			                         : EEmoteType::ET_UGC;
 
 		(*DataObject).Get()->TryGetStringField(TEXT("createdAt"), StringField);
 		UKismetMathLibrary::DateTimeFromIsoString(StringField, AnimationMetadata.CreatedAt);
-		
+
 		const TSharedPtr<FJsonObject>* MetadataObject = nullptr;
 		(*DataObject)->TryGetObjectField(TEXT("metadata"), MetadataObject);
 		if (!(MetadataObject && MetadataObject->IsValid()))
@@ -165,11 +167,18 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 				if (StringField != TEXT("png"))
 					continue;
 				FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.IconURL.Map);
-				continue;
+				// continue;
 			}
+			
+			if (StringField == TEXT("animation-v2"))
+			{
+				FString CacheURL;
+				FileObject->TryGetStringField(TEXT("url"), CacheURL);
+				if (!CacheURL.Contains(".glb"))
+					continue;
 
-			if (StringField == TEXT("animation"))
-				FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.AnimationURL.Map);
+				AnimationMetadata.AnimationURL.Map = CacheURL;
+			}
 		}
 
 		UE_LOG(LogKinetixAccount, Warning,
@@ -212,5 +221,4 @@ void FAccount::CallMetadatasAvailableDelegates()
 	{
 		OnMetadatasAvailableDelegates[i].ExecuteIfBound(!Metadatas.IsEmpty(), Metadatas.Array());
 	}
-
 }

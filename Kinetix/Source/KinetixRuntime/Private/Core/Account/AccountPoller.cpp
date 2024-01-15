@@ -131,7 +131,7 @@ void FAccountPoller::StartPolling()
 								Blocker.Trigger();
 							});
 
-						Request->SetURL(SDKAPIUrlBase + FString::Printf(
+						Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
 							SDKAPIEmoteUsersUrl, *FAccountManager::Get().GetConnectedAccount()->GetAccountID()));
 						Request->SetVerb(TEXT("GET"));
 						Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
