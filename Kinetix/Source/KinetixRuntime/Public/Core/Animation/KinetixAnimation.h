@@ -11,7 +11,7 @@ class UKinetixCharacterComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogKinetixAnimation, Log, All);
 
-class FLocalPlayerManager;
+class FPlayerManager;
 
 /**
  * 
@@ -23,7 +23,6 @@ class KINETIXRUNTIME_API UKinetixAnimation
 	GENERATED_BODY()
 
 public:
-	
 	UKinetixAnimation();
 	// Needed to have TUniquePtr<> with forward declared classes
 	UKinetixAnimation(FVTableHelper& Helper);
@@ -41,6 +40,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
 	void RegisterLocalPlayerAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance);
+
+	/**
+	 * @brief Register the local player AnimInstance with Skeletal setup to play animation on it 
+	 * @param InAnimInstance AnimInstance of your local character
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
+	void RegisterAvatarAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance, FGuid& OutGuid);
 
 	/**
 	 * @brief Register the local player configuration for custom animation system.
@@ -65,6 +71,14 @@ public:
 	void PlayAnimationOnLocalPlayer(UPARAM(ref) const FAnimationID& InAnimationID);
 
 	/**
+	* @brief Play animation on local player
+	* @param InAnimationID ID of the animation to play
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
+	void PlayAnimationOnAvatar(FGuid InPlayerGUID,
+		const FAnimationID& InAnimationID);
+
+	/**
 	 * @brief Play animations on local player
 	 * @param InAnimationIDs IDs of the animations
 	 * @param bLoop Should loop the queue
@@ -84,7 +98,8 @@ public:
 	 * @param OnSuccessDelegate Callback with loading result
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString& InLockID, const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
+	void LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString& InLockID,
+	                              const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
 
 	/**
 	 * @brief Load local player animations
@@ -92,7 +107,8 @@ public:
 	 * @param OnSuccessDelegate Callback with loading result
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void LoadLocalPlayerAnimations(TArray<FAnimationID>& InAnimationIDs, const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
+	void LoadLocalPlayerAnimations(TArray<FAnimationID>& InAnimationIDs,
+	                               const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
 
 	/**
 	 * @brief Unload a local player animation
@@ -122,7 +138,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
 	UKinetixCharacterComponent* GetLocalKCC() const;
-	
+
 public:
 	/**
 	 * @brief Event called when Local Player is registered
@@ -157,15 +173,13 @@ public:
 	 */
 	UPROPERTY(BlueprintAssignable)
 	FOnKinetixAnimationEndOnLocalPlayer OnKinetixAnimationEndOnLocalPlayer;
-	
+
 private:
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess="true"))
 	UAnimInstance* AnimInstance;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	USkeletalMesh* ReferenceSkeletalMesh;
 
-	TUniquePtr<FLocalPlayerManager> LocalPlayerManager;
-
+	TUniquePtr<FPlayerManager> LocalPlayerManager;
 };

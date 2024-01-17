@@ -124,7 +124,7 @@ bool UKinetixAssetsFunctionLibrary::GenerateMetadataAssets(UObject* WorldContext
 	return bMetadataCreated;
 }
 
-bool UKinetixAssetsFunctionLibrary::GenerateAnimationAssets(UObject* WorldContextObject,
+bool UKinetixAssetsFunctionLibrary::FindGLBandGenerateAnimationAssets(UObject* WorldContextObject,
                                                                    USkeletalMesh* InSkeletalMesh)
 {
 	FAssetRegistryModule& AssetRegistryModule =

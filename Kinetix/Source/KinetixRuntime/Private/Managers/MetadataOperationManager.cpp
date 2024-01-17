@@ -2,6 +2,7 @@
 
 #include "Managers/MetadataOperationManager.h"
 
+#include "EmoteManager.h"
 #include "HttpModule.h"
 #include "KinetixDeveloperSettings.h"
 #include "Core/Account/KinetixAccount.h"
@@ -25,7 +26,7 @@ void FMetadataOperationManager::GetAnimationMetadataOfEmote(const FAnimationMeta
 	{
 		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 		Request->SetURL(
-			SDKAPIUrlBase + FString::Printf(
+			GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
 				SDKAPIEmoteUrl, *InAnimationID.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower)));
 		Request->SetVerb(TEXT("GET"));
 		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
@@ -37,32 +38,46 @@ void FMetadataOperationManager::GetAnimationMetadataOfEmote(const FAnimationMeta
 			TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> OldRequest,
 			TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> Response,
 			bool bSuccess)
-		{
-			if (!Response.IsValid())
 			{
-				UE_LOG(LogKinetixMetadata, Warning,
-					   TEXT("[FMetadataOperationManager] OnGetEmotesToVirtualWorldResponse: Failed to connect to service"));
-				return;
-			}
+				if (!Response.IsValid())
+				{
+					UE_LOG(LogKinetixMetadata, Warning,
+					       TEXT(
+						       "[FMetadataOperationManager] OnGetEmotesToVirtualWorldResponse: Failed to connect to service"
+					       ));
+					return;
+				}
 
-			if (Response->GetResponseCode() == EHttpResponseCodes::Denied)
-			{
-				UE_LOG(LogKinetixAccount, Warning,
-					   TEXT(
-						   "[FMetadataOperationManager] OnGetEmotesToVirtualWorldResponse: Emote is already registered or there is an error in the request : %s!"
-					   ), *Response->GetContentAsString());
-				return;
-			}
+				if (Response->GetResponseCode() == EHttpResponseCodes::Denied)
+				{
+					UE_LOG(LogKinetixAccount, Warning,
+					       TEXT(
+						       "[FMetadataOperationManager] OnGetEmotesToVirtualWorldResponse: Emote is already registered or there is an error in the request : %s!"
+					       ), *Response->GetContentAsString());
+					return;
+				}
 
-			const FString JsonString = Response->GetContentAsString();
-			FAnimationMetadata AnimationMetadata;
-			if(!UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(JsonString, AnimationMetadata))
-				return;
+				const FString JsonString = Response->GetContentAsString();
+				FAnimationMetadata AnimationMetadata;
+				if (!UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(JsonString, AnimationMetadata))
+					return;
 
-			Callback.ExecuteIfBound(AnimationMetadata);
-		});
-		
+
+				FKinetixEmote* Emote =
+					FEmoteManager::Get().GetEmote(AnimationMetadata.Id);
+
+				if (Emote == nullptr)
+				{
+					Callback.ExecuteIfBound(AnimationMetadata);
+					return;
+				}
+
+				Emote->SetMetadata(AnimationMetadata);
+				Callback.ExecuteIfBound(AnimationMetadata);
+			});
+
 		if (!Request->ProcessRequest())
-			UE_LOG(LogKinetixMetadata, Warning, TEXT("[FMetadataOperationManager] GetAnimationMetadata(): Unable to process request !"));
+			UE_LOG(LogKinetixMetadata, Warning,
+		       TEXT("[FMetadataOperationManager] GetAnimationMetadata(): Unable to process request !"));
 	});
 }

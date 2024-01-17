@@ -3,7 +3,9 @@
 #include "Core/Animation/KinetixAnimation.h"
 
 #include "Kismet/KismetSystemLibrary.h"
-#include "Managers/LocalPlayerManager.h"
+#include "Managers/MemoryManager.h"
+#include "Managers/PlayerManager.h"
+#include "Managers/PlayersManager.h"
 #include "Tasks/Task.h"
 #include "Utils/Animation/RootMotionConfig.h"
 
@@ -25,7 +27,7 @@ UKinetixAnimation::~UKinetixAnimation()
 
 void UKinetixAnimation::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)
 {
-	LocalPlayerManager = MakeUnique<FLocalPlayerManager>(CoreConfiguration.bPlayAutomaticallyAnimationOnAnimInstances);
+	LocalPlayerManager = MakeUnique<FPlayerManager>(CoreConfiguration.bPlayAutomaticallyAnimationOnAnimInstances);
 	bResult = true;
 }
 
@@ -44,15 +46,10 @@ void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimIns
 	OnRegisterLocalPlayer.Broadcast();
 }
 
-// void UKinetixAnimation::RegisterLocalPlayerAnimInstanceWithRootMotionConfig(
-// 	UAnimInstance* InAnimInstance, FRootMotionConfig InConfig)
-// {
-// }
-
-// void UKinetixAnimation::RegisterLocalPlayerCustomAnimInstance(UAnimInstance* InAnimInstance, FTransform InRootTransform,
-//                                                               EExportType InExportType)
-// {
-// }
+void UKinetixAnimation::RegisterAvatarAnimInstance(UAnimInstance* InAnimInstance, FGuid& OutGuid)
+{
+	FPlayersManager::Get().AddPlayerCharacterComponent(InAnimInstance, OutGuid);
+}
 
 void UKinetixAnimation::UnregisterLocalPlayer()
 {
@@ -65,6 +62,14 @@ void UKinetixAnimation::PlayAnimationOnLocalPlayer(const FAnimationID& InAnimati
 
 void UKinetixAnimation::PlayAnimationQueueOnLocalPlayer(TArray<FAnimationID>& InAnimationIDs, bool bLoop)
 {
+}
+
+void UKinetixAnimation::PlayAnimationOnAvatar(FGuid InPlayerGUID, const FAnimationID& InAnimationID)
+{
+	FPlayersManager::Get().PlayAnimation(
+		InPlayerGUID,
+		InAnimationID,
+		OnPlayedKinetixAnimationLocalPlayer);
 }
 
 void UKinetixAnimation::StopAnimationOnLocalPlayer()
@@ -89,6 +94,7 @@ void UKinetixAnimation::LoadLocalPlayerAnimations(TArray<FAnimationID>& InAnimat
 
 void UKinetixAnimation::UnloadLocalPlayerAnimation(const FAnimationID& InAnimationID)
 {
+	
 }
 
 void UKinetixAnimation::UnloadLocalPlayerAnimations(TArray<FAnimationID>& AnimationIDs)

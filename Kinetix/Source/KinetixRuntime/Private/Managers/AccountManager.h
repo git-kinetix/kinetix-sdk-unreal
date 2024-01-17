@@ -28,7 +28,6 @@ public:
 	void DisconnectAccount();
 
 	bool AssociateEmotesToVirtualWorld(const TArray<FAnimationID>& InEmotes);
-	bool AssociateEmoteToUser(const FAnimationID& InEmote);
 
 	bool IsAccountConnected(const FString& InUserID);
 

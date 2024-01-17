@@ -3,21 +3,15 @@
 #include "Components/KinetixCharacterComponent.h"
 
 #include "Components/SkeletalMeshComponent.h"
-
-#include "glTFRuntimeFunctionLibrary.h"
-
 #include "Kismet/KismetSystemLibrary.h"
+#include "Net/UnrealNetwork.h"
+#include "Subsystems/SubsystemBlueprintLibrary.h"
 
 // For the logs
 #include "KinetixRuntimeModule.h"
 #include "Core/KinetixCoreSubsystem.h"
-#include "Core/Animation/KinetixAnimation.h"
-#include "Core/Metadata/KinetixMetadata.h"
-#include "Engine/ActorChannel.h"
 #include "Interfaces/KinetixAnimationInterface.h"
 #include "Managers/EmoteManager.h"
-#include "Net/UnrealNetwork.h"
-#include "Subsystems/SubsystemBlueprintLibrary.h"
 
 // Sets default values for this component's properties
 UKinetixCharacterComponent::UKinetixCharacterComponent()
@@ -71,6 +65,8 @@ void UKinetixCharacterComponent::BeginPlay()
 	Super::BeginPlay();
 
 	CheckSkeletalMeshComponent();
+
+
 }
 
 void UKinetixCharacterComponent::CheckAnimInstanceToNotify(AActor* CurrentOwner)

@@ -22,6 +22,10 @@
 #include "JsonUtils/JsonPointer.h"
 #include "Managers/EmoteManager.h"
 
+UKinetixDataBlueprintFunctionLibrary::UKinetixDataBlueprintFunctionLibrary()
+{
+}
+
 bool UKinetixDataBlueprintFunctionLibrary::GetPluginRelativePath(FString& RelativePath)
 {
 	RelativePath = FKinetixRuntimeModule::GetPlugin()->GetBaseDir();
@@ -43,6 +47,17 @@ bool UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(FString& 
 	return true;
 }
 
+bool UKinetixDataBlueprintFunctionLibrary::GetCacheAnimationPath(FString& AbsolutePath,
+                                                                 const FAnimationID& InAnimationMetadata)
+{
+	AbsolutePath = FPaths::Combine(FPaths::ProjectUserDir(), TEXT("Kinetix"), TEXT("Animations"));
+	AbsolutePath = FString::Printf(TEXT("%s/%s.glb"),
+	                               *AbsolutePath,
+	                               *InAnimationMetadata.UUID.ToString(EGuidFormats::DigitsWithHyphensLower));
+
+	return true;
+}
+
 bool UKinetixDataBlueprintFunctionLibrary::GetMetadataFiles(TArray<FString>& OutFiles, const FString InFileExtension)
 {
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -53,7 +68,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetMetadataFiles(TArray<FString>& Out
 	                                  *FKinetixRuntimeModule::GetPlugin()->GetContentDir(),
 	                                  *InFileExtension);
 #else
-  	PlatformFile.FindFilesRecursively(OutFiles,
+	PlatformFile.FindFilesRecursively(OutFiles,
 	                                  *FPaths::ProjectContentDir(),
 	                                  *InFileExtension);
 	UE_LOG(LogKinetixRuntime, Warning, TEXT("FPaths::ProjectContentDir(): %s"), *FPaths::ProjectContentDir());
@@ -118,6 +133,13 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationIDFromString(const FStrin
 	return FGuid::Parse(InAnimationID, OutAnimationID.UUID);
 }
 
+bool UKinetixDataBlueprintFunctionLibrary::GetStringFromAnimationID(const FAnimationID& InAnimationID,
+                                                                    FString& OutAnimationID)
+{
+	OutAnimationID = InAnimationID.UUID.ToString(EGuidFormats::DigitsWithHyphensLower);
+	return true;
+}
+
 bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromFile(UObject* WorldContextObject, FString File,
                                                                         FAnimationMetadata& AnimationMetadata)
 {
@@ -170,18 +192,6 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 		return false;
 	AnimationMetadata.Name = FName(Value);
 
-	// if (!JsonObject->TryGetStringField(TEXT("ownership"), Value))
-	// 	return false;
-
-	// Value = FString::Printf(TEXT("o_%s"), *Value);
-	// AnimationMetadata.Ownership =
-	// 	static_cast<EOwnership>(StaticEnum<EOwnership>()->GetValueByNameString(Value));
-
-	// float Duration = 0.f;
-	// if (!JsonObject->TryGetNumberField(TEXT("duration"), Duration))
-	// 	return false;
-	// AnimationMetadata.Duration = Duration;
-
 	return true;
 }
 
@@ -207,28 +217,6 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 		       *JsonReader.Get().GetErrorMessage());
 		return false;
 	}
-
-	// for (int i = 0; i < JsonArray.Num(); ++i)
-	// {
-	// 	const TSharedPtr<FJsonObject> ResponseObject = JsonArray[i]->AsObject();
-	// 	if (!ResponseObject.IsValid())
-	// 		continue;
-	//
-	// 	// UUID field
-	// 	FString EmoteUUID;
-	// 	ResponseObject->TryGetStringField(TEXT("emoteUuid"), EmoteUUID);
-	// 	FGuid::Parse(EmoteUUID, OutAnimationMetadata.Id.UUID);
-	//
-	// 	const TSharedPtr<FJsonObject>* DataObject;
-	// 	ResponseObject->TryGetObjectField(TEXT("data"), DataObject);
-	// 	if (!(DataObject && DataObject->IsValid()))
-	// 		continue;
-	//
-	// 	// Name field
-	// 	FString StringField;
-	// 	(*DataObject).Get()->TryGetStringField(TEXT("name"), StringField);
-	// 	OutAnimationMetadata.Name = FName(StringField);
-	//
 
 	FString StringField;
 	const TSharedPtr<FJsonObject>* MetadataObject = nullptr;
@@ -261,8 +249,27 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 			continue;
 		}
 
-		if (StringField == TEXT("animation"))
-			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+		if (StringField == TEXT("animation-v2"))
+		{
+			// Ready for kinanim integration
+			// 	FString Extension;
+			// 	FileObject->TryGetStringField(TEXT("extension"), Extension);
+			// 	if (Extension == TEXT("kinanim"))
+			// 	{
+			// 		FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+			// 	}
+			// }
+			// else if (StringField == TEXT("animation"))
+			// 	FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+
+			// Will be removed when kinanim in place
+			FString CacheURL;
+			FileObject->TryGetStringField(TEXT("url"), CacheURL);
+			if (!CacheURL.Contains(".glb"))
+				continue;
+
+			OutAnimationMetadata.AnimationURL.Map = CacheURL;
+		}
 	}
 
 	UE_LOG(LogKinetixRuntime, Warning,
@@ -307,9 +314,8 @@ bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDel
 	// /Script/Engine.Skeleton'/ReadyPlayerMe/Character/Fullbody/Mesh/RPM_Mixamo_Skeleton.RPM_Mixamo_Skeleton'
 	// Normalize path D:/Kinetix/kinetix-sdk-unreal/Plugins/ReadyPlayerMe/Content/Character/Fullbody/Mesh/RPM_Mixamo_SkeletalMesh.uasset
 	FString GeneralPath = IPluginManager::Get().FindPlugin(TEXT("Kinetix"))->GetContentDir() + TEXT(
-		"/Character/Fullbody/Mesh");
+		"/Characters/Sam");
 	GeneralPath = FPaths::CreateStandardFilename(GeneralPath);
-	// GeneralPath = FPaths::GetPath(GeneralPath);
 
 	// Format package path
 	FString SkeletalMeshPackagePath = GeneralPath;

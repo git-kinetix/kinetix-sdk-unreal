@@ -21,7 +21,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Kinetix|Settings")
 	static void GetCoreConfiguration(FKinetixCoreConfiguration& OutCoreConfiguration);
-
+	
+	UFUNCTION(Category="Kinetix|Settings")
+	static void GetSDKAPIUrlBase(FString& OutSDKAPIUrlBase);
+	
 public:
 
 	UPROPERTY(Config, BlueprintReadOnly, Category = "General", meta = (DisplayName="Load At Startup"))
@@ -29,4 +32,8 @@ public:
 	
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "General", meta = (DisplayName="Core Configuration"))
 	FKinetixCoreConfiguration CoreConfiguration;
+
+	UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly, Category = "General")
+	FString SDKAPIUrlBase;
+
 };

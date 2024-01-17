@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class KinetixRuntime : ModuleRules
@@ -59,5 +60,10 @@ public class KinetixRuntime : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
+		
+		// PublicAdditionalLibraries.Add(Path.Combine(PluginDirectory, "Binaries", "ThirdParty", "Kinetix", "Kinanim.lib"));
+		// PublicAdditionalLibraries.Add(Path.Combine(PluginDirectory, "Binaries", "ThirdParty", "Kinetix", "KinanimLibrary.lib"));
+		// PublicDelayLoadDLLs.Add("Kinanim.dll");
+		// RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/Kinetix/Kinanim.dll");
 	}
 }

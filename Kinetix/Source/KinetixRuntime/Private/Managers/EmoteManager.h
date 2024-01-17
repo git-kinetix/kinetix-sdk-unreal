@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "glTFRuntimeAsset.h"
 #include "Emote/KinetixEmote.h"
+#include "SmartCache/KinetixCacheSaveGame.h"
 #include "Templates/UniquePtr.h"
 
 class IHttpResponse;
@@ -29,6 +31,7 @@ public:
 	static FEmoteManager& Get();
 
 	USkeletalMesh* GetReferenceSkeleton() const;
+	bool GetAnimSequenceFromGltfAsset(const FKinetixEmote* InEmote, UglTFRuntimeAsset* LoadedGltfAsset);
 
 	void AnimationRequestComplete(
 		TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
@@ -36,21 +39,18 @@ public:
 		bool bSuccess,
 		FAnimationMetadata InAnimationMetadata,
 		TDelegate<void()> OnSuccessDelegate);
-	
+
 	void LoadAnimation(const FKinetixEmote* InEmote, const TDelegate<void()>& OnOperationFinished);
 
 protected:
-	
 	TDelegate<void(FAssetData)> RefSkeletonLoadedDelegate;
 
 	void OnReferenceSkeletonAvailable(FAssetData AssetData);
 
 private:
-	
 	static TUniquePtr<FEmoteManager> Instance;
 
 	TMap<FAnimationID, FKinetixEmote> KinetixEmotes;
 
 	USkeletalMesh* ReferenceSkeletalMesh;
-	
 };
