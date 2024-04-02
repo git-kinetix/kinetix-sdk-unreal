@@ -24,7 +24,7 @@ public:
 	
 #pragma region Registering
 
-	void AddPlayerCharacterComponent(UAnimInstance* InAnimInstance, FGuid& OutGuid);
+	void AddPlayerCharacterComponent(UAnimInstance* InAnimInstance, FGuid& OutGuid, FString AvatarUUID);
 
 	void UnregisterLocalPlayer();
 

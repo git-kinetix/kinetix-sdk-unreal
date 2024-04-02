@@ -8,6 +8,8 @@ public class KinetixRuntime : ModuleRules
 	public KinetixRuntime(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		bEnableExceptions = true;
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
@@ -62,8 +64,6 @@ public class KinetixRuntime : ModuleRules
 			);
 		
 		// PublicAdditionalLibraries.Add(Path.Combine(PluginDirectory, "Binaries", "ThirdParty", "Kinetix", "Kinanim.lib"));
-		// PublicAdditionalLibraries.Add(Path.Combine(PluginDirectory, "Binaries", "ThirdParty", "Kinetix", "KinanimLibrary.lib"));
-		// PublicDelayLoadDLLs.Add("Kinanim.dll");
-		// RuntimeDependencies.Add("$(PluginDir)/Binaries/ThirdParty/Kinetix/Kinanim.dll");
+		// PublicIncludePaths.Add(Path.Combine(PluginDirectory, "Binaries", "ThirdParty", "Kinetix", "Includes"));
 	}
 }

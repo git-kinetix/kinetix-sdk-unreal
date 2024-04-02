@@ -17,15 +17,15 @@ UKinetixAccount::UKinetixAccount(FVTableHelper& Helper)
 UKinetixAccount::~UKinetixAccount()
 {
 	UE_LOG(LogKinetixAccount, Warning, TEXT("[UKinetixAccount] ~UKinetixAccount"));
-	FAccountManager::Get().StopPolling();
+	FAccountManager::Get()->StopPolling();
 }
 
 void UKinetixAccount::Initialize_Implementation(const FKinetixCoreConfiguration& CoreConfiguration, bool& bResult)
 {
-	FAccountManager::Get().SetVirtualWorldID(CoreConfiguration.VirtualWorld);
-	FAccountManager::Get().OnConnectedAccount().AddUObject(this, &UKinetixAccount::ConnectedAccount);
-	FAccountManager::Get().OnUpdatedAccount().AddUObject(this, &UKinetixAccount::UpdatedAccount);
-	FAccountManager::Get().OnAssociatedEmote().AddUObject(this, &UKinetixAccount::AssociatedEmote);
+	FAccountManager::Get()->SetVirtualWorldID(CoreConfiguration.VirtualWorld);
+	FAccountManager::Get()->OnConnectedAccount().AddUObject(this, &UKinetixAccount::ConnectedAccount);
+	FAccountManager::Get()->OnUpdatedAccount().AddUObject(this, &UKinetixAccount::UpdatedAccount);
+	FAccountManager::Get()->OnAssociatedEmote().AddUObject(this, &UKinetixAccount::AssociatedEmote);
 
 	bResult = true;
 }
@@ -38,12 +38,12 @@ void UKinetixAccount::ConnectAccount(const FString& InUserID)
 		return ;
 	}
 
-	FAccountManager::Get().ConnectAccount(InUserID);
+	FAccountManager::Get()->ConnectAccount(InUserID);
 }
 
 void UKinetixAccount::GetConnectedAccount(FName& OutUserName)
 {
-	FAccount* LoggedAccount = FAccountManager::Get().GetConnectedAccount();
+	FAccount* LoggedAccount = FAccountManager::Get()->GetConnectedAccount();
 	if (LoggedAccount == nullptr)
 		return;
 
@@ -52,7 +52,7 @@ void UKinetixAccount::GetConnectedAccount(FName& OutUserName)
 
 void UKinetixAccount::DisconnectAccount()
 {
-	FAccountManager::Get().DisconnectAccount();
+	FAccountManager::Get()->DisconnectAccount();
 }
 
 void UKinetixAccount::UpdatedAccount()

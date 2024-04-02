@@ -36,4 +36,6 @@ public:
 	UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly, Category = "General")
 	FString SDKAPIUrlBase;
 
+	UPROPERTY(Config, EditAnywhere, Category = "Network", meta = (DisplayName="bSendPose"))
+	bool bSendPose;
 };

@@ -3,6 +3,7 @@
 #include "Core/Animation/KinetixAnimation.h"
 
 #include "Kismet/KismetSystemLibrary.h"
+#include "Managers/EmoteManager.h"
 #include "Managers/MemoryManager.h"
 #include "Managers/PlayerManager.h"
 #include "Managers/PlayersManager.h"
@@ -31,7 +32,7 @@ void UKinetixAnimation::Initialize_Implementation(const FKinetixCoreConfiguratio
 	bResult = true;
 }
 
-void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimInstance)
+void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimInstance, FString AvatarUUID)
 {
 	if (!IsValid(InAnimInstance))
 	{
@@ -41,14 +42,14 @@ void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimIns
 
 	AnimInstance = InAnimInstance;
 
-	LocalPlayerManager.Get()->AddPlayerCharacterComponent(InAnimInstance);
+	LocalPlayerManager.Get()->AddPlayerCharacterComponent(InAnimInstance, AvatarUUID);
 
 	OnRegisterLocalPlayer.Broadcast();
 }
 
-void UKinetixAnimation::RegisterAvatarAnimInstance(UAnimInstance* InAnimInstance, FGuid& OutGuid)
+void UKinetixAnimation::RegisterAvatarAnimInstance(UAnimInstance* InAnimInstance, FGuid& OutGuid, FString AvatarUUID)
 {
-	FPlayersManager::Get().AddPlayerCharacterComponent(InAnimInstance, OutGuid);
+	FPlayersManager::Get().AddPlayerCharacterComponent(InAnimInstance, OutGuid, AvatarUUID);
 }
 
 void UKinetixAnimation::UnregisterLocalPlayer()
@@ -77,10 +78,11 @@ void UKinetixAnimation::StopAnimationOnLocalPlayer()
 }
 
 void UKinetixAnimation::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString& InLockID,
+                                                 FString AvatarUUID,
                                                  const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate)
 {
 	LocalPlayerManager.Get()->LoadLocalPlayerAnimation(
-		InAnimationID, InLockID,
+		InAnimationID, InLockID, AvatarUUID,
 		TDelegate<void()>::CreateLambda([OnSuccessDelegate]()
 		{
 			OnSuccessDelegate.ExecuteIfBound(true);
@@ -94,7 +96,6 @@ void UKinetixAnimation::LoadLocalPlayerAnimations(TArray<FAnimationID>& InAnimat
 
 void UKinetixAnimation::UnloadLocalPlayerAnimation(const FAnimationID& InAnimationID)
 {
-	
 }
 
 void UKinetixAnimation::UnloadLocalPlayerAnimations(TArray<FAnimationID>& AnimationIDs)
@@ -109,6 +110,20 @@ bool UKinetixAnimation::IsAnimationAvailableOnLocalPlayer(const FAnimationID& In
 UKinetixCharacterComponent* UKinetixAnimation::GetLocalKCC() const
 {
 	return nullptr;
+}
+
+void UKinetixAnimation::SetReferenceSkeleton(USkeletalMesh* InSkeletalMesh)
+{
+	FEmoteManager::Get().SetReferenceSkeleton(InSkeletalMesh);
+	SetReferenceSkeletalMesh(InSkeletalMesh);
+}
+
+void UKinetixAnimation::SetCurveRemapper(const FglTFRuntimeAnimationCurveRemapper& InRemapper)
+{
+	if (!InRemapper.IsBound())
+		return;
+
+	FEmoteManager::Get().SetCurveRemapper(InRemapper);
 }
 
 void UKinetixAnimation::SetReferenceSkeletalMesh(USkeletalMesh* InSkeletalMesh)

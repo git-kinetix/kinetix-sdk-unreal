@@ -37,13 +37,13 @@ const TArray<FPlayerManager*>& FPlayersManager::GetPlayers() const
 	return Players;
 }
 
-void FPlayersManager::AddPlayerCharacterComponent(UAnimInstance* InAnimInstance, FGuid& OutGuid)
+void FPlayersManager::AddPlayerCharacterComponent(UAnimInstance* InAnimInstance, FGuid& OutGuid, FString AvatarUUID)
 {
 	if (!IsValid(InAnimInstance))
 		return;
 
 	FPlayerManager* NewPlayer = new FPlayerManager(true);
-	NewPlayer->AddPlayerCharacterComponent(InAnimInstance);
+	NewPlayer->AddPlayerCharacterComponent(InAnimInstance, AvatarUUID);
 	Players.Add(NewPlayer);
 	OutGuid = NewPlayer->UUID;
 	

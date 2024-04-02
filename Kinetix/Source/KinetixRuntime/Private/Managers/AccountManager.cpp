@@ -2,6 +2,7 @@
 
 #include "AccountManager.h"
 
+#include "EmoteManager.h"
 #include "HttpModule.h"
 #include "JsonObjectConverter.h"
 #include "KinetixDeveloperSettings.h"
@@ -13,24 +14,19 @@
 #include "Tasks/Task.h"
 #include "Data/KinetixDataLibrary.h"
 
-TUniquePtr<FAccountManager> FAccountManager::Instance = nullptr;
+// TUniquePtr<FAccountManager> FAccountManager::Instance = nullptr;
+FAccountManager* FAccountManager::Instance = nullptr;
 
 FAccountManager::FAccountManager()
 	: LoggedAccount(nullptr), AssignEmotePipe(TEXT("AssignEmotePipe"))
 {
-	check(!AssociateEmoteEvent.IsValid());
-	AssociateEmoteEvent = MakeUnique<UE::Tasks::FTaskEvent>(UE_SOURCE_LOCATION);
+	// check(!AssociateEmoteEvent.IsValid());
+	// AssociateEmoteEvent = MakeUnique<UE::Tasks::FTaskEvent>(UE_SOURCE_LOCATION);
 }
 
 FAccountManager::~FAccountManager()
 {
-	if (!AssociateEmoteEvent.IsValid())
-		return;
-
-	AssociateEmoteEvent->Trigger();
-	AssociateEmoteEvent = nullptr;
-
-	Instance = nullptr;
+	// Instance = nullptr;
 
 	AccountPoller.StopPolling();
 }
@@ -186,13 +182,13 @@ bool FAccountManager::TryCreateAccount(const FString& InUserID)
 	return false;
 }
 
-FAccountManager& FAccountManager::Get()
+FAccountManager* FAccountManager::Get()
 {
-	if (!Instance.IsValid())
+	if (!Instance)
 	{
-		Instance = MakeUnique<FAccountManager>();
+		Instance = new FAccountManager();
 	}
-	return *Instance;
+	return Instance;
 }
 
 void FAccountManager::StopPolling()
@@ -320,7 +316,7 @@ void FAccountManager::OnGetEmotesToVirtualWorldResponse(
 		return;
 	}
 
-	check(AssociateEmoteEvent.IsValid());
-	AssociateEmoteEvent->Trigger();
+	// check(AssociateEmoteEvent.IsValid());
+	// AssociateEmoteEvent->Trigger();
 	//AssociateEmoteEvent.Reset();
 }

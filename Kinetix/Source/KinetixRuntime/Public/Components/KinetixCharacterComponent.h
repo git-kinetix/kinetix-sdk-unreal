@@ -15,7 +15,7 @@ class USkeletalMeshComponent;
 class UPoseableMeshComponent;
 class UAnimSamplerComponent;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAnimationStart, const FAnimationID&, AnimationID)	;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAnimationStart, const FAnimationID&, AnimationID) ;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAnimationEnd, const FAnimationID&, AnimationID);
 
@@ -29,7 +29,7 @@ class KINETIXRUNTIME_API UKinetixCharacterComponent : public UActorComponent
 public:
 	UKinetixCharacterComponent();
 	UKinetixCharacterComponent(FVTableHelper& Helper);
-	
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(BlueprintCallable)
@@ -45,7 +45,13 @@ public:
 	void RegisterSampler(IKinetixSamplerInterface* AnimSequenceSamplerComponent);
 
 	TScriptInterface<IKinetixAnimationInterface> GetAnimInstanceToNotify() const;
-	
+
+	UFUNCTION(BlueprintCallable)
+	void SetAvatarID(FString InAvatarID);
+
+	void PlayAnimationInternal(FAnimationID InID, bool bCond,
+	                           const TDelegate<void(const FAnimationID&), FDefaultDelegateUserPolicy>& Delegate);
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -86,17 +92,17 @@ public:
 	 */
 	UPROPERTY(BlueprintAssignable, Category="Kinetix|Animation|Events")
 	FOnFramePlayed OnFramePlayed;
-	
+
 	IKinetixSamplerInterface* AnimSampler;
-	
+
 	FKinetixCoreInitializedDelegate Callback;
+
+	UPROPERTY()
+	FGuid AvatarID;
 
 private:
 	UPROPERTY(VisibleAnywhere, meta=(DisplayName = "Skeletal Mesh in use"))
 	USkeletalMeshComponent* OwnerSkeletalMeshComponent;
-
-	// UPROPERTY(EditAnywhere, Category="Kinetix|Animation", meta=(AllowPrivateAccess="true"))
-	// bool bRegisterPlayerOnLaunch;
 
 	FTimerHandle CheckSkeletalMeshTimer;
 

@@ -24,7 +24,7 @@ class KINETIXRUNTIME_API IKinetixSamplerInterface
 public:
 
 	UFUNCTION(BlueprintNativeEvent, Category="Kinetix|Animation")
-	void PlayAnimation(UAnimSequence* InAnimSequence);
+	void PlayAnimation(const FAnimationID& InID, const FString& AvatarID, UAnimSequence* InAnimSequence);
 
 	UFUNCTION(BlueprintNativeEvent, Category="Kinetix|Animation")
 	void StopAnimation();

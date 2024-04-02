@@ -21,7 +21,7 @@ FPlayerManager::~FPlayerManager()
 	UE_LOG(LogKinetixRuntime, Log, TEXT("LocalPlayerManager destroyed"));
 }
 
-bool FPlayerManager::AddKinetixComponentAndInitialize(UAnimInstance* InAnimInstance)
+bool FPlayerManager::AddKinetixComponentAndInitialize(UAnimInstance* InAnimInstance, FString AvatarUUID)
 {
 	USkeletalMeshComponent* InSkeletalMeshComponent = InAnimInstance->GetOuterUSkeletalMeshComponent();
 	if (!IsValid(InSkeletalMeshComponent))
@@ -33,21 +33,25 @@ bool FPlayerManager::AddKinetixComponentAndInitialize(UAnimInstance* InAnimInsta
 
 	LocalKinetixComponent = AnimInstanceOwner->FindComponentByClass<UKinetixCharacterComponent>();
 	if (IsValid(LocalKinetixComponent))
+	{
+		LocalKinetixComponent->SetAvatarID(AvatarUUID);
 		return true;
+	}
 
 	LocalKinetixComponent = NewObject<UKinetixCharacterComponent>(AnimInstanceOwner);
 	if (!IsValid(LocalKinetixComponent))
 		return false;
 
+	LocalKinetixComponent->SetAvatarID(AvatarUUID);
 	LocalKinetixComponent->RegisterComponent();
 	InSkeletalMeshComponent->GetOwner()->AddInstanceComponent(LocalKinetixComponent);
 
 	return true;
 }
 
-bool FPlayerManager::AddPlayerCharacterComponent(UAnimInstance* InAnimInstance)
+bool FPlayerManager::AddPlayerCharacterComponent(UAnimInstance* InAnimInstance, FString AvatarUUID)
 {
-	if (!AddKinetixComponentAndInitialize(InAnimInstance))
+	if (!AddKinetixComponentAndInitialize(InAnimInstance, AvatarUUID))
 		return false;
 
 	OnRegisterLocalPlayer();
@@ -132,7 +136,7 @@ void FPlayerManager::UnregisterKinetixComponent()
 {
 }
 
-void FPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString InLockID,
+void FPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString InLockID, FString AvatarUUID,
                                               const TDelegate<void()>& OnSuccess,
                                               const TDelegate<void()>& OnFailure)
 {
@@ -146,7 +150,7 @@ void FPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID,
 	if (DownloadedEmotesReadyToPlay.Contains(InAnimationID))
 		OnSuccess.ExecuteIfBound();
 
-	Async(EAsyncExecution::TaskGraphMainThread, [InAnimationID, Emote, OnSuccess, OnFailure, this]()
+	Async(EAsyncExecution::TaskGraphMainThread, [InAnimationID, Emote, AvatarUUID, OnSuccess, OnFailure, this]()
 	{
 		FEmoteManager::Get().LoadAnimation(Emote, TDelegate<void()>::CreateLambda(
 			                                   [InAnimationID, Emote, OnSuccess, this]()
@@ -155,11 +159,11 @@ void FPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID,
 					                                   InAnimationID, Emote->GetAnimSequence());
 				                                   UE_LOG(LogKinetixAnimation, Warning,
 				                                          TEXT(
-					                                          "[LocalPlayerManager] LodLocalPlayerAnimation: AnimationLoaded"
+					                                          "[LocalPlayerManager] LoadLocalPlayerAnimation: AnimationLoaded"
 				                                          ));
 
 				                                   OnSuccess.ExecuteIfBound();
-			                                   }));
+			                                   }), AvatarUUID);
 	});
 }
 

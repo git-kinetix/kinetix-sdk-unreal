@@ -3,12 +3,14 @@
 
 #include "Core/KinetixCoreSubsystem.h"
 
+#include "glTFRuntimeFunctionLibrary.h"
 #include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
 #include "Core/Account/KinetixAccount.h"
 #include "Core/Animation/KinetixAnimation.h"
 #include "Core/Metadata/KinetixMetadata.h"
 #include "Data/KinetixDataLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 void UKinetixCoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {

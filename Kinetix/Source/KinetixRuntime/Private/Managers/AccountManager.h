@@ -14,7 +14,7 @@ class IHttpResponse;
 /**
  * 
  */
-class FAccountManager
+class KINETIXRUNTIME_API FAccountManager
 {
 public:
 	FAccountManager();
@@ -52,7 +52,7 @@ public:
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnAssociatedEmote, const FString&);
 	FOnAssociatedEmote& OnAssociatedEmote() { return OnAssociatedEmoteDelegate; }
 
-	static FAccountManager& Get();
+	static FAccountManager* Get();
 
 	void StopPolling();
 	
@@ -74,8 +74,9 @@ private:
 		bool bSuccess);
 
 private:
+	static FAccountManager* Instance;
 	
-	static TUniquePtr<FAccountManager> Instance;
+	// static TUniquePtr<FAccountManager> Instance;
 
 	FString VirtualWorldID;
 
@@ -89,11 +90,12 @@ private:
 	TArray<FAnimationID> Emotes;
 
 	UE::Tasks::FPipe AssignEmotePipe;
-	TUniquePtr<UE::Tasks::FTaskEvent> AssociateEmoteEvent;
+	// TUniquePtr<UE::Tasks::FTaskEvent> AssociateEmoteEvent;
 
 	FOnUpdatedAccount OnUpdatedAccountDelegate;
 	FOnConnectedAccount OnConnectedAccountDelegate;
 	FOnAssociatedEmote OnAssociatedEmoteDelegate;
 
 	FAccountPoller AccountPoller;
+	
 };

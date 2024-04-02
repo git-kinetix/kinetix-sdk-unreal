@@ -12,19 +12,6 @@ class IPlugin;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogKinetixRuntime, Log, All);
 
-typedef int(*__SumOf)(int a, int b);
-typedef std::function<void(int, const char*)> LogCallback;
-typedef void (*__RegisterForLogs)(LogCallback LogCallbackDelegate);
-typedef float(*__From)(short s);
-typedef int(*__Func)();
-UENUM()
-enum class ELogType : uint8
-{
-	LT_Log = 0,
-	LT_Warning,
-	LT_Error
-};
-
 class FKinetixRuntimeModule : public IModuleInterface
 {
 public:
