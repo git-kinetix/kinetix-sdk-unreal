@@ -149,6 +149,65 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 		(*MetadataObject)->TryGetStringField(TEXT("description"), StringField);
 		AnimationMetadata.Description = FText::FromString(StringField);
 
+		const TSharedPtr<FJsonObject>* AvatarObject;
+		(*DataObject)->TryGetObjectField(TEXT("avatars"), AvatarObject);
+
+		bool bHasAvatarMetadata = false;
+		if (AvatarObject && AvatarObject->IsValid() && !(*AvatarObject)->Values.IsEmpty())
+			bHasAvatarMetadata = true;
+
+		if (bHasAvatarMetadata)
+		{
+			AnimationMetadata.AvatarMetadatas.Empty();
+			AnimationMetadata.AvatarMetadatas.SetNum((*AvatarObject)->Values.Num());
+
+			for (int avatarIndex = 0; avatarIndex < (*AvatarObject)->Values.Num(); ++avatarIndex)
+			{
+				FString AvatarID = (*AvatarObject)->Values.Array()[avatarIndex].Key;
+				TSharedPtr<FJsonValue> AvatarValue = (*AvatarObject)->Values.Array()[avatarIndex].Value;
+		
+				const TArray<TSharedPtr<FJsonValue>>* AvatarMetadatas;
+				AvatarObject->Get()->TryGetArrayField(AvatarID, AvatarMetadatas);
+		
+				FGuid::Parse(AvatarID, AnimationMetadata.AvatarMetadatas[avatarIndex].AvatarID);
+
+				if (!(AvatarValue && AvatarValue.IsValid()))
+					continue;
+
+				if (!(AvatarMetadatas && AvatarMetadatas->Num()))
+					continue;
+
+				for (int j = 0; j < AvatarMetadatas->Num(); ++j)
+				{
+					TSharedPtr<FJsonObject> AvatarMetadata = (*AvatarMetadatas)[j]->AsObject();
+					if (!AvatarMetadata.IsValid())
+						continue;
+
+					AvatarMetadata->TryGetStringField(TEXT("name"), StringField);
+					if (StringField == TEXT("thumbnail"))
+					{
+						AvatarMetadata->TryGetStringField(TEXT("extension"), StringField);
+						if (StringField != TEXT("png"))
+							continue;
+						AvatarMetadata->TryGetStringField(TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].IconURL.Map);
+						continue;
+					}
+
+					if (StringField == TEXT("unreal"))
+					{
+						// Ready for kinanim integration
+						FString Extension;
+						AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
+						// if (Extension == TEXT("kinanim"))
+						if (Extension == TEXT("glb"))
+						{
+							AvatarMetadata->TryGetStringField(TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].AvatarURL.Map);
+						}
+					}
+				}
+			}
+		}
+		
 		const TArray<TSharedPtr<FJsonValue>>* FilesObject;
 		(*DataObject)->TryGetArrayField(TEXT("files"), FilesObject);
 		if (!(FilesObject && FilesObject->Num()))
@@ -170,7 +229,7 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 				// continue;
 			}
 			
-			if (StringField == TEXT("animation-v2"))
+			if (StringField == TEXT("unreal"))
 			{
 				FString CacheURL;
 				FileObject->TryGetStringField(TEXT("url"), CacheURL);

@@ -228,6 +228,65 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 	(*MetadataObject)->TryGetStringField(TEXT("description"), StringField);
 	OutAnimationMetadata.Description = FText::FromString(StringField);
 
+	const TSharedPtr<FJsonObject>* AvatarObject;
+	JsonObject->TryGetObjectField(TEXT("avatars"), AvatarObject);
+
+	bool bHasAvatarMetadata = false;
+	if (AvatarObject && AvatarObject->IsValid() && !(*AvatarObject)->Values.IsEmpty())
+		bHasAvatarMetadata = true;
+
+	if (bHasAvatarMetadata)
+	{
+		OutAnimationMetadata.AvatarMetadatas.Empty();
+		OutAnimationMetadata.AvatarMetadatas.SetNum((*AvatarObject)->Values.Num());
+
+		for (int i = 0; i < (*AvatarObject)->Values.Num(); ++i)
+		{
+			FString AvatarID = (*AvatarObject)->Values.Array()[i].Key;
+			TSharedPtr<FJsonValue> AvatarValue = (*AvatarObject)->Values.Array()[i].Value;
+		
+			const TArray<TSharedPtr<FJsonValue>>* AvatarMetadatas;
+			AvatarObject->Get()->TryGetArrayField(AvatarID, AvatarMetadatas);
+		
+			FGuid::Parse(AvatarID, OutAnimationMetadata.AvatarMetadatas[i].AvatarID);
+
+			if (!(AvatarValue && AvatarValue.IsValid()))
+				return false;
+
+			if (!(AvatarMetadatas && AvatarMetadatas->Num()))
+				return false;
+
+			for (int j = 0; j < AvatarMetadatas->Num(); ++j)
+			{
+				TSharedPtr<FJsonObject> AvatarMetadata = (*AvatarMetadatas)[j]->AsObject();
+				if (!AvatarMetadata.IsValid())
+					continue;
+
+				AvatarMetadata->TryGetStringField(TEXT("name"), StringField);
+				if (StringField == TEXT("thumbnail"))
+				{
+					AvatarMetadata->TryGetStringField(TEXT("extension"), StringField);
+					if (StringField != TEXT("png"))
+						continue;
+					AvatarMetadata->TryGetStringField(TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].IconURL.Map);
+					continue;
+				}
+
+				if (StringField == TEXT("unreal"))
+				{
+					// Ready for kinanim integration
+					FString Extension;
+					AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
+					// if (Extension == TEXT("kinanim"))
+					if (Extension == TEXT("glb"))
+					{
+						AvatarMetadata->TryGetStringField(TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].AvatarURL.Map);
+					}
+				}
+			}
+		}
+	}
+
 	const TArray<TSharedPtr<FJsonValue>>* FilesObject;
 	JsonObject->TryGetArrayField(TEXT("files"), FilesObject);
 	if (!(FilesObject && FilesObject->Num()))
@@ -249,28 +308,29 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 			continue;
 		}
 
-		if (StringField == TEXT("animation-v2"))
+		if (StringField == TEXT("unreal"))
 		{
 			// Ready for kinanim integration
-			// 	FString Extension;
-			// 	FileObject->TryGetStringField(TEXT("extension"), Extension);
-			// 	if (Extension == TEXT("kinanim"))
-			// 	{
-			// 		FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
-			// 	}
-			// }
-			// else if (StringField == TEXT("animation"))
-			// 	FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
-
-			// Will be removed when kinanim in place
-			FString CacheURL;
-			FileObject->TryGetStringField(TEXT("url"), CacheURL);
-			if (!CacheURL.Contains(".glb"))
-				continue;
-
-			OutAnimationMetadata.AnimationURL.Map = CacheURL;
+			FString Extension;
+			FileObject->TryGetStringField(TEXT("extension"), Extension);
+			// if (Extension == TEXT("kinanim"))
+			if (Extension == TEXT("glb"))
+			{
+				FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+			}
 		}
+		else if ((StringField == TEXT("animation")) && (!OutAnimationMetadata.AnimationURL.Map.Contains(TEXT("https"))))
+			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+
+		// Will be removed when kinanim in place
+		// FString CacheURL;
+		// FileObject->TryGetStringField(TEXT("url"), CacheURL);
+		// if (!CacheURL.Contains(".glb"))
+		// 	continue;
+
+		// OutAnimationMetadata.AnimationURL.Map = CacheURL;
 	}
+
 
 	UE_LOG(LogKinetixRuntime, Warning,
 	       TEXT("[FAccount] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
@@ -279,8 +339,6 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 	       OutAnimationMetadata.Duration,
 	       *OutAnimationMetadata.IconURL.Map,
 	       *OutAnimationMetadata.AnimationURL.Map);
-
-	// }
 
 	return true;
 }

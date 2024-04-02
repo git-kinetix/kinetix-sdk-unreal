@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Data/KinetixDataLibrary.h"
 #include "Interfaces/KinetixSubcoreInterface.h"
+#include "glTFRuntimeParser.h"
 #include "KinetixAnimation.generated.h"
 
 class UKinetixCharacterComponent;
@@ -39,14 +40,14 @@ public:
 	 * @param InAnimInstance AnimInstance of your local character
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void RegisterLocalPlayerAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance);
+	void RegisterLocalPlayerAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance, FString AvatarUUID);
 
 	/**
 	 * @brief Register the local player AnimInstance with Skeletal setup to play animation on it 
 	 * @param InAnimInstance AnimInstance of your local character
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void RegisterAvatarAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance, FGuid& OutGuid);
+	void RegisterAvatarAnimInstance(UPARAM(ref) UAnimInstance* InAnimInstance, FGuid& OutGuid, FString AvatarUUID);
 
 	/**
 	 * @brief Register the local player configuration for custom animation system.
@@ -98,7 +99,7 @@ public:
 	 * @param OnSuccessDelegate Callback with loading result
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
-	void LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString& InLockID,
+	void LoadLocalPlayerAnimation(const FAnimationID& InAnimationID, FString& InLockID, FString AvatarUUID,
 	                              const FOnKinetixLocalAnimationLoadingFinished& OnSuccessDelegate);
 
 	/**
@@ -138,6 +139,20 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
 	UKinetixCharacterComponent* GetLocalKCC() const;
+
+	/**
+	 * @brief Setter for specific avatar's loadings
+	 * @return The USkeletalMesh registered (must be one)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
+	void SetReferenceSkeleton(USkeletalMesh* InSkeletalMesh);
+	
+	/**
+	 * @brief Getter for the register Kinetix Component
+	 * @return The UKinetixComponent registered (if there is one)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
+	void SetCurveRemapper(const FglTFRuntimeAnimationCurveRemapper& InRemapper);
 
 public:
 	/**

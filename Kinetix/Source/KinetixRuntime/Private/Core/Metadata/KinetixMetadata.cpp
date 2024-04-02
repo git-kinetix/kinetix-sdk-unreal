@@ -88,7 +88,7 @@ void UKinetixMetadata::GetUserAnimationMetadatas(const FOnMetadatasAvailable& Ca
 		return;
 	}
 
-	FAccountManager::Get().GetAllUserAnimationMetadatas(
+	FAccountManager::Get()->GetAllUserAnimationMetadatas(
 		Callback, TDelegate<void()>());
 }
 

@@ -27,9 +27,11 @@ public:
 
 	void GetAnimSequence(const FAnimationID& InAnimationID, const TDelegate<void(UAnimSequence*)>& OnSuccess);
 	void AnimSequenceAvailable(FSoftObjectPath SoftObjectPath, TDelegate<void(UAnimSequence*)> Delegate) const;
+	void SetCurveRemapper(const FglTFRuntimeAnimationCurveRemapper& InRemapper);
 
 	static FEmoteManager& Get();
 
+	void SetReferenceSkeleton(USkeletalMesh* SkeletalMesh);
 	USkeletalMesh* GetReferenceSkeleton() const;
 	bool GetAnimSequenceFromGltfAsset(const FKinetixEmote* InEmote, UglTFRuntimeAsset* LoadedGltfAsset);
 
@@ -40,10 +42,12 @@ public:
 		FAnimationMetadata InAnimationMetadata,
 		TDelegate<void()> OnSuccessDelegate);
 
-	void LoadAnimation(const FKinetixEmote* InEmote, const TDelegate<void()>& OnOperationFinished);
+	void LoadAnimation(const FKinetixEmote* InEmote, const TDelegate<void()>& OnOperationFinished, FString AvatarUUID = FString());
 
 protected:
 	TDelegate<void(FAssetData)> RefSkeletonLoadedDelegate;
+
+	FglTFRuntimeAnimationCurveRemapper CurveRemapper;
 
 	void OnReferenceSkeletonAvailable(FAssetData AssetData);
 

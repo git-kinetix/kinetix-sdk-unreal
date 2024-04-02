@@ -16,8 +16,9 @@ public:
 	FPlayerManager(bool bInPlayAutomaticallyOnAnimator);
 	~FPlayerManager();
 
-	bool AddKinetixComponentAndInitialize(UAnimInstance* InAnimInstance);
-	bool AddPlayerCharacterComponent(UAnimInstance* InAnimInstance);
+	bool AddKinetixComponentAndInitialize(UAnimInstance* InAnimInstance, FString AvatarUUID = FString());
+	
+	bool AddPlayerCharacterComponent(UAnimInstance* InAnimInstance, FString AvatarUUID = FString());
 	bool RemovePlayerCharacterComponent();
 
 	bool IsAnimationAvailable(FAnimationID InAnimationID) const;
@@ -42,7 +43,7 @@ public:
 #pragma region Loading
 
 	void LoadLocalPlayerAnimation(const FAnimationID& InAnimationID,
-		FString InLockID,
+		FString InLockID, FString AvatarUUID = FString(),
 		const TDelegate<void()>& OnSuccess = TDelegate<void()>(),
 		const TDelegate<void()>& OnFailure = TDelegate<void()>());
 

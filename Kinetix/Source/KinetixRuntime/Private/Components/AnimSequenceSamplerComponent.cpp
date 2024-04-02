@@ -2,11 +2,15 @@
 
 #include "Components/AnimSequenceSamplerComponent.h"
 
+#include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
 #include "Animation/AnimationPoseData.h"
 #include "AnimInstances/KinetixAnimInstance.h"
 #include "Components/KinetixCharacterComponent.h"
 #include "Components/PoseableMeshComponent.h"
+#include "Core/KinetixCoreSubsystem.h"
+#include "Core/Animation/KinetixAnimation.h"
+#include "Core/Metadata/KinetixMetadata.h"
 #include "Core/Network/KinetixNetworkedPose.h"
 
 UAnimSequenceSamplerComponent::UAnimSequenceSamplerComponent(const FObjectInitializer& ObjectInitializer)
@@ -93,8 +97,6 @@ void UAnimSequenceSamplerComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	AnimSequenceToPlay->GetAnimationPose(TickPose, Context);
 	CSPose.InitPose(MoveTemp(OutPose));
 
-	FBonePoseInfo BoneInfo;
-
 	// ReSharper disable once CppJoinDeclarationAndAssignment
 	FTransform BoneTransform;
 	for (int i = 0; i < BoneNames.Num(); ++i)
@@ -172,7 +174,7 @@ void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 		AnimInstance = SkeletalMeshComponents[i]->GetAnimInstance();
 		if (!IsValid(AnimInstance))
 			continue;
-		
+
 		KinetixSkeletalMeshComponentSource = Cast<UKinetixAnimInstance>(
 			SkeletalMeshComponents[i]->AnimScriptInstance);
 		if (!IsValid(KinetixSkeletalMeshComponentSource))
@@ -210,45 +212,24 @@ void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 	// 	PoseableMeshComp->SetHiddenInGame(true, true);
 }
 
-void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* InAnimSequence)
+void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(const FAnimationID& InID, const FString& AvatarID, UAnimSequence* InAnimSequence)
 {
 	if (!IsValid(InAnimSequence))
 		return;
 
+	if (!GetDefault<UKinetixDeveloperSettings>()->bSendPose)
+	{
+		SendServerAnimationID(InID, AvatarID);
+		return;
+	}
+
 	if (!IsValid(KinetixSkeletalMeshComponentSource))
 		return;
 
-	// auto CurrentOwner = SkeletalMeshComponentToPause->GetOwner();
-	// UKismetSystemLibrary::PrintString(this,
-	//                                   FString::Printf(TEXT("%s %s PlayAnimation"),
-	//                                                   *UEnum::GetValueAsString(CurrentOwner->GetLocalRole()),
-	//                                                   *UEnum::GetValueAsString(CurrentOwner->GetRemoteRole())),
-	//                                   true, true,
-	//                                   CurrentOwner->HasAuthority() == true ? FLinearColor::Red : FLinearColor::Blue,
-	//                                   20.f);
-
-	// if (IsValid(AnimSequenceToPlay))
-	// 	EnableAnimInstance();
-
-	// if (!IsValid(AnimQueue.AnimationSequences[AnimIndex]))
-	// 	return;
-
 	AnimSequenceToPlay = InAnimSequence;
-
-	// float AnimLength = AnimSequenceToPlay->GetPlayLength();
 
 	RequiredBones =
 		KinetixSkeletalMeshComponentSource->GetRequiredBones();
-
-	// CompactPose.ResetToRefPose(RequiredBones);	
-
-	// Curve.InitFrom(RequiredBones);
-	// SkeletalMeshComponentToPause->SetAnimationMode(EAnimationMode::AnimationCustomMode);
-	// SkeletalMeshComponentToPause->SetComponentTickEnabled(false);
-
-	// UE::PoseSearch::FSequenceBaseSampler::FInput Input;
-	// Input.SequenceBase = AnimSequenceToPlay;
-	// Sampler.Init(Input);
 
 	Context.CurrentTime = 0.f;
 	for (int i = 0; i < RequiredBones.GetNumBones(); ++i)
@@ -268,32 +249,6 @@ void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(UAnimSequence* 
 
 	Time = 0.f;
 
-	// Sampler.ExtractPose(Context, PoseData);
-
-	// if (!IsComponentTickEnabled() || FMath::IsNearlyZero(AnimLength, 0.01f))
-
-	// GetOwnerSkeletalMeshComponent();
-
-	// if (!FMath::IsNearlyZero(Duration, 0.01f))
-	// {
-	// RootMotionUtils.RevertToOffsets();
-	// }
-	//
-	// DisableAnimInstance();
-	//
-	// Time = BlendTime;
-	// Duration = AnimLength;
-	// BlendState = EBlendState::BS_In;
-	//
-	// // RootMotionUtil.SaveOffsets();
-	//
-	// float BlendDuration = Duration >= BlendInTime ? BlendInTime : Duration;
-	// if (AnimQueue.AnimationIDs.Num() >= AnimIndex
-	// 	&& AnimQueue.AnimationIDs[AnimIndex].UUID.IsValid())
-	// 	OnAnimationStart.ExecuteIfBound(AnimQueue.AnimationIDs[AnimIndex]);
-
-	// BlendAnimations.BlendAnim(AnimSequenceToPlay, BlendDuration, BlendDuration);
-	// BlendAnimations.OnBlendEnded.AddUObject(OnBlendInEnded);
 }
 
 void UAnimSequenceSamplerComponent::StopAnimation_Implementation()
@@ -328,6 +283,11 @@ void UAnimSequenceSamplerComponent::DisableAnimInstance()
 	SkeletalMeshComponentToPause->SetAnimationMode(EAnimationMode::AnimationCustomMode);
 }
 
+void UAnimSequenceSamplerComponent::SendServerAnimationID_Implementation(FAnimationID InID, const FString& AvatarID)
+{
+	AllDispatchPlayedAnimationID(InID, AvatarID);
+}
+
 bool UAnimSequenceSamplerComponent::ServerSendFramePose_Validate(FKinetixNetworkedPose NetworkedPose)
 {
 	if (NetworkedPose.Bones.Num() != BoneNames.Num())
@@ -349,7 +309,7 @@ void UAnimSequenceSamplerComponent::ServerSendFramePose_Implementation(FKinetixN
 		return;
 
 	OnServerReceivedPose.Broadcast(NetworkedPose, this);
-	
+
 	AllDispatchPose(NetworkedPose);
 }
 
@@ -358,7 +318,7 @@ void UAnimSequenceSamplerComponent::AllDispatchPose_Implementation(FKinetixNetwo
 	if (!bKinetixSkeletalMeshFound)
 		return;
 
-	FTransform BoneTransform;
+	// FTransform BoneTransform;
 	FVector TempVector = FVector::ZeroVector;
 
 	TArray<FName> Copy;
@@ -382,6 +342,80 @@ void UAnimSequenceSamplerComponent::AllDispatchPose_Implementation(FKinetixNetwo
 
 	AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(
 		AnimInstanceToNotify.GetObject(), true);
+}
+
+void UAnimSequenceSamplerComponent::AllDispatchPlayedAnimationID_Implementation(FAnimationID InID, const FString& AvatarID)
+{
+	if (GetOwnerRole() != ENetRole::ROLE_SimulatedProxy)
+		return;
+
+	UWorld* CurrentWorld = GetWorld();
+	if (!IsValid(CurrentWorld))
+		return;
+
+	UGameInstance* CurrentGI = CurrentWorld->GetGameInstance();
+	if (!IsValid(CurrentGI))
+		return;
+
+	UKinetixCoreSubsystem* KinetixCore = CurrentGI->GetSubsystem<UKinetixCoreSubsystem>();
+	if (!IsValid(KinetixCore))
+		return;
+
+	FOnMetadataAvailable OnMetadataAvailable;
+	OnMetadataAvailable.BindUFunction(this, TEXT("OnMetadataAvailable"));
+	CacheAvatarID = AvatarID;
+	KinetixCore->KinetixMetadata->GetAnimationMetadataByAnimationID(InID, OnMetadataAvailable);
+}
+
+void UAnimSequenceSamplerComponent::OnMetadataAvailable(bool bSuccess, const FAnimationMetadata& AnimationMetadata)
+{
+	FString InLockID;
+	FOnKinetixLocalAnimationLoadingFinished AnimationLoadingFinished;
+	AnimationLoadingFinished.BindUFunction(this, TEXT("OnAnimationLoadingFinished"));
+	RemoteAnimationIDToPlay = AnimationMetadata.Id;
+
+	UWorld* CurrentWorld = GetWorld();
+	if (!IsValid(CurrentWorld))
+		return;
+
+	UGameInstance* CurrentGI = CurrentWorld->GetGameInstance();
+	if (!IsValid(CurrentGI))
+		return;
+
+	UKinetixCoreSubsystem* KinetixCore = CurrentGI->GetSubsystem<UKinetixCoreSubsystem>();
+	if (!IsValid(KinetixCore))
+		return;
+
+	KinetixCore->KinetixAnimation->LoadLocalPlayerAnimation(AnimationMetadata.Id, InLockID, CacheAvatarID,
+	                                                        AnimationLoadingFinished);
+}
+
+void UAnimSequenceSamplerComponent::OnAnimationLaunchedOnServer(const FAnimationID& AnimationID)
+{
+}
+
+void UAnimSequenceSamplerComponent::PlayAnimationOnComponent(FAnimationID InID)
+{
+	AActor* CurrentOwner = GetOwner();
+	if (!IsValid(CurrentOwner))
+		return;
+
+	UKinetixCharacterComponent* KinetixCharacterComponent = CurrentOwner->GetComponentByClass<UKinetixCharacterComponent>();
+	if (!IsValid(KinetixCharacterComponent))
+		return;
+
+	KinetixCharacterComponent->PlayAnimationInternal(InID, false,
+	                           TDelegate<void(const FAnimationID&)>::CreateUObject(
+		                           this, &UAnimSequenceSamplerComponent::OnAnimationLaunchedOnServer));
+}
+
+void UAnimSequenceSamplerComponent::OnAnimationLoadingFinished(bool bSuccess)
+{
+	if (!bSuccess)
+		return;
+
+	PlayAnimationOnComponent(RemoteAnimationIDToPlay);
+	RemoteAnimationIDToPlay.UUID.Invalidate();
 }
 
 void UAnimSequenceSamplerComponent::KinetixStartAnimation(const FAnimationID& AnimationID)

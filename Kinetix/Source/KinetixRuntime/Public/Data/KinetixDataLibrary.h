@@ -82,6 +82,21 @@ FORCEINLINE uint32 GetTypeHash(const FAnimationID& AnimationID)
 }
 
 USTRUCT(BlueprintType)
+struct FKinetixAvatarMetadata
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere)
+	FGuid AvatarID;
+
+	UPROPERTY(VisibleAnywhere)
+	FURL AvatarURL;
+	
+	UPROPERTY(VisibleAnywhere)
+	FURL IconURL;
+};
+
+USTRUCT(BlueprintType)
 struct FAnimationMetadata
 {
 	GENERATED_BODY()
@@ -110,6 +125,9 @@ struct FAnimationMetadata
 	UPROPERTY(VisibleAnywhere)
 	FURL IconURL;
 
+	UPROPERTY(VisibleAnywhere)
+	TArray<FKinetixAvatarMetadata> AvatarMetadatas;
+
 #pragma endregion
 
 	FAnimationMetadata()
@@ -133,7 +151,7 @@ struct FAnimationMetadata
 		CreatedAt = Other.CreatedAt;
 		AnimationURL = Other.AnimationURL;
 		IconURL = Other.IconURL;
-
+		AvatarMetadatas = Other.AvatarMetadatas;
 		return *this;
 	}
 
@@ -183,7 +201,7 @@ struct FKinetixCoreConfiguration
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	uint8 CachedEmotes;
-	
+
 	// TODO: Implement network structure
 	// FKinetixNetworkConfiguration NetworkConfiguration
 
@@ -303,8 +321,9 @@ public:
 	static UPARAM(DisplayName="Success") bool RemoveContentFromPluginPath(FString& RelativePath, FString PathRoot);
 
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Data", meta = (Keywords = "data"))
-	static UPARAM(DisplayName="Success") bool GetCacheAnimationPath(FString& AbsolutePath, const FAnimationID& InAnimationMetadata);
-	
+	static UPARAM(DisplayName="Success") bool GetCacheAnimationPath(FString& AbsolutePath,
+	                                                                const FAnimationID& InAnimationMetadata);
+
 #pragma endregion
 
 #pragma region Metadatas
@@ -387,5 +406,4 @@ public:
 	static FString GetKinetixSlotName();
 
 #pragma endregion
-
 };

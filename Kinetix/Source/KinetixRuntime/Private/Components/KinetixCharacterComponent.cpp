@@ -23,7 +23,6 @@ UKinetixCharacterComponent::UKinetixCharacterComponent()
 	// bRegisterPlayerOnLaunch = false;
 
 	SetIsReplicatedByDefault(true);
-	
 }
 
 UKinetixCharacterComponent::UKinetixCharacterComponent(FVTableHelper& Helper)
@@ -59,14 +58,62 @@ TScriptInterface<IKinetixAnimationInterface> UKinetixCharacterComponent::GetAnim
 	return AnimInstanceToNotify;
 }
 
+void UKinetixCharacterComponent::SetAvatarID(FString InAvatarID)
+{
+	FGuid::Parse(InAvatarID, AvatarID);
+}
+
+void UKinetixCharacterComponent::PlayAnimationInternal(FAnimationID InID, bool bCond,
+                                                       const TDelegate<
+	                                                       void(const FAnimationID&)>& OnPlayedAnimationDelegate)
+{
+	if (!InID.UUID.IsValid())
+		return;
+
+	UKinetixCoreSubsystem* KinetixCore = Cast<UKinetixCoreSubsystem>(
+		USubsystemBlueprintLibrary::GetGameInstanceSubsystem(this, UKinetixCoreSubsystem::StaticClass()));
+	if (!IsValid(KinetixCore))
+		return;
+
+	FEmoteManager::Get().GetAnimSequence(InID,
+	                                     TDelegate<void(UAnimSequence*)>::CreateLambda([&](UAnimSequence* AnimSequence)
+	                                     {
+		                                     if (!IsValid(AnimSequence))
+		                                     {
+			                                     UE_LOG(LogKinetixRuntime, Warning,
+			                                            TEXT(
+				                                            "[UKinetixComponent] PlayAnimation: %s AnimSequence is null !"
+			                                            ), *GetName());
+			                                     return;
+		                                     }
+
+		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
+		                                     OnPlayedAnimationDelegate.ExecuteIfBound(InID);
+		                                     OnAnimationStart.Broadcast(InID);
+		                                     if (AnimSampler)
+			                                     AnimSampler->Execute_PlayAnimation(
+				                                     AnimSampler->_getUObject(), InID,
+				                                     AvatarID.ToString(EGuidFormats::DigitsWithHyphensLower),
+				                                     AnimSequence);
+
+		                                     GetWorld()->GetTimerManager().SetTimer(
+			                                     EndAnimationHandle, this,
+			                                     &UKinetixCharacterComponent::OnKinetixAnimationEnded,
+			                                     AnimSequence->GetPlayLength());
+		                                     if (!IsValid(AnimInstanceToNotify.GetObject()))
+			                                     return;
+		                                     AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(
+			                                     AnimInstanceToNotify.GetObject(), true);
+		                                     CurrentAnimationIDBeingPlayed = InID;
+	                                     }));
+}
+
 // Called when the game starts
 void UKinetixCharacterComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	CheckSkeletalMeshComponent();
-
-
 }
 
 void UKinetixCharacterComponent::CheckAnimInstanceToNotify(AActor* CurrentOwner)
@@ -124,7 +171,9 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 		                                     OnAnimationStart.Broadcast(InAnimationID);
 		                                     if (AnimSampler)
 			                                     AnimSampler->Execute_PlayAnimation(
-				                                     AnimSampler->_getUObject(), AnimSequence);
+				                                     AnimSampler->_getUObject(), InAnimationID,
+				                                     AvatarID.ToString(EGuidFormats::DigitsWithHyphensLower),
+				                                     AnimSequence);
 
 		                                     GetWorld()->GetTimerManager().SetTimer(
 			                                     EndAnimationHandle, this,
@@ -166,11 +215,6 @@ void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
 	}
 
 	OnOwnerAnimationInitialized();
-
-	// if (GetOwnerRole() != ROLE_AutonomousProxy && GetNetMode() != NM_Standalone)
-	// {
-	// 	OwnerSkeletalMeshComponent->SetHiddenInGame(true, true);
-	// }
 
 	CheckAnimInstanceToNotify(CurrentOwner);
 }
@@ -253,7 +297,7 @@ void UKinetixCharacterComponent::OnKinetixAnimationEnded()
 	if (AnimSampler)
 		AnimSampler->Execute_StopAnimation(
 			AnimSampler->_getUObject());
-	
+
 	if (!IsValid(AnimInstanceToNotify.GetObject()))
 		return;
 	AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(AnimInstanceToNotify.GetObject(), false);

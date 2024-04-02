@@ -18,6 +18,9 @@
 
 #pragma region SmartCache
 
+// #include <IKinanimInterface.h>
+// #include <KinanimWrapper.h>
+
 #include "MemoryManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "SmartCache/KinetixCacheSaveGame.h"
@@ -101,6 +104,11 @@ void FEmoteManager::AnimSequenceAvailable(FSoftObjectPath SoftObjectPath,
 	Delegate.Execute(AnimSequence);
 }
 
+void FEmoteManager::SetCurveRemapper(const FglTFRuntimeAnimationCurveRemapper& InRemapper)
+{
+	CurveRemapper = InRemapper;
+}
+
 FEmoteManager& FEmoteManager::Get()
 {
 	if (!Instance.IsValid())
@@ -113,6 +121,17 @@ FEmoteManager& FEmoteManager::Get()
 	return *Instance;
 }
 
+void FEmoteManager::SetReferenceSkeleton(USkeletalMesh* SkeletalMesh)
+{
+	if (!IsValid(SkeletalMesh))
+	{
+		UE_LOG(LogKinetixAnimation, Warning, TEXT("[EmoteManager] SetReferenceSkeleton: Given skeleton is null !"))
+		return;
+	}
+
+	ReferenceSkeletalMesh = SkeletalMesh;
+}
+
 USkeletalMesh* FEmoteManager::GetReferenceSkeleton() const
 {
 	return ReferenceSkeletalMesh;
@@ -121,6 +140,13 @@ USkeletalMesh* FEmoteManager::GetReferenceSkeleton() const
 bool FEmoteManager::GetAnimSequenceFromGltfAsset(const FKinetixEmote* InEmote, UglTFRuntimeAsset* LoadedGltfAsset)
 {
 	FglTFRuntimeSkeletalAnimationConfig SkeletalAnimConfig;
+	SkeletalAnimConfig.bRemoveMorphTargets = true;
+
+	if (CurveRemapper.IsBound())
+	{
+		SkeletalAnimConfig.CurveRemapper.Remapper = CurveRemapper;
+	}
+
 	USkeletalMesh* RefSkeletalMesh = GetReferenceSkeleton();
 	if (!IsValid(RefSkeletalMesh))
 	{
@@ -128,7 +154,6 @@ bool FEmoteManager::GetAnimSequenceFromGltfAsset(const FKinetixEmote* InEmote, U
 		       TEXT("[FAccount] AnimationRequestComplete(): RefSekeletalMesh is null !"));
 		return true;
 	}
-
 	UAnimSequence* AnimSequence = LoadedGltfAsset->LoadSkeletalAnimation(RefSkeletalMesh, 0,
 	                                                                     SkeletalAnimConfig);
 
@@ -149,7 +174,8 @@ bool FEmoteManager::GetAnimSequenceFromGltfAsset(const FKinetixEmote* InEmote, U
 }
 
 void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
-                                  const TDelegate<void()>& OnOperationFinished)
+                                  const TDelegate<void()>& OnOperationFinished,
+                                  FString AvatarUUID)
 {
 	const UKinetixCacheSaveGame& Manifest = FMemoryManager::Get().GetManifest();
 	if (Manifest.Contains(InEmote->GetAnimationMetadata().Id))
@@ -168,8 +194,12 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 		RuntimeConfig.BaseTransform.SetRotation(FRotator(0.f, 180.f, 0.f).Quaternion());
 		RuntimeConfig.BaseTransform.SetScale3D(FVector(-1.f, 1.f, 1.f));
 
-		UglTFRuntimeAsset* LoadedGltfAsset = UglTFRuntimeFunctionLibrary::glTFLoadAssetFromFilename(
-			Path, false, RuntimeConfig);
+		// FglTFRuntimeHttpResponse GltfHttpResponse;
+		
+		// GltfHttpResponse.BindUFunction();
+		UglTFRuntimeAsset* LoadedGltfAsset =
+			UglTFRuntimeFunctionLibrary::glTFLoadAssetFromFilename(
+				Path, false, RuntimeConfig);
 
 		if (LoadedGltfAsset == nullptr)
 		{
@@ -189,7 +219,34 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
 		FHttpModule::Get().CreateRequest();
 
-	HttpRequest->SetURL(InEmote->GetAnimationMetadata().AnimationURL.Map);
+	bool bAvatarIDFound = false;
+	if (!AvatarUUID.IsEmpty()
+		&& !InEmote->GetAnimationMetadata().AvatarMetadatas.IsEmpty())
+	{
+		for (int i = 0; i < InEmote->GetAnimationMetadata().AvatarMetadatas.Num(); ++i)
+		{
+			if (InEmote->GetAnimationMetadata().AvatarMetadatas[i].AvatarID.ToString(
+				EGuidFormats::DigitsWithHyphensLower) != AvatarUUID)
+				continue;
+
+			// AvatarID found
+			HttpRequest->SetURL(InEmote->GetAnimationMetadata().AvatarMetadatas[i].AvatarURL.Map);
+			i = InEmote->GetAnimationMetadata().AvatarMetadatas.Num();
+			bAvatarIDFound = true;
+		}
+
+		if (!bAvatarIDFound)
+		{
+			UE_LOG(LogKinetixAnimation, Error,
+			       TEXT("[EmoteManager] LoadAnimation(): Given AvatarID not in emote metadata's avatars"));
+			return;
+		}
+	}
+	else
+	{
+		HttpRequest->SetURL(InEmote->GetAnimationMetadata().AnimationURL.Map);
+	}
+
 	HttpRequest->OnProcessRequestComplete().BindRaw(
 		this, &FEmoteManager::AnimationRequestComplete,
 		InEmote->GetAnimationMetadata(), OnOperationFinished);
@@ -213,6 +270,71 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 
 	FString JsonString = HttpResponse->GetContentAsString();
 
+#pragma region Kinanim implementation
+
+
+	// const TArray<uint8> JsonContent = HttpResponse->GetContent();
+	//
+	// const char* Datas = reinterpret_cast<const char*>(JsonContent.GetData());
+	// void* BinaryStream = Kinanim::CreateBinaryStreamFromArray(Datas, JsonContent.Num());
+	// if (BinaryStream == nullptr)
+	// {
+	// 	UE_LOG(LogKinetixAnimation, Error,
+	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream ! %s"),
+	// 	       *JsonString);
+	// 	return;
+	// }
+	//
+	// void* InterpoCompression = KinanimWrapper::Ctor_InterpoCompression();
+	// if (InterpoCompression == nullptr)
+	// {
+	// 	UE_LOG(LogKinetixAnimation, Error,
+	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create InterpoCompression ! %s"),
+	// 	       *JsonString);
+	// 	return;
+	// }
+	//
+	// void* KinanimImporter = KinanimWrapper::Ctor_KinanimImporter(InterpoCompression);
+	// if (KinanimImporter == nullptr)
+	// {
+	// 	UE_LOG(LogKinetixAnimation, Error,
+	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create KinanimImporter ! %s"),
+	// 	       *JsonString);
+	// 	return;
+	// }
+	//
+	// KinanimWrapper::KinanimImporter_ReadFile(KinanimImporter, BinaryStream);
+	//
+	// void* KinanimResult = KinanimWrapper::KinanimImporter_GetResult(KinanimImporter);
+	// if (KinanimResult == nullptr)
+	// {
+	// 	UE_LOG(LogKinetixAnimation, Error,
+	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to get KinanimResult ! %s"),
+	// 	       *JsonString);
+	// 	return;
+	// }
+	//
+	// unsigned short FrameCount = KinanimWrapper::KinanimHeader_GetFrameCount(
+	// 	KinanimWrapper::KinanimData_Get_header(KinanimResult));
+	//
+	// if (FrameCount == 0)
+	// {
+	// 	UE_LOG(LogKinetixAnimation, Error,
+	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to get FrameCount ! %s"),
+	// 	       *JsonString);
+	// 	return;
+	// }
+	//
+	// TArray<FrameData> Frames;
+	// Frames.SetNumUninitialized(FrameCount);
+	// void* Content = KinanimWrapper::KinanimData_Get_content(KinanimResult);
+	// for (unsigned int i = 0; i < FrameCount; ++i)
+	// {
+	// 	Frames[i] = KinanimWrapper::KinanimContent_Get_frames(Content, i);
+	// }
+
+#pragma endregion
+
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
 	const TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonString);
 
@@ -225,7 +347,7 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 	RuntimeConfig.TransformBaseType = EglTFRuntimeTransformBaseType::Transform;
 	RuntimeConfig.BaseTransform.SetRotation(FRotator(0.f, 180.f, 0.f).Quaternion());
 	RuntimeConfig.BaseTransform.SetScale3D(FVector(-1.f, 1.f, 1.f));
-	
+
 	UglTFRuntimeAsset* GlTFAsset =
 		UglTFRuntimeFunctionLibrary::glTFLoadAssetFromData(
 			HttpResponse->GetContent(),
@@ -234,17 +356,21 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 	if (!IsValid(GlTFAsset))
 	{
 		UE_LOG(LogKinetixAnimation, Warning,
-		       TEXT("[FAccount] AnimationRequestComplete(): Unable to deserialize response ! %s"),
+		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to deserialize response ! %s"),
 		       *JsonString);
 		return;
 	}
 
 	FglTFRuntimeSkeletalAnimationConfig SkeletalAnimConfig;
+	if (CurveRemapper.IsBound())
+	{
+		SkeletalAnimConfig.CurveRemapper.Remapper = CurveRemapper;
+	}
 	USkeletalMesh* RefSkeletalMesh = GetReferenceSkeleton();
 	if (!IsValid(RefSkeletalMesh))
 	{
 		UE_LOG(LogKinetixAnimation, Warning,
-		       TEXT("[FAccount] AnimationRequestComplete(): RefSekeletalMesh is null !"));
+		       TEXT("[FEmoteManager] AnimationRequestComplete(): RefSekeletalMesh is null !"));
 		return;
 	}
 
@@ -265,7 +391,6 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 			UE_LOG(LogKinetixAnimation,
 			       Error,
 			       TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .glb file failed !"))
-			// return;
 		}
 	}
 

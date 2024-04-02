@@ -104,7 +104,7 @@ void FMemoryManager::OnManifestLoaded(const FString& SlotName, int UserIndex, US
 		// From this part we should create a new one
 
 		CreateCacheSave();
-
+return;
 	}
 
 	CacheManifest = KinetixCacheSaveGame;

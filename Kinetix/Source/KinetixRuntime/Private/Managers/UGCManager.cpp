@@ -30,7 +30,7 @@ FUGCManager::~FUGCManager()
 void FUGCManager::StartPollingUGC()
 {
 	FAccount* ConnectedAccount =
-		FAccountManager::Get().GetConnectedAccount();
+		FAccountManager::Get()->GetConnectedAccount();
 
 	if (ConnectedAccount == nullptr)
 		return;
@@ -95,7 +95,7 @@ void FUGCManager::GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback
 {
 	if (UgcUrl.IsEmpty() || (FDateTime::Now() - LastFetchedDate).GetMinutes() > FetchTimeOutInMinutes)
 	{
-		const FAccount* ConnectedAccount = FAccountManager::Get().GetConnectedAccount();
+		const FAccount* ConnectedAccount = FAccountManager::Get()->GetConnectedAccount();
 		if (ConnectedAccount == nullptr)
 			return;
 
@@ -125,7 +125,7 @@ void FUGCManager::GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback
 bool FUGCManager::IsUGCAvailable()
 {
 	return bEnableUGC
-		&& (FAccountManager::Get().GetConnectedAccount() != nullptr);
+		&& (FAccountManager::Get()->GetConnectedAccount() != nullptr);
 }
 
 void FUGCManager::OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr<IHttpResponse> Response, bool bSuccess)
@@ -160,7 +160,7 @@ void FUGCManager::OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr
 	}
 
 	const TArray<TSharedPtr<FJsonValue>> Elements = ResponseValue->AsArray();
-	FAccount* Account = FAccountManager::Get().GetConnectedAccount();
+	FAccount* Account = FAccountManager::Get()->GetConnectedAccount();
 	if (Account == nullptr)
 		return;
 

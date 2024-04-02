@@ -12,7 +12,8 @@
 
 class UKinetixAnimInstance;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnServerReceivedPose, const FKinetixNetworkedPose&, ReceivedNetworkedPose, UAnimSequenceSamplerComponent*, From);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnServerReceivedPose, const FKinetixNetworkedPose&, ReceivedNetworkedPose,
+                                             UAnimSequenceSamplerComponent*, From);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent, DisplayName="AnimSequenceSamplerComponent"))
 class KINETIXRUNTIME_API UAnimSequenceSamplerComponent
@@ -41,7 +42,7 @@ public:
 	void SetContext(const AActor* InActor);
 
 #pragma region IKinetixSamplerInterface inheritance
-	virtual void PlayAnimation_Implementation(UAnimSequence* InAnimSequence) override;
+	virtual void PlayAnimation_Implementation(const FAnimationID& InID, const FString& AvatarID, UAnimSequence* InAnimSequence) override;
 	virtual void StopAnimation_Implementation() override;
 #pragma endregion
 
@@ -52,6 +53,23 @@ protected:
 	UFUNCTION(Server, Unreliable, WithValidation)
 	void ServerSendFramePose(FKinetixNetworkedPose NetworkedPose);
 
+	UFUNCTION(Server, Reliable)
+	void SendServerAnimationID(FAnimationID InID, const FString& AvatarID);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void AllDispatchPlayedAnimationID(FAnimationID InID, const FString& AvatarID);
+
+	UFUNCTION()
+	void OnMetadataAvailable(bool bSuccess, const FAnimationMetadata& AnimationMetadata);
+
+	UFUNCTION()
+	void OnAnimationLaunchedOnServer(const FAnimationID& AnimationID);
+
+	void PlayAnimationOnComponent(FAnimationID InID);
+
+	UFUNCTION()
+	void OnAnimationLoadingFinished(bool bSuccess);
+
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
 	void AllDispatchPose(FKinetixNetworkedPose NetworkedPose);
 
@@ -60,7 +78,7 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerSendStopAnimation();
-	
+
 	UFUNCTION(NetMulticast, Reliable)
 	void AllSendStopAnimation();
 
@@ -81,9 +99,11 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnServerReceivedPose OnServerReceivedPose;
-	
-private:
 
+	FAnimationID RemoteAnimationIDToPlay;
+	
+
+private:
 	UAnimSequence* AnimSequenceToPlay;
 
 	FAnimationQueue AnimQueue;
@@ -131,6 +151,8 @@ private:
 	TArray<FTransform> BoneTransforms;
 
 	FKinetixNetworkedPose CachePose;
-	
+
 	TScriptInterface<IKinetixAnimationInterface> AnimInstanceToNotify;
+
+	FString CacheAvatarID;
 };

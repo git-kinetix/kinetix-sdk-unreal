@@ -81,7 +81,7 @@ void FAccountPoller::StartPolling()
 								}
 
 								const TArray<TSharedPtr<FJsonValue>> Elements = ResponseValue->AsArray();
-								FAccount* Account = FAccountManager::Get().GetConnectedAccount();
+								FAccount* Account = FAccountManager::Get()->GetConnectedAccount();
 								if (Account == nullptr)
 								{
 									Blocker.Trigger();
@@ -132,7 +132,7 @@ void FAccountPoller::StartPolling()
 							});
 
 						Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
-							SDKAPIEmoteUsersUrl, *FAccountManager::Get().GetConnectedAccount()->GetAccountID()));
+							SDKAPIEmoteUsersUrl, *FAccountManager::Get()->GetConnectedAccount()->GetAccountID()));
 						Request->SetVerb(TEXT("GET"));
 						Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 						Request->SetHeader(TEXT("accept"), TEXT("application/json"));

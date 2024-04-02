@@ -43,7 +43,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Initialization")
 	bool IsInitialized() { return bCoreInitialized; };
-
+	
 protected:
 
 	UFUNCTION()

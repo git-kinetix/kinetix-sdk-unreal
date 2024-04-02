@@ -4,7 +4,7 @@
 #include "KinetixDeveloperSettings.h"
 
 UKinetixDeveloperSettings::UKinetixDeveloperSettings()
-	: bLoadAtStartup(false)
+	: bLoadAtStartup(false), bSendPose(true)
 {
 	SectionName = TEXT("Kinetix Section");
 	SDKAPIUrlBase = TEXT("https://sdk-api.kinetix.tech");
