@@ -193,13 +193,13 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 						continue;
 					}
 
-					if (StringField == TEXT("unreal"))
+					if (StringField == TEXT("animation-v2"))
 					{
 						// Ready for kinanim integration
 						FString Extension;
 						AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
-						// if (Extension == TEXT("kinanim"))
-						if (Extension == TEXT("glb"))
+						// if (Extension == TEXT("glb"))
+						if (Extension == TEXT("kinanim"))
 						{
 							AvatarMetadata->TryGetStringField(TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].AvatarURL.Map);
 						}
@@ -229,14 +229,16 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 				// continue;
 			}
 			
-			if (StringField == TEXT("unreal"))
+			if (StringField == TEXT("animation-v2"))
 			{
-				FString CacheURL;
-				FileObject->TryGetStringField(TEXT("url"), CacheURL);
-				if (!CacheURL.Contains(".glb"))
-					continue;
-
-				AnimationMetadata.AnimationURL.Map = CacheURL;
+				FString Extension;
+				FileObject->TryGetStringField(TEXT("extension"), Extension);
+				// if (Extension == TEXT("glb"))
+				if (Extension == TEXT("kinanim"))
+				{
+					FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.AnimationURL.Map);
+				}
+				// AnimationMetadata.AnimationURL.Map = CacheURL;
 			}
 		}
 

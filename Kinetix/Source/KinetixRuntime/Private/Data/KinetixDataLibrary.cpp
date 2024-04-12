@@ -51,7 +51,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetCacheAnimationPath(FString& Absolu
                                                                  const FAnimationID& InAnimationMetadata)
 {
 	AbsolutePath = FPaths::Combine(FPaths::ProjectUserDir(), TEXT("Kinetix"), TEXT("Animations"));
-	AbsolutePath = FString::Printf(TEXT("%s/%s.glb"),
+	AbsolutePath = FString::Printf(TEXT("%s/%s.kinanim"),
 	                               *AbsolutePath,
 	                               *InAnimationMetadata.UUID.ToString(EGuidFormats::DigitsWithHyphensLower));
 
@@ -272,13 +272,14 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 					continue;
 				}
 
-				if (StringField == TEXT("unreal"))
+				// if (StringField == TEXT("unreal"))
+				if (StringField == TEXT("animation-v2"))
 				{
 					// Ready for kinanim integration
 					FString Extension;
 					AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
-					// if (Extension == TEXT("kinanim"))
-					if (Extension == TEXT("glb"))
+					// if (Extension == TEXT("glb"))
+					if (Extension == TEXT("kinanim"))
 					{
 						AvatarMetadata->TryGetStringField(TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].AvatarURL.Map);
 					}
@@ -308,13 +309,14 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 			continue;
 		}
 
-		if (StringField == TEXT("unreal"))
+		// if (StringField == TEXT("unreal"))
+		if (StringField == TEXT("animation-v2"))
 		{
 			// Ready for kinanim integration
 			FString Extension;
 			FileObject->TryGetStringField(TEXT("extension"), Extension);
-			// if (Extension == TEXT("kinanim"))
-			if (Extension == TEXT("glb"))
+			// if (Extension == TEXT("glb"))
+			if (Extension == TEXT("kinanim"))
 			{
 				FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
 			}
