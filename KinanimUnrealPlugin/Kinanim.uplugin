@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Kinanim",
+	"Description": "Kinanim native implementation for Unreal",
+	"Category": "Other",
+	"CreatedBy": "Kinetix",
+	"CreatedByURL": "https://kinetix.tech",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "Kinanim",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
