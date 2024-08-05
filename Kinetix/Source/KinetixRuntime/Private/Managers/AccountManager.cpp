@@ -48,7 +48,7 @@ bool FAccountManager::ConnectAccount(const FString& InUserID)
 
 	if (IsAccountConnected(UserID))
 	{
-		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] ConnectAccount: %s already connected !"), *InUserID);
+		UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] ConnectAccount: %s already connected !"), *InUserID);
 		return false;
 	}
 
@@ -66,7 +66,7 @@ void FAccountManager::FinishAccountConnection()
 {
 	if (LoggedAccount != nullptr)
 	{
-		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] ConnectAccount: %s already connected !"),
+		UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] ConnectAccount: %s already connected !"),
 		       *LoggedAccount->GetAccountID());
 		DisconnectAccount();
 	}
@@ -173,7 +173,7 @@ bool FAccountManager::TryCreateAccount(const FString& InUserID)
 
 	Request->SetContentAsString(FString::Printf(TEXT("{\"id\":\"%s\"}"), *InUserID));
 
-	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
+	UE_LOG(LogKinetixAccount, Log, TEXT("%s"), *Request->GetContentType());
 	if (!Request->ProcessRequest())
 	{
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] TryCreateAccount: %s Error in Http request"),
@@ -206,7 +206,7 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 	Request->OnProcessRequestComplete().BindRaw(this, &FAccountManager::OnGetUserResponse);
 
-	UE_LOG(LogKinetixRuntime, Warning, TEXT("SDKAPIUrlBase %s"),
+	UE_LOG(LogKinetixRuntime, Log, TEXT("SDKAPIUrlBase %s"),
 		*GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase);
 	Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + SDKAPIUsersUrl + "/" + InUserID);
 	Request->SetVerb(TEXT("GET"));
@@ -215,7 +215,7 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
 	Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 
-	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
+	UE_LOG(LogKinetixAccount, Log, TEXT("%s"), *Request->GetContentType());
 	if (!Request->ProcessRequest())
 	{
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AccountExists: %s Error in Http request"),

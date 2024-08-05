@@ -39,13 +39,13 @@ void UKinetixCharacterComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 void UKinetixCharacterComponent::ServerCalledFromClientWithData_Implementation(const FString& DataToSend)
 {
 	auto CurrentOwner = GetOwner();
-	UKismetSystemLibrary::PrintString(this,
-	                                  FString::Printf(TEXT("%s %s ServerCalledFromClientWithData: %s"),
-	                                                  *UEnum::GetValueAsString(CurrentOwner->GetLocalRole()),
-	                                                  *UEnum::GetValueAsString(CurrentOwner->GetRemoteRole()),
-	                                                  *DataToSend), true, true,
-	                                  CurrentOwner->HasAuthority() == true ? FLinearColor::Red : FLinearColor::Blue,
-	                                  2.f);
+	// UKismetSystemLibrary::PrintString(this,
+	//                                   FString::Printf(TEXT("%s %s ServerCalledFromClientWithData: %s"),
+	//                                                   *UEnum::GetValueAsString(CurrentOwner->GetLocalRole()),
+	//                                                   *UEnum::GetValueAsString(CurrentOwner->GetRemoteRole()),
+	//                                                   *DataToSend), true, true,
+	//                                   CurrentOwner->HasAuthority() == true ? FLinearColor::Red : FLinearColor::Blue,
+	//                                   2.f);
 }
 
 void UKinetixCharacterComponent::RegisterSampler(IKinetixSamplerInterface* InAnimSequenceSamplerComponent)

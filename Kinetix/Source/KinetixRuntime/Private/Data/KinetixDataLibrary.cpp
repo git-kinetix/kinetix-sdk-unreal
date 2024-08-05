@@ -38,7 +38,7 @@ bool UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(FString& 
 
 	if (Index == INDEX_NONE)
 	{
-		UE_LOG(LogKinetixRuntime, Warning, TEXT("Wrong path given %s"), *RelativePath);
+		// UE_LOG(LogKinetixRuntime, Warning, TEXT("Wrong path given %s"), *RelativePath);
 		return false;
 	}
 
@@ -82,7 +82,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetJsonObjectFromFile(
 {
 	FFilePath JsonFilePath;
 	JsonFilePath.FilePath = File;
-	return UJsonBlueprintFunctionLibrary::FromFile(WorldContextObject, JsonFilePath, OutJsonObjectWrapper);
+	return UJsonBlueprintFunctionLibrary::FromFile(JsonFilePath, OutJsonObjectWrapper);
 }
 
 bool UKinetixDataBlueprintFunctionLibrary::GetUUIDFromJson(FGuid& OutUUID,
@@ -274,7 +274,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 
 				if (StringField == TEXT("userData"))
 				{
-					UE_LOG(LogKinetixRuntime, Warning,
+					UE_LOG(LogKinetixRuntime, Log,
 					       TEXT("[FAccount] GetAnimationMetadataFromJson(): Found UserDatas !"));
 
 					AvatarMetadata->TryGetStringField(TEXT("url"), 
@@ -345,7 +345,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 	}
 
 
-	UE_LOG(LogKinetixRuntime, Warning,
+	UE_LOG(LogKinetixRuntime, Log,
 	       TEXT("[FKinetixDataLibrary] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
 	       *OutAnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
 	       *OutAnimationMetadata.Name.ToString(),

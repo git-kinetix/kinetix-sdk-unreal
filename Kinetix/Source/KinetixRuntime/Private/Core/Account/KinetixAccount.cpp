@@ -16,7 +16,7 @@ UKinetixAccount::UKinetixAccount(FVTableHelper& Helper)
 
 UKinetixAccount::~UKinetixAccount()
 {
-	UE_LOG(LogKinetixAccount, Warning, TEXT("[UKinetixAccount] ~UKinetixAccount"));
+	UE_LOG(LogKinetixAccount, Log, TEXT("[UKinetixAccount] ~UKinetixAccount"));
 	FAccountManager::Get()->StopPolling();
 }
 
