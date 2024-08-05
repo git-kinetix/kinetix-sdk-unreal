@@ -244,10 +244,10 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 		{
 			FString AvatarID = (*AvatarObject)->Values.Array()[i].Key;
 			TSharedPtr<FJsonValue> AvatarValue = (*AvatarObject)->Values.Array()[i].Value;
-		
+
 			const TArray<TSharedPtr<FJsonValue>>* AvatarMetadatas;
 			AvatarObject->Get()->TryGetArrayField(AvatarID, AvatarMetadatas);
-		
+
 			FGuid::Parse(AvatarID, OutAnimationMetadata.AvatarMetadatas[i].AvatarID);
 
 			if (!(AvatarValue && AvatarValue.IsValid()))
@@ -272,8 +272,18 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 					continue;
 				}
 
+				if (StringField == TEXT("userData"))
+				{
+					UE_LOG(LogKinetixRuntime, Warning,
+					       TEXT("[FAccount] GetAnimationMetadataFromJson(): Found UserDatas !"));
+
+					AvatarMetadata->TryGetStringField(TEXT("url"), 
+					OutAnimationMetadata.AvatarMetadatas[i].MappingURL.Map);
+					continue;
+				}
+
 				// if (StringField == TEXT("unreal"))
-				if (StringField == TEXT("animation-v2"))
+				if (StringField == TEXT("animation"))
 				{
 					// Ready for kinanim integration
 					FString Extension;
@@ -281,7 +291,8 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 					// if (Extension == TEXT("glb"))
 					if (Extension == TEXT("kinanim"))
 					{
-						AvatarMetadata->TryGetStringField(TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].AvatarURL.Map);
+						AvatarMetadata->TryGetStringField(
+							TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].AvatarURL.Map);
 					}
 				}
 			}
@@ -335,7 +346,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 
 
 	UE_LOG(LogKinetixRuntime, Warning,
-	       TEXT("[FAccount] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
+	       TEXT("[FKinetixDataLibrary] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
 	       *OutAnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
 	       *OutAnimationMetadata.Name.ToString(),
 	       OutAnimationMetadata.Duration,

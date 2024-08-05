@@ -47,6 +47,7 @@ void FUGCManager::StartPollingUGC()
 
 	Request->SetURL(
 		GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID()));
+	Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -78,6 +79,7 @@ void FUGCManager::StartPollingForNewUGCToken()
 
 	Request->SetURL(
 		GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(KINETIXUGCTOKEN, *TokenUUID));
+	Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -110,6 +112,7 @@ void FUGCManager::GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback
 		Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 		Request->SetHeader(
 			TEXT("x-api-key"), GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);
+		Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 
 		UgCUrlFetchedCallback = InUrlFetchedCallback;
 

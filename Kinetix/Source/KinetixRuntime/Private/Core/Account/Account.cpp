@@ -43,7 +43,8 @@ const TArray<FKinetixEmote*> FAccount::FetchMetadatas()
 			Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 			Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 			Request->SetHeader(
-				TEXT("x-api-key"), GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);
+				TEXT("x-api-key"), GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);			Request->SetHeader(
+				TEXT("User-Agent"), SDKUSERAGENT);
 
 			if (!Request->ProcessRequest())
 				UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccount] FetchMetadatas(): Unable to process request !"));
@@ -106,6 +107,13 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 		return;
 	}
 
+	if (JsonArray.Num() == Metadatas.Num())
+	{
+		UE_LOG(LogKinetixAccount, Log,
+			   TEXT("[FAccount] MetadataRequestComplete(): Nothing changed on "));
+		return;
+	}
+	
 	Emotes.Empty();
 	Metadatas.Empty();
 
@@ -193,7 +201,12 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 						continue;
 					}
 
-					if (StringField == TEXT("animation-v2"))
+					if (StringField == TEXT("userData"))
+					{
+						AvatarMetadata->TryGetStringField(TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].MappingURL.Map);
+					}
+					
+					if (StringField == TEXT("animation"))
 					{
 						// Ready for kinanim integration
 						FString Extension;
@@ -226,14 +239,12 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 				if (StringField != TEXT("png"))
 					continue;
 				FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.IconURL.Map);
-				// continue;
 			}
 			
 			if (StringField == TEXT("animation-v2"))
 			{
 				FString Extension;
 				FileObject->TryGetStringField(TEXT("extension"), Extension);
-				// if (Extension == TEXT("glb"))
 				if (Extension == TEXT("kinanim"))
 				{
 					FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.AnimationURL.Map);

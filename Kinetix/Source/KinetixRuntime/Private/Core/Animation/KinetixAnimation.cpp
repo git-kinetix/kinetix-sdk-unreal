@@ -126,6 +126,22 @@ void UKinetixAnimation::SetCurveRemapper(const FglTFRuntimeAnimationCurveRemappe
 	FEmoteManager::Get().SetCurveRemapper(InRemapper);
 }
 
+void UKinetixAnimation::SetBoneMapping(const UKinanimBonesDataAsset* InRemapper)
+{
+	if (!IsValid(InRemapper))
+		return;
+
+	FEmoteManager::Get().SetBoneMapping(InRemapper);
+}
+
+void UKinetixAnimation::LoadBoneMapping(
+	const FAnimationMetadata& InAnimationMetadata,
+	const FString& InAvatarUUID,
+	const FOnKinetixBoneMappingDownloaded& OnSuccessDelegate)
+{
+	// FEmoteManager::Get().LoadBoneMapping()
+}
+
 void UKinetixAnimation::SetReferenceSkeletalMesh(USkeletalMesh* InSkeletalMesh)
 {
 	ReferenceSkeletalMesh = InSkeletalMesh;

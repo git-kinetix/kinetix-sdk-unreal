@@ -97,6 +97,7 @@ struct FDownloadIconFunctor
 			});
 
 		HttpRequest->SetURL(Emote->GetAnimationMetadata().IconURL.Map);
+		HttpRequest->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 		HttpRequest->SetVerb(TEXT("GET"));
 		HttpRequest->ProcessRequest();
 	}
