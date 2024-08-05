@@ -47,7 +47,7 @@ void FPlayersManager::AddPlayerCharacterComponent(UAnimInstance* InAnimInstance,
 	Players.Add(NewPlayer);
 	OutGuid = NewPlayer->UUID;
 	
-	UE_LOG(LogKinetixAnimation, Warning, TEXT("OutGuid: %s, NewPlayer.UUID %s, Pleyrs[].UUID: %s"),
+	UE_LOG(LogKinetixAnimation, Log, TEXT("OutGuid: %s, NewPlayer.UUID %s, Pleyrs[].UUID: %s"),
 		*OutGuid.ToString(EGuidFormats::DigitsWithHyphensLower),
 		*NewPlayer->UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
 		*Players[Players.Num()-1]->UUID.ToString(EGuidFormats::DigitsWithHyphensLower));

@@ -157,7 +157,7 @@ void FPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID,
 			                                   {
 				                                   DownloadedEmotesReadyToPlay.Add(
 					                                   InAnimationID, Emote->GetAnimSequence());
-				                                   UE_LOG(LogKinetixAnimation, Warning,
+				                                   UE_LOG(LogKinetixAnimation, Log,
 				                                          TEXT(
 					                                          "[LocalPlayerManager] LoadLocalPlayerAnimation: AnimationLoaded"
 				                                          ));

@@ -44,7 +44,8 @@ public class KinetixEditor : ModuleRules
 				"AssetRegistry",
 				"Projects",
 				"KinetixRuntime",
-				"glTFRuntime"
+				"glTFRuntime",
+				"FunctionalTesting"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

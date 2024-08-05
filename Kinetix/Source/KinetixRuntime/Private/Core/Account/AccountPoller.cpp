@@ -36,7 +36,7 @@ void FAccountPoller::StartPolling()
 				UE::Tasks::FTask Task =
 					UE::Tasks::Launch(UE_SOURCE_LOCATION, []
 					{
-						UE_LOG(LogKinetixAccount, Warning,
+						UE_LOG(LogKinetixAccount, Log,
 						       TEXT("[FAccountPoller] StartPolling(): New Polling !"));
 
 						UE::Tasks::FTaskEvent Blocker{UE_SOURCE_LOCATION};
@@ -88,7 +88,7 @@ void FAccountPoller::StartPolling()
 									return;
 								}
 
-								UE_LOG(LogKinetixAccount, Warning,
+								UE_LOG(LogKinetixAccount, Log,
 								       TEXT("[FAccountPoller] StartPolling(): New Response !"));
 
 								if (Account->GetEmotes().Num() >= Elements.Num())

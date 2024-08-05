@@ -860,7 +860,7 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 	if (!KinanimDownloader->DownloadRemainingFrames())
 	{
 		UE_LOG(LogKinetixAnimation, Error,
-		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream ! %s %i %i"),
+		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream ! %s"),
 		       *JsonString);
 		return;
 	}
