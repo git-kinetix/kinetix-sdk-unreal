@@ -142,7 +142,6 @@ private:
 	UE::Anim::FStackAttributeContainer Attributes;
 
 	FAnimExtractContext Context;
-	UE::PoseSearch::FSequenceBaseSampler Sampler;
 
 	FBoneContainer RequiredBones;
 

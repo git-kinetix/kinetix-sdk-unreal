@@ -82,7 +82,12 @@ bool UKinetixDataBlueprintFunctionLibrary::GetJsonObjectFromFile(
 {
 	FFilePath JsonFilePath;
 	JsonFilePath.FilePath = File;
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+	return UJsonBlueprintFunctionLibrary::FromFile(JsonFilePath, OutJsonObjectWrapper);
+#else
 	return UJsonBlueprintFunctionLibrary::FromFile(WorldContextObject, JsonFilePath, OutJsonObjectWrapper);
+#endif
 }
 
 bool UKinetixDataBlueprintFunctionLibrary::GetUUIDFromJson(FGuid& OutUUID,

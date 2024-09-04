@@ -23,6 +23,7 @@
 // #include <KinanimWrapper.h>
 
 #include "KinanimWrapper.h"
+#include "KinetixDeveloperSettings.h"
 #include "MemoryManager.h"
 #include "KinanimWrapper/KinanimParser.h"
 #include "Kismet/GameplayStatics.h"
@@ -126,6 +127,7 @@ FEmoteManager& FEmoteManager::Get()
 		Instance->RefSkeletonLoadedDelegate = TDelegate<void(FAssetData)>::CreateRaw(
 			Instance.Get(), &FEmoteManager::OnReferenceSkeletonAvailable);
 		UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(Instance->RefSkeletonLoadedDelegate);
+		UKinetixDeveloperSettings::GetBlendshapeFlags(Instance->bBlendshapesEnabled);
 	}
 	return *Instance;
 }
@@ -570,7 +572,7 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 
 
 		UAnimSequence* ToReturn = UKinanimParser::LoadSkeletalAnimationFromStream(
-			GetReferenceSkeleton(), Filestream, KinanimBoneMapping);
+			GetReferenceSkeleton(), Filestream, KinanimBoneMapping, bBlendshapesEnabled);
 
 		if (!IsValid(ToReturn))
 		{
@@ -708,7 +710,7 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 	}
 
 	UAnimSequence* KinanimAnimSequence =
-		UKinanimParser::LoadSkeletalAnimationFromStream(GetReferenceSkeleton(), BinaryStream, KinanimBoneMapping);
+		UKinanimParser::LoadSkeletalAnimationFromStream(GetReferenceSkeleton(), BinaryStream, KinanimBoneMapping, bBlendshapesEnabled);
 
 	if (!IsValid(KinanimAnimSequence))
 	{
@@ -849,6 +851,7 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 
 	UKinanimDownloader* KinanimDownloader = NewObject<UKinanimDownloader>();
 	KinanimDownloader->SetImporter(&Importer);
+	KinanimDownloader->SetBlendshapesEnabled(bBlendshapesEnabled);
 	KinanimDownloader->SetUrl(HttpRequest->GetURL());
 	KinanimDownloader->SetAnimationMetadataID(InAnimationMetadata.Id.UUID);
 	KinanimDownloader->SetupAnimSequence(GetReferenceSkeleton(), KinanimBoneMapping);
@@ -860,8 +863,7 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 	if (!KinanimDownloader->DownloadRemainingFrames())
 	{
 		UE_LOG(LogKinetixAnimation, Error,
-		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream ! %s %i %i"),
-		       *JsonString);
+		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream !"));
 		return;
 	}
 }

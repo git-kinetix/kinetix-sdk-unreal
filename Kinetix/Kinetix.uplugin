@@ -42,6 +42,10 @@
 		{
 			"Name": "PoseSearch",
 			"Enabled": true
+		},
+		{
+			"Name": "Kinanim",
+			"Enabled": true
 		}
 	]
 }

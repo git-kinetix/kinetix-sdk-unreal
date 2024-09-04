@@ -80,6 +80,8 @@ protected:
 
 	UPROPERTY()
 	const UKinanimBonesDataAsset* KinanimBoneMapping;
+	
+	bool bBlendshapesEnabled;
 
 	void OnReferenceSkeletonAvailable(FAssetData AssetData);
 

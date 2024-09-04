@@ -111,6 +111,7 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 	{
 		UE_LOG(LogKinetixAccount, Log,
 			   TEXT("[FAccount] MetadataRequestComplete(): Nothing changed on "));
+		CallMetadatasAvailableDelegates();
 		return;
 	}
 	
