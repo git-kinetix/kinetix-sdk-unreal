@@ -559,17 +559,33 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 			return;
 		}
 
-		const TCHAR* File = *Path;
-		void* Filestream = Kinanim::OpenReadFile(File);
-
-		if (Filestream == nullptr)
+		TArray<uint8> KinanimFileContent;
+		if (!FFileHelper::LoadFileToArray(KinanimFileContent, *Path))
 		{
-			UE_LOG(LogKinetixAnimation,
-			       Error,
-			       TEXT("[FEmoteManager] LoadAnimation(): Failed to open Kinanim file !"))
+			UE_LOG(LogKinetixAnimation, Warning, TEXT("[EmoteManager] LoadAnimation: Failed to load file at %s"),
+			       *Path);
 			return;
 		}
 
+		// const TArray<uint8> JsonContent = HttpResponse->GetContent();
+		//
+		const char* KinanimFileArray = reinterpret_cast<const char*>(KinanimFileContent.GetData());
+		// void* BinaryStream = Kinanim::CreateBinaryStreamFromArray(Datas, JsonContent.Num());
+		
+		// const TCHAR* File = *Path;
+		void* Filestream = Kinanim::CreateBinaryStreamFromArray(
+			KinanimFileArray,
+			KinanimFileContent.Num());
+
+		// void* Filestream = Kinanim::OpenReadFile(File);
+
+		// if (Filestream == nullptr)
+		// {
+		// 	UE_LOG(LogKinetixAnimation,
+		// 	       Error,
+		// 	       TEXT("[FEmoteManager] LoadAnimation(): Failed to open Kinanim file !"))
+		// 	return;
+		// }
 
 		UAnimSequence* ToReturn = UKinanimParser::LoadSkeletalAnimationFromStream(
 			GetReferenceSkeleton(), Filestream, KinanimBoneMapping, bBlendshapesEnabled);
@@ -584,8 +600,9 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 
 		ToReturn->AddToRoot();
 		// delete File;
-		Kinanim::ifstream_CloseStream(Filestream);
-
+		// Kinanim::ifstream_CloseStream(Filestream);
+		Kinanim::ioMemStream_CloseStream(Filestream);
+		
 		FKinetixEmote* Emote = GetEmote(InEmote->GetAnimationMetadata().Id);
 		if (Emote != nullptr)
 		{
@@ -683,6 +700,11 @@ void FEmoteManager::AnimationRequestProgress(FHttpRequestPtr Request, int32 Byte
 	       BytesReceived);
 }
 
+void FEmoteManager::ClearEmotes()
+{
+	Instance.Get()->KinetixEmotes.Empty();
+}
+
 void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> HttpRequest,
                                              TSharedPtr<IHttpResponse, ESPMode::ThreadSafe> HttpResponse, bool bSuccess,
                                              FAnimationMetadata InAnimationMetadata,
@@ -710,7 +732,8 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 	}
 
 	UAnimSequence* KinanimAnimSequence =
-		UKinanimParser::LoadSkeletalAnimationFromStream(GetReferenceSkeleton(), BinaryStream, KinanimBoneMapping, bBlendshapesEnabled);
+		UKinanimParser::LoadSkeletalAnimationFromStream(GetReferenceSkeleton(), BinaryStream, KinanimBoneMapping,
+		                                                bBlendshapesEnabled);
 
 	if (!IsValid(KinanimAnimSequence))
 	{
@@ -825,6 +848,7 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 		|| !EHttpResponseCodes::IsOk(HttpResponse->GetResponseCode()))
 		return;
 
+	// TODO: Delete due to debug used
 	FString JsonString = HttpResponse->GetContentAsString();
 
 	const TArray<uint8> JsonContent = HttpResponse->GetContent();
@@ -929,11 +953,11 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 		if (!FFileHelper::SaveArrayToFile(TArray<uint8>(), *Path))
 		{
 			UE_LOG(LogKinetixAnimation,
-				   Error,
-				   TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .kinanim file failed !"))
+			       Error,
+			       TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .kinanim file failed !"))
 		}
 	}
-	
+
 	if (!FPaths::FileExists(Path))
 	{
 		int32 Index = 0;
@@ -943,13 +967,41 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 		if (!FileManager.CreateDirectory(*PathWithoutFile))
 		{
 			UE_LOG(LogKinetixAnimation,
-				   Error,
-				   TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .kinanim file failed !"))
+			       Error,
+			       TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .kinanim file failed !"))
 		}
 	}
-	
-	//void* ExportStream = Kinanim::CreateBinaryStream(100000);
-	void* ExportStream = Kinanim::OpenWriteFile(*Path, false);
+
+	UE_LOG(LogKinetixAnimation,
+	       Warning,
+	       TEXT("[FEmoteManager] AnimationRequestComplete(): Try saving file with %d frames !"),
+	       KinanimDownloader->GetFrameCount());
+
+	//////////// CALCUL DE LA TAILLE DU FICHIER /////////////
+	uint64 TotalSize = 0;
+	void* UncompressedHeader = KinanimDownloader->GetUncompressedHeader();
+	if (UncompressedHeader == nullptr)
+	{
+		UE_LOG(LogKinetixAnimation, Error,
+		       TEXT("[FEmoteManager] AnimationRequestComplete(): No header on KinanimDownloader !"))
+		return;
+	}
+
+	TotalSize = KinanimWrapper::KinanimHeader_Get_binarySize(UncompressedHeader);
+	for (int i = 0; i < KinanimDownloader->GetFrameCount(); ++i)
+	{
+		TotalSize += KinanimWrapper::KinanimHeader_Get_frameSizes(UncompressedHeader, i);
+	}
+
+	if (TotalSize == 0)
+	{
+		UE_LOG(LogKinetixAnimation, Error,
+		       TEXT("[FEmoteManager] AnimationRequestComplete(): Returned size of Kinanim is 0 !"))
+		return;
+	}
+
+	//////////// FORMATAGE DU FLUX ET CONVERSION EN TARRAY ///////////////////
+	void* ExportStream = Kinanim::CreateBinaryStream(TotalSize);
 	KinanimWrapper::KinanimExporter_WriteHeader(ExportStream, KinanimDownloader->GetUncompressedHeader());
 	KinanimWrapper::KinanimExporter_Content_WriteFrames(
 		ExportStream,
@@ -958,7 +1010,32 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 		KinanimWrapper::KinanimHeader_Get_hasBlendshapes(KinanimDownloader->GetUncompressedHeader()),
 		0);
 
+	char* Buffer = KinanimWrapper::IoMemStream_GetBuffer(ExportStream);
+	TArray<uint8> TargetBuffer;
+	TargetBuffer.SetNumZeroed(TotalSize / sizeof(uint8));
+
+	for (int i = 0; i < TargetBuffer.Num(); ++i)
+	{
+		TargetBuffer[i] = *Buffer;
+		Buffer += sizeof(uint8);
+	}
+
+	FFileHelper::SaveArrayToFile(TargetBuffer, *Path);
+
 	Kinanim::ioMemStream_CloseStream(ExportStream);
+	return;
+
+	//void* ExportStream = Kinanim::CreateBinaryStream(100000);
+	// void* ExportStream = Kinanim::OpenWriteFile(*Path, false);
+	// KinanimWrapper::KinanimExporter_WriteHeader(ExportStream, KinanimDownloader->GetUncompressedHeader());
+	// KinanimWrapper::KinanimExporter_Content_WriteFrames(
+	// 	ExportStream,
+	// 	KinanimDownloader->GetFrames(),
+	// 	KinanimDownloader->GetFrameCount(),
+	// 	KinanimWrapper::KinanimHeader_Get_hasBlendshapes(KinanimDownloader->GetUncompressedHeader()),
+	// 	0);
+	//
+	// Kinanim::ioMemStream_CloseStream(ExportStream);
 }
 
 void FEmoteManager::OnReferenceSkeletonAvailable(FAssetData AssetData)

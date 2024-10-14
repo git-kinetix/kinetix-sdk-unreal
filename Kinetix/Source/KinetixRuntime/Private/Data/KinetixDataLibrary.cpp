@@ -441,3 +441,9 @@ FString UKinetixDataBlueprintFunctionLibrary::GetKinetixSlotName()
 {
 	return KINETIXSLOTNAME;
 }
+
+void UKinetixDataBlueprintFunctionLibrary::ClearSmartCache()
+{
+	UKinetixCacheSaveGame::ClearCache();
+	FEmoteManager::Get().ClearEmotes();
+}

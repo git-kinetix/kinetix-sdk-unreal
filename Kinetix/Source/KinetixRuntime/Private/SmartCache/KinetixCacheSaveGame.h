@@ -41,7 +41,7 @@ public:
 	static void LoadManifest(FOnKinetixCacheLoadedDelegate& InCallback);
 
 	static void OnManifestCreated(const FString& SlotName, int UserIndex, bool bSuccess);
-
+	
 	static void CreateCacheSave();
 
 	static void OnManifestLoaded(const FString& SlotName, const int32 UserIndex,
@@ -50,6 +50,8 @@ public:
 	void SaveCacheSave();
 
 	const TArray<FKinetixCacheAnimation>& GetAnimations() const;
+
+	static void ClearCache();
 	
 public:
 

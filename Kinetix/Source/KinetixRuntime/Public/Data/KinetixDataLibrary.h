@@ -426,5 +426,8 @@ public:
 	UFUNCTION(BlueprintPure, Category="Kinetix|Save")
 	static FString GetKinetixSlotName();
 
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|SmartCache", meta = (Keywords = "cache"))
+	static void ClearSmartCache();
+
 #pragma endregion
 };

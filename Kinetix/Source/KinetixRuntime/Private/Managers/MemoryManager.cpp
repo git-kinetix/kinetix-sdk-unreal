@@ -79,8 +79,19 @@ void FMemoryManager::SaveManifest()
 	CacheManifest->SaveCacheSave();
 }
 
+void FMemoryManager::ClearManifest()
+{
+	UGameplayStatics::DeleteGameInSlot(KINETIXSMARTCACHESLOT, 0);
+	Instance = nullptr;
+}
+
 const UKinetixCacheSaveGame& FMemoryManager::GetManifest()
 {
+	if (!IsValid(CacheManifest))
+	{
+		CreateCacheSave();
+	}
+
 	return *CacheManifest;
 }
 
@@ -95,6 +106,18 @@ void FMemoryManager::LoadManifest()
 	UGameplayStatics::AsyncLoadGameFromSlot(KINETIXSMARTCACHESLOT, 0, LoadGameDelegate);
 }
 
+void FMemoryManager::LoadManifestSync()
+{
+	FAsyncLoadGameFromSlotDelegate LoadGameDelegate =
+	FAsyncLoadGameFromSlotDelegate::CreateRaw(this, &FMemoryManager::OnManifestLoaded);
+
+	// Empty the manifest
+	CacheManifest = nullptr;
+
+	USaveGame* SaveGame = UGameplayStatics::LoadGameFromSlot(KINETIXSMARTCACHESLOT, 0);
+	OnManifestLoaded(KINETIXSMARTCACHESLOT, 0, SaveGame);
+}
+
 void FMemoryManager::OnManifestLoaded(const FString& SlotName, int UserIndex, USaveGame* SaveGame)
 {
 	UKinetixCacheSaveGame* KinetixCacheSaveGame = Cast<UKinetixCacheSaveGame>(SaveGame);
@@ -104,7 +127,7 @@ void FMemoryManager::OnManifestLoaded(const FString& SlotName, int UserIndex, US
 		// From this part we should create a new one
 
 		CreateCacheSave();
-return;
+		return;
 	}
 
 	CacheManifest = KinetixCacheSaveGame;

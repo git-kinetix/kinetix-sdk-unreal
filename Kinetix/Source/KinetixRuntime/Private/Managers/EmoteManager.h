@@ -73,6 +73,7 @@ public:
 
 	void AnimationRequestProgress(FHttpRequestPtr Request, int32 BytesSent, int32 BytesReceived);
 
+	void ClearEmotes();
 protected:
 	TDelegate<void(FAssetData)> RefSkeletonLoadedDelegate;
 

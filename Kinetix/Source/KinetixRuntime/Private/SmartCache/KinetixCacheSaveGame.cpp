@@ -6,6 +6,7 @@
 #include "KinetixDeveloperSettings.h"
 #include "Animation/AnimTrace.h"
 #include "Kismet/GameplayStatics.h"
+#include "Managers/MemoryManager.h"
 
 DEFINE_LOG_CATEGORY(LogKinetixSmartCache);
 
@@ -143,7 +144,6 @@ void UKinetixCacheSaveGame::OnManifestLoaded(const FString& SlotName, const int3
 
 		return;
 	}
-
 }
 
 void UKinetixCacheSaveGame::SaveCacheSave()
@@ -156,4 +156,17 @@ void UKinetixCacheSaveGame::SaveCacheSave()
 const TArray<FKinetixCacheAnimation>& UKinetixCacheSaveGame::GetAnimations() const
 {
 	return Animations;
+}
+
+void UKinetixCacheSaveGame::ClearCache()
+{
+	FMemoryManager::Get().ClearManifest();
+
+	FString GeneralPath = FPaths::ProjectDir() + "Kinetix/";
+
+	IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
+	if (!FileManager.DeleteDirectoryRecursively(*GeneralPath))
+	{
+		UE_LOG(LogKinetixSmartCache, Warning, TEXT("Failed to delete Smart Cache folder"));
+	}
 }
