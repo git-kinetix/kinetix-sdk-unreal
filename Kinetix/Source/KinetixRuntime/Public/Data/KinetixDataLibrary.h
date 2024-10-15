@@ -361,7 +361,7 @@ public:
 
 	/** Helper function to retrieve animation metadata from a json object */
 	static bool GetAnimationMetadataFromJson(const TSharedPtr<FJsonObject>& JsonObject,
-	                                         FAnimationMetadata& AnimationMetadata);
+	                                         FAnimationMetadata& OutAnimationMetadata);
 
 	static bool GetAnimationMetadataFromJson(const FString& JsonString, FAnimationMetadata& OutAnimationMetadata);
 

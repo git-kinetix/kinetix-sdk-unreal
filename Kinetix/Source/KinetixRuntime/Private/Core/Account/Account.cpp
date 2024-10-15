@@ -38,12 +38,15 @@ const TArray<FKinetixEmote*> FAccount::FetchMetadatas()
 			TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 			Request->OnProcessRequestComplete().BindRaw(this, &FAccount::MetadataRequestComplete);
 
-			Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *AccountID));
+			Request->SetURL(
+				GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
+					SDKAPIEmoteUsersUrl, *AccountID));
 			Request->SetVerb(TEXT("GET"));
 			Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 			Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 			Request->SetHeader(
-				TEXT("x-api-key"), GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);			Request->SetHeader(
+				TEXT("x-api-key"), GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);
+			Request->SetHeader(
 				TEXT("User-Agent"), SDKUSERAGENT);
 
 			if (!Request->ProcessRequest())
@@ -110,11 +113,11 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 	if (JsonArray.Num() == Metadatas.Num())
 	{
 		UE_LOG(LogKinetixAccount, Log,
-			   TEXT("[FAccount] MetadataRequestComplete(): Nothing changed on "));
+		       TEXT("[FAccount] MetadataRequestComplete(): Nothing changed on "));
 		CallMetadatasAvailableDelegates();
 		return;
 	}
-	
+
 	Emotes.Empty();
 	Metadatas.Empty();
 
@@ -174,10 +177,10 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 			{
 				FString AvatarID = (*AvatarObject)->Values.Array()[avatarIndex].Key;
 				TSharedPtr<FJsonValue> AvatarValue = (*AvatarObject)->Values.Array()[avatarIndex].Value;
-		
+
 				const TArray<TSharedPtr<FJsonValue>>* AvatarMetadatas;
 				AvatarObject->Get()->TryGetArrayField(AvatarID, AvatarMetadatas);
-		
+
 				FGuid::Parse(AvatarID, AnimationMetadata.AvatarMetadatas[avatarIndex].AvatarID);
 
 				if (!(AvatarValue && AvatarValue.IsValid()))
@@ -198,15 +201,17 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 						AvatarMetadata->TryGetStringField(TEXT("extension"), StringField);
 						if (StringField != TEXT("png"))
 							continue;
-						AvatarMetadata->TryGetStringField(TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].IconURL.Map);
+						AvatarMetadata->TryGetStringField(
+							TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].IconURL.Map);
 						continue;
 					}
 
 					if (StringField == TEXT("userData"))
 					{
-						AvatarMetadata->TryGetStringField(TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].MappingURL.Map);
+						AvatarMetadata->TryGetStringField(
+							TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].MappingURL.Map);
 					}
-					
+
 					if (StringField == TEXT("animation"))
 					{
 						// Ready for kinanim integration
@@ -215,13 +220,14 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 						// if (Extension == TEXT("glb"))
 						if (Extension == TEXT("kinanim"))
 						{
-							AvatarMetadata->TryGetStringField(TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].AvatarURL.Map);
+							AvatarMetadata->TryGetStringField(
+								TEXT("url"), AnimationMetadata.AvatarMetadatas[avatarIndex].AvatarURL.Map);
 						}
 					}
 				}
 			}
 		}
-		
+
 		const TArray<TSharedPtr<FJsonValue>>* FilesObject;
 		(*DataObject)->TryGetArrayField(TEXT("files"), FilesObject);
 		if (!(FilesObject && FilesObject->Num()))
@@ -241,7 +247,7 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 					continue;
 				FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.IconURL.Map);
 			}
-			
+
 			if (StringField == TEXT("animation-v2"))
 			{
 				FString Extension;
@@ -271,14 +277,11 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 
 void FAccount::RegisterOrCallMetadatasAvailable(const FOnMetadatasAvailable& OnMetadatasAvailable)
 {
-	if (Metadatas.IsEmpty())
+	if (Metadatas.IsEmpty() || bPendingRequest)
 	{
 		OnMetadatasAvailableDelegates.AddUnique(OnMetadatasAvailable);
 		return;
 	}
-
-	if (bPendingRequest)
-		return;
 
 	OnMetadatasAvailable.ExecuteIfBound(true, Metadatas.Array());
 }
