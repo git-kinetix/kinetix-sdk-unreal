@@ -878,6 +878,7 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 	KinanimDownloader->SetBlendshapesEnabled(bBlendshapesEnabled);
 	KinanimDownloader->SetUrl(HttpRequest->GetURL());
 	KinanimDownloader->SetAnimationMetadataID(InAnimationMetadata.Id.UUID);
+	KinanimDownloader->SetupCurveRemapper(CurveRemapper);
 	KinanimDownloader->SetupAnimSequence(GetReferenceSkeleton(), KinanimBoneMapping);
 	KinanimDownloader->AddToRoot();
 	KinanimDownloader->OnKinanimDownloadComplete.BindRaw(

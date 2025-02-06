@@ -140,7 +140,8 @@ void FUGCManager::OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr
 		return;
 	}
 
-	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+	if (!(Response->GetResponseCode() >= EHttpResponseCodes::Ok
+		&& Response->GetResponseCode() < EHttpResponseCodes::Ambiguous))
 	{
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnPollingResponse(): Wrong response from server %i !"),
