@@ -50,7 +50,7 @@ public class KinetixRuntime : ModuleRules
 				"JsonUtilities",
 				"JsonBlueprintUtilities",
 				"DeveloperSettings",
-				"RenderCore"
+				"RenderCore", "Kinanim"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

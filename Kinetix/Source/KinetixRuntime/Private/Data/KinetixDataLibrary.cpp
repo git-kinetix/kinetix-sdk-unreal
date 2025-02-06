@@ -51,7 +51,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetCacheAnimationPath(FString& Absolu
                                                                  const FAnimationID& InAnimationMetadata)
 {
 	AbsolutePath = FPaths::Combine(FPaths::ProjectUserDir(), TEXT("Kinetix"), TEXT("Animations"));
-	AbsolutePath = FString::Printf(TEXT("%s/%s.glb"),
+	AbsolutePath = FString::Printf(TEXT("%s/%s.kinanim"),
 	                               *AbsolutePath,
 	                               *InAnimationMetadata.UUID.ToString(EGuidFormats::DigitsWithHyphensLower));
 
@@ -82,7 +82,12 @@ bool UKinetixDataBlueprintFunctionLibrary::GetJsonObjectFromFile(
 {
 	FFilePath JsonFilePath;
 	JsonFilePath.FilePath = File;
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+	return UJsonBlueprintFunctionLibrary::FromFile(JsonFilePath, OutJsonObjectWrapper);
+#else
 	return UJsonBlueprintFunctionLibrary::FromFile(WorldContextObject, JsonFilePath, OutJsonObjectWrapper);
+#endif
 }
 
 bool UKinetixDataBlueprintFunctionLibrary::GetUUIDFromJson(FGuid& OutUUID,
@@ -181,17 +186,153 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromFile(UObject*
 
 bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 	const TSharedPtr<FJsonObject>& JsonObject,
-	FAnimationMetadata& AnimationMetadata)
+	FAnimationMetadata& OutAnimationMetadata)
 {
-	FString Value;
-	if (!JsonObject->TryGetStringField(TEXT("uuid"), Value))
+	FString StringField;
+	if (!JsonObject->TryGetStringField(TEXT("uuid"), StringField))
 		return false;
-	FGuid::Parse(Value, AnimationMetadata.Id.UUID);
+	FGuid::Parse(StringField, OutAnimationMetadata.Id.UUID);
 
-	if (!JsonObject->TryGetStringField(TEXT("name"), Value))
+	if (!JsonObject->TryGetStringField(TEXT("name"), StringField))
 		return false;
-	AnimationMetadata.Name = FName(Value);
+	OutAnimationMetadata.Name = FName(StringField);
 
+	const TSharedPtr<FJsonObject>* MetadataObject = nullptr;
+	JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject);
+	if (!(MetadataObject && MetadataObject->IsValid()))
+	{
+		UE_LOG(LogKinetixRuntime, Error, TEXT("WRONG WRONG WRONG"));
+		return false;
+	}
+
+	(*MetadataObject)->TryGetNumberField(TEXT("duration"), OutAnimationMetadata.Duration);
+	(*MetadataObject)->TryGetStringField(TEXT("description"), StringField);
+	OutAnimationMetadata.Description = FText::FromString(StringField);
+
+	const TSharedPtr<FJsonObject>* AvatarObject;
+	JsonObject->TryGetObjectField(TEXT("avatars"), AvatarObject);
+
+	bool bHasAvatarMetadata = false;
+	if (AvatarObject && AvatarObject->IsValid() && !(*AvatarObject)->Values.IsEmpty())
+		bHasAvatarMetadata = true;
+
+	if (bHasAvatarMetadata)
+	{
+		OutAnimationMetadata.AvatarMetadatas.Empty();
+		OutAnimationMetadata.AvatarMetadatas.SetNum((*AvatarObject)->Values.Num());
+
+		for (int i = 0; i < (*AvatarObject)->Values.Num(); ++i)
+		{
+			FString AvatarID = (*AvatarObject)->Values.Array()[i].Key;
+			TSharedPtr<FJsonValue> AvatarValue = (*AvatarObject)->Values.Array()[i].Value;
+
+			const TArray<TSharedPtr<FJsonValue>>* AvatarMetadatas;
+			AvatarObject->Get()->TryGetArrayField(AvatarID, AvatarMetadatas);
+
+			FGuid::Parse(AvatarID, OutAnimationMetadata.AvatarMetadatas[i].AvatarID);
+
+			if (!(AvatarValue && AvatarValue.IsValid()))
+				return false;
+
+			if (!(AvatarMetadatas && AvatarMetadatas->Num()))
+				return false;
+
+			for (int j = 0; j < AvatarMetadatas->Num(); ++j)
+			{
+				TSharedPtr<FJsonObject> AvatarMetadata = (*AvatarMetadatas)[j]->AsObject();
+				if (!AvatarMetadata.IsValid())
+					continue;
+
+				AvatarMetadata->TryGetStringField(TEXT("name"), StringField);
+				if (StringField == TEXT("thumbnail"))
+				{
+					AvatarMetadata->TryGetStringField(TEXT("extension"), StringField);
+					if (StringField != TEXT("png"))
+						continue;
+					AvatarMetadata->TryGetStringField(TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].IconURL.Map);
+					continue;
+				}
+
+				if (StringField == TEXT("userData"))
+				{
+					UE_LOG(LogKinetixRuntime, Warning,
+					       TEXT("[FAccount] GetAnimationMetadataFromJson(): Found UserDatas !"));
+
+					AvatarMetadata->TryGetStringField(TEXT("url"), 
+					OutAnimationMetadata.AvatarMetadatas[i].MappingURL.Map);
+					continue;
+				}
+
+				// if (StringField == TEXT("unreal"))
+				if (StringField == TEXT("animation"))
+				{
+					// Ready for kinanim integration
+					FString Extension;
+					AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
+					// if (Extension == TEXT("glb"))
+					if (Extension == TEXT("kinanim"))
+					{
+						AvatarMetadata->TryGetStringField(
+							TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].AvatarURL.Map);
+					}
+				}
+			}
+		}
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* FilesObject;
+	JsonObject->TryGetArrayField(TEXT("files"), FilesObject);
+	if (!(FilesObject && FilesObject->Num()))
+		return false;
+
+	for (int j = 0; j < FilesObject->Num(); ++j)
+	{
+		TSharedPtr<FJsonObject> FileObject = (*FilesObject)[j]->AsObject();
+		if (!FileObject.IsValid())
+			continue;
+
+		FileObject->TryGetStringField(TEXT("name"), StringField);
+		if (StringField == TEXT("thumbnail"))
+		{
+			FileObject->TryGetStringField(TEXT("extension"), StringField);
+			if (StringField != TEXT("png"))
+				continue;
+			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.IconURL.Map);
+			continue;
+		}
+
+		// if (StringField == TEXT("unreal"))
+		if (StringField == TEXT("animation-v2"))
+		{
+			// Ready for kinanim integration
+			FString Extension;
+			FileObject->TryGetStringField(TEXT("extension"), Extension);
+			// if (Extension == TEXT("glb"))
+			if (Extension == TEXT("kinanim"))
+			{
+				FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+			}
+		}
+		else if ((StringField == TEXT("animation")) && (!OutAnimationMetadata.AnimationURL.Map.Contains(TEXT("https"))))
+			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
+
+		// Will be removed when kinanim in place
+		// FString CacheURL;
+		// FileObject->TryGetStringField(TEXT("url"), CacheURL);
+		// if (!CacheURL.Contains(".glb"))
+		// 	continue;
+
+		// OutAnimationMetadata.AnimationURL.Map = CacheURL;
+	}
+
+
+	UE_LOG(LogKinetixRuntime, Warning,
+	       TEXT("[FKinetixDataLibrary] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
+	       *OutAnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
+	       *OutAnimationMetadata.Name.ToString(),
+	       OutAnimationMetadata.Duration,
+	       *OutAnimationMetadata.IconURL.Map,
+	       *OutAnimationMetadata.AnimationURL.Map);
 	return true;
 }
 
@@ -244,10 +385,10 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 		{
 			FString AvatarID = (*AvatarObject)->Values.Array()[i].Key;
 			TSharedPtr<FJsonValue> AvatarValue = (*AvatarObject)->Values.Array()[i].Value;
-		
+
 			const TArray<TSharedPtr<FJsonValue>>* AvatarMetadatas;
 			AvatarObject->Get()->TryGetArrayField(AvatarID, AvatarMetadatas);
-		
+
 			FGuid::Parse(AvatarID, OutAnimationMetadata.AvatarMetadatas[i].AvatarID);
 
 			if (!(AvatarValue && AvatarValue.IsValid()))
@@ -272,15 +413,27 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 					continue;
 				}
 
-				if (StringField == TEXT("unreal"))
+				if (StringField == TEXT("userData"))
+				{
+					UE_LOG(LogKinetixRuntime, Warning,
+					       TEXT("[FAccount] GetAnimationMetadataFromJson(): Found UserDatas !"));
+
+					AvatarMetadata->TryGetStringField(TEXT("url"), 
+					OutAnimationMetadata.AvatarMetadatas[i].MappingURL.Map);
+					continue;
+				}
+
+				// if (StringField == TEXT("unreal"))
+				if (StringField == TEXT("animation"))
 				{
 					// Ready for kinanim integration
 					FString Extension;
 					AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
-					// if (Extension == TEXT("kinanim"))
-					if (Extension == TEXT("glb"))
+					// if (Extension == TEXT("glb"))
+					if (Extension == TEXT("kinanim"))
 					{
-						AvatarMetadata->TryGetStringField(TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].AvatarURL.Map);
+						AvatarMetadata->TryGetStringField(
+							TEXT("url"), OutAnimationMetadata.AvatarMetadatas[i].AvatarURL.Map);
 					}
 				}
 			}
@@ -308,13 +461,14 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 			continue;
 		}
 
-		if (StringField == TEXT("unreal"))
+		// if (StringField == TEXT("unreal"))
+		if (StringField == TEXT("animation-v2"))
 		{
 			// Ready for kinanim integration
 			FString Extension;
 			FileObject->TryGetStringField(TEXT("extension"), Extension);
-			// if (Extension == TEXT("kinanim"))
-			if (Extension == TEXT("glb"))
+			// if (Extension == TEXT("glb"))
+			if (Extension == TEXT("kinanim"))
 			{
 				FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
 			}
@@ -333,7 +487,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 
 
 	UE_LOG(LogKinetixRuntime, Warning,
-	       TEXT("[FAccount] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
+	       TEXT("[FKinetixDataLibrary] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
 	       *OutAnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
 	       *OutAnimationMetadata.Name.ToString(),
 	       OutAnimationMetadata.Duration,
@@ -422,4 +576,10 @@ bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDel
 FString UKinetixDataBlueprintFunctionLibrary::GetKinetixSlotName()
 {
 	return KINETIXSLOTNAME;
+}
+
+void UKinetixDataBlueprintFunctionLibrary::ClearSmartCache()
+{
+	UKinetixCacheSaveGame::ClearCache();
+	FEmoteManager::Get().ClearEmotes();
 }

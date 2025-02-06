@@ -24,6 +24,9 @@ public:
 	
 	UFUNCTION(Category="Kinetix|Settings")
 	static void GetSDKAPIUrlBase(FString& OutSDKAPIUrlBase);
+
+	UFUNCTION(Category="Kinetix|Settings")
+	static void GetBlendshapeFlags(bool& OutBlendshapesFlag);
 	
 public:
 
@@ -38,4 +41,8 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, Category = "Network", meta = (DisplayName="bSendPose"))
 	bool bSendPose;
+	
+	UPROPERTY(Config, EditAnywhere, Category = "Genral", meta = (DisplayName="Enable Morph Targets"))
+	bool bEnableBlendshapes;
+
 };

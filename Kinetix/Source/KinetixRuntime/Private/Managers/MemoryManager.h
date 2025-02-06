@@ -26,10 +26,13 @@ public:
 	
 	void SaveManifest();
 
+	void ClearManifest();
+
 	const UKinetixCacheSaveGame& GetManifest();
 	
 private:
 	void LoadManifest();
+	void LoadManifestSync();
 	void CreateCacheSave();
 	void OnManifestCreated(const FString& SlotName, int UserIndex, bool bSuccess);
 	void OnManifestLoaded(const FString& SlotName, int UserIndex, USaveGame* SaveGame);

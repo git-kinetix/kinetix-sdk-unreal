@@ -100,6 +100,7 @@ bool FAccountManager::AssociateEmotesToVirtualWorld(const TArray<FAnimationID>& 
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 	Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
+	Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 
 	FString UUIDs;
 	for (int i = 0; i < InEmotes.Num(); ++i)
@@ -168,6 +169,8 @@ bool FAccountManager::TryCreateAccount(const FString& InUserID)
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 	Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
+	Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
+
 	Request->SetContentAsString(FString::Printf(TEXT("{\"id\":\"%s\"}"), *InUserID));
 
 	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
@@ -210,6 +213,7 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 	Request->SetHeader(TEXT("x-api-key"), VirtualWorldID);
+	Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 
 	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
 	if (!Request->ProcessRequest())

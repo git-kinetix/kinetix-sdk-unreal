@@ -24,6 +24,7 @@ void UKinetixIconDownloader::DownloadIcon(FKinetixEmote* Emote)
 	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UKinetixIconDownloader::ProcessIconRequest);
 	HttpRequest->SetURL(Emote->GetAnimationMetadata().IconURL.Map);
 	HttpRequest->SetVerb(TEXT("GET"));
+	HttpRequest->SetHeader(TEXT("UserAgent"), SDKUSERAGENT);
 	HttpRequest->ProcessRequest();
 }
 

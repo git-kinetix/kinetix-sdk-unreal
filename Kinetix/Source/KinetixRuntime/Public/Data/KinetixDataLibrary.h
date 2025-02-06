@@ -19,7 +19,11 @@ static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define KINETIXUGCTOKEN TEXT("/v1/process/token/%s")
 #define KINETIXALIASURL TEXT("/v1/virtual-world/alias/")
 
+#define SDKUSERAGENT TEXT("SDK-Unreal/0.6")
+
 #define KINETIXSMARTCACHESLOT TEXT("KinetixSmartCacheSlot")
+
+class UKinanimBonesDataAsset;
 
 UENUM(Category="Kinetix|Animation")
 enum class EOwnership : uint8
@@ -86,14 +90,29 @@ struct FKinetixAvatarMetadata
 {
 	GENERATED_BODY()
 
+	FKinetixAvatarMetadata()
+	{
+		bMappingAvailable = false;
+		KinanimBoneMapping = nullptr;
+	}
+
 	UPROPERTY(VisibleAnywhere)
 	FGuid AvatarID;
 
 	UPROPERTY(VisibleAnywhere)
 	FURL AvatarURL;
-	
+
 	UPROPERTY(VisibleAnywhere)
 	FURL IconURL;
+
+	UPROPERTY(VisibleAnywhere)
+	bool bMappingAvailable;
+
+	UPROPERTY(VisibleAnywhere)
+	FURL MappingURL;
+
+	UPROPERTY(VisibleAnywhere)
+	UKinanimBonesDataAsset* KinanimBoneMapping;
 };
 
 USTRUCT(BlueprintType)
@@ -269,6 +288,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnKinetixAnimationEndOnLocalPlayer,
 // Maybe adding a UEnum result for better understanding in case of error 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnKinetixLocalAnimationLoadingFinished, bool, Success);
 
+DECLARE_DYNAMIC_DELEGATE(FOnKinetixBoneMappingDownloaded);
+
 #pragma endregion
 
 #pragma region Core
@@ -340,7 +361,7 @@ public:
 
 	/** Helper function to retrieve animation metadata from a json object */
 	static bool GetAnimationMetadataFromJson(const TSharedPtr<FJsonObject>& JsonObject,
-	                                         FAnimationMetadata& AnimationMetadata);
+	                                         FAnimationMetadata& OutAnimationMetadata);
 
 	static bool GetAnimationMetadataFromJson(const FString& JsonString, FAnimationMetadata& OutAnimationMetadata);
 
@@ -404,6 +425,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Kinetix|Save")
 	static FString GetKinetixSlotName();
+
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|SmartCache", meta = (Keywords = "cache"))
+	static void ClearSmartCache();
 
 #pragma endregion
 };

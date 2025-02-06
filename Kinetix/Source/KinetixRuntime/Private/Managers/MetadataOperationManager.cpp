@@ -28,6 +28,7 @@ void FMetadataOperationManager::GetAnimationMetadataOfEmote(const FAnimationMeta
 		Request->SetURL(
 			GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
 				SDKAPIEmoteUrl, *InAnimationID.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower)));
+		Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 		Request->SetVerb(TEXT("GET"));
 		Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 		Request->SetHeader(TEXT("accept"), TEXT("application/json"));
@@ -72,8 +73,15 @@ void FMetadataOperationManager::GetAnimationMetadataOfEmote(const FAnimationMeta
 					return;
 				}
 
-				Emote->SetMetadata(AnimationMetadata);
-				Callback.ExecuteIfBound(AnimationMetadata);
+				if (Emote->IsLocal())
+				{
+					Callback.ExecuteIfBound(Emote->GetAnimationMetadata());
+				}
+				else
+				{
+					Emote->SetMetadata(AnimationMetadata);
+					Callback.ExecuteIfBound(AnimationMetadata);
+				}
 			});
 
 		if (!Request->ProcessRequest())

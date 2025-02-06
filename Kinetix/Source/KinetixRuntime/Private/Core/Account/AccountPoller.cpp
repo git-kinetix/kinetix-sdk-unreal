@@ -138,6 +138,8 @@ void FAccountPoller::StartPolling()
 						Request->SetHeader(TEXT("accept"), TEXT("application/json"));
 						Request->SetHeader(
 							TEXT("x-api-key"), GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);
+						Request->SetHeader(
+							TEXT("User-Agent"), SDKUSERAGENT);
 
 						if (!Request->ProcessRequest())
 							UE_LOG(LogKinetixAccount, Warning,

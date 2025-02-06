@@ -184,6 +184,11 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 		                                     AnimInstanceToNotify->Execute_SetKinetixAnimationPlaying(
 			                                     AnimInstanceToNotify.GetObject(), true);
 		                                     CurrentAnimationIDBeingPlayed = InAnimationID;
+
+	                                     	UKismetSystemLibrary::PrintString(this,
+	                                     		FString::Printf(TEXT("PlayAnimation '%s' on '%s'"),
+	                                     			*InAnimationID.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
+	                                     			*GetName()), true, false, FLinearColor::Yellow, 10.f);
 	                                     }));
 }
 

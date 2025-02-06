@@ -6,6 +6,7 @@
 #include "Data/KinetixDataLibrary.h"
 #include "Interfaces/KinetixSubcoreInterface.h"
 #include "glTFRuntimeParser.h"
+#include "KinanimBonesDataAsset.h"
 #include "KinetixAnimation.generated.h"
 
 class UKinetixCharacterComponent;
@@ -148,12 +149,26 @@ public:
 	void SetReferenceSkeleton(USkeletalMesh* InSkeletalMesh);
 	
 	/**
-	 * @brief Getter for the register Kinetix Component
+	 * @brief Setter for the register Kinetix Component
 	 * @return The UKinetixComponent registered (if there is one)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
 	void SetCurveRemapper(const FglTFRuntimeAnimationCurveRemapper& InRemapper);
 
+	/**
+	 * @brief Set the bone mapping used for next played animation
+	 * @param InRemapper Remapper asset to use
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
+	void SetBoneMapping(const UKinanimBonesDataAsset* InRemapper);
+
+	/**
+	 * @brief Set the bone mapping used for next played animation
+	 * @param InRemapper Remapper asset to use
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Kinetix|Animation")
+	void LoadBoneMapping(const FAnimationMetadata& InAnimationMetadata, const FString& InAvatarUUID, const FOnKinetixBoneMappingDownloaded& OnSuccessDelegate);
+	
 public:
 	/**
 	 * @brief Event called when Local Player is registered
