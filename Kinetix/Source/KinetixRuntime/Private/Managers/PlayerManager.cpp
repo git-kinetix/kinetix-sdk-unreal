@@ -148,7 +148,10 @@ void FPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID,
 	}
 
 	if (DownloadedEmotesReadyToPlay.Contains(InAnimationID))
+	{
 		OnSuccess.ExecuteIfBound();
+		return;
+	}
 
 	Async(EAsyncExecution::TaskGraphMainThread, [InAnimationID, Emote, AvatarUUID, OnSuccess, OnFailure, this]()
 	{
