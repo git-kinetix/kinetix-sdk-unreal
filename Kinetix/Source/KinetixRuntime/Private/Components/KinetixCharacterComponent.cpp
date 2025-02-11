@@ -87,7 +87,10 @@ void UKinetixCharacterComponent::PlayAnimationInternal(FAnimationID InID, bool b
 			                                     return;
 		                                     }
 
-		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
+		                                     OwnerSkeletalMeshComponent->GetAnimInstance()->
+		                                                                 PlaySlotAnimationAsDynamicMontage(
+			                                                                 AnimSequence,TEXT("DefaultSlot"));
+
 		                                     OnPlayedAnimationDelegate.ExecuteIfBound(InID);
 		                                     OnAnimationStart.Broadcast(InID);
 		                                     if (AnimSampler)
@@ -166,7 +169,9 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 			                                     return;
 		                                     }
 
-		                                     OwnerSkeletalMeshComponent->PlayAnimation(AnimSequence, false);
+	                                     	OwnerSkeletalMeshComponent->GetAnimInstance()->
+																		 PlaySlotAnimationAsDynamicMontage(
+																			 AnimSequence,TEXT("DefaultSlot"));
 		                                     OnPlayedAnimationDelegate.Broadcast(InAnimationID);
 		                                     OnAnimationStart.Broadcast(InAnimationID);
 		                                     if (AnimSampler)
@@ -185,10 +190,13 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 			                                     AnimInstanceToNotify.GetObject(), true);
 		                                     CurrentAnimationIDBeingPlayed = InAnimationID;
 
-	                                     	UKismetSystemLibrary::PrintString(this,
-	                                     		FString::Printf(TEXT("PlayAnimation '%s' on '%s'"),
-	                                     			*InAnimationID.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
-	                                     			*GetName()), true, false, FLinearColor::Yellow, 10.f);
+		                                     UKismetSystemLibrary::PrintString(this,
+		                                                                       FString::Printf(
+			                                                                       TEXT("PlayAnimation '%s' on '%s'"),
+			                                                                       *InAnimationID.UUID.ToString(
+				                                                                       EGuidFormats::DigitsWithHyphensLower),
+			                                                                       *GetName()), true, false,
+		                                                                       FLinearColor::Yellow, 10.f);
 	                                     }));
 }
 
