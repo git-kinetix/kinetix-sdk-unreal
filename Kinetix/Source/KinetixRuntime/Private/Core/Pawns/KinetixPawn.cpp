@@ -25,8 +25,6 @@ AKinetixPawn::AKinetixPawn()
 	SkeletalMeshTarget->SetupAttachment(SkeletalMeshSource);
 
 	KinetixComponent = CreateDefaultSubobject<UKinetixCharacterComponent>(TEXT("KinetixComponent"));
-	// KinetixComponent->SetIsReplicated(true);
-	// bReplicates = true;
 }
 
 // Called when the game starts or when spawned

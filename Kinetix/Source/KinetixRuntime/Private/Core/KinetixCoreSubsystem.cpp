@@ -19,6 +19,7 @@ void UKinetixCoreSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	const UKinetixDeveloperSettings* KinetixSettings = GetDefault<UKinetixDeveloperSettings>();
 	if (!IsValid(KinetixSettings))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Error, TEXT("ERROR: Unable to load settings!"));
 		return;
 	}
@@ -58,6 +59,7 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 	UObject* SubcoreObject = nullptr;
 	if (!InitializeSubcore(UKinetixAnimation::StaticClass(), &SubcoreObject))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixAnimation failed to initialize !"));
 		return false;
 	}
@@ -66,6 +68,7 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 	SubcoreObject = nullptr;
 	if (!InitializeSubcore(UKinetixMetadata::StaticClass(), &SubcoreObject))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixMetadata failed to initialize !"));
 		return false;
 	}
@@ -74,6 +77,7 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 	SubcoreObject = nullptr;
 	if (!InitializeSubcore(UKinetixAccount::StaticClass(), &SubcoreObject))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixAccount failed to initialize !"));
 		return false;
 	}
@@ -82,6 +86,7 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 	SubcoreObject = nullptr;
 	if (!InitializeSubcore(UKinetixUGC::StaticClass(), &SubcoreObject))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("KinetixUGC failed to initialize !"));
 		return false;
 	}
@@ -93,6 +98,7 @@ bool UKinetixCoreSubsystem::Setup(const FKinetixCoreConfiguration& InConfigurati
 		OnCoreInitializedDelegates[i].Execute();
 	}
 
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixRuntime, Log, TEXT("%s successfully initialized !"), *GetName());
 	
 	return true;
@@ -112,6 +118,7 @@ void UKinetixCoreSubsystem::OnReferenceSkeletonAvailable(FAssetData AssetData)
 {
 	if (!AssetData.IsValid() || !AssetData.IsAssetLoaded())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Asset still not loaded !"));
 		return;
 	}
@@ -119,11 +126,13 @@ void UKinetixCoreSubsystem::OnReferenceSkeletonAvailable(FAssetData AssetData)
 	USkeletalMesh* LoadedSkeletalMesh = Cast<USkeletalMesh>(AssetData.GetAsset());
 	if (!IsValid(LoadedSkeletalMesh))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Loaded asset is still null !"));
 		return;
 	}
 
 	KinetixAnimation->SetReferenceSkeletalMesh(LoadedSkeletalMesh);
-	
+
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixRuntime, Log, TEXT("%s asset loaded and available"), *LoadedSkeletalMesh->GetName());
 }

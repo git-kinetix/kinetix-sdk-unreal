@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/UGC/KinetixUGC.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Templates/UniquePtr.h"
 
@@ -18,7 +19,7 @@ public:
 
 	void StartPollingUGC();
 
-	void StartPollingForNewUGCToken();
+	void GetUGCTokenState();
 
 	void GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback);
 

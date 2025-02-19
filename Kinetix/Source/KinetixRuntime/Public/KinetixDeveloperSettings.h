@@ -27,6 +27,9 @@ public:
 
 	UFUNCTION(Category="Kinetix|Settings")
 	static void GetBlendshapeFlags(bool& OutBlendshapesFlag);
+
+	UFUNCTION(Category="Kinetix|Settings")
+	static bool GetLogFlag();
 	
 public:
 

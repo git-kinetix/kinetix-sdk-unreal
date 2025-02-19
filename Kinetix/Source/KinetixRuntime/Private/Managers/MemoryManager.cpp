@@ -2,6 +2,7 @@
 
 #include "Managers/MemoryManager.h"
 
+#include "KinetixDeveloperSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "SmartCache/KinetixCacheSaveGame.h"
 
@@ -71,6 +72,7 @@ void FMemoryManager::SaveManifest()
 {
 	if (CacheManifest == nullptr)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixMemory, Warning, TEXT("SaveManifest: No manifest to save !"));
 		CreateCacheSave();
 		return;
@@ -123,6 +125,7 @@ void FMemoryManager::OnManifestLoaded(const FString& SlotName, int UserIndex, US
 	UKinetixCacheSaveGame* KinetixCacheSaveGame = Cast<UKinetixCacheSaveGame>(SaveGame);
 	if (KinetixCacheSaveGame == nullptr)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixSmartCache, Warning, TEXT("[UKinetixCacheSaveGame] OnManifestLoaded: No manifest on disk!"));
 		// From this part we should create a new one
 

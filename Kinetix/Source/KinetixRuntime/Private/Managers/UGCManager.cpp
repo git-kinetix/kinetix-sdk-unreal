@@ -17,9 +17,9 @@ FUGCManager::FUGCManager()
 	bEnableUGC = true;
 	FetchTimeOutInMinutes = 5;
 
-	UE_LOG(LogKinetixUGC, Warning,
-	       TEXT("[FUGCManager] HAS BEEN CONSTRUCTED!"));
-	
+	if (UKinetixDeveloperSettings::GetLogFlag())
+		UE_LOG(LogKinetixUGC, Warning,
+	       TEXT("[FUGCManager] Has been constructed!"));
 }
 
 FUGCManager::~FUGCManager()
@@ -37,7 +37,8 @@ void FUGCManager::StartPollingUGC()
 
 	TSet<FKinetixEmote*> Emotes = ConnectedAccount->GetEmotes();
 
-	FString Url = GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID());
+	FString Url = GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
+		SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID());
 
 	FHttpModule& HttpModule = FHttpModule::Get();
 	TSharedRef<IHttpRequest> Request = HttpModule.CreateRequest();
@@ -46,7 +47,8 @@ void FUGCManager::StartPollingUGC()
 		this, &FUGCManager::OnPollingResponse);
 
 	Request->SetURL(
-		GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID()));
+		GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
+			SDKAPIEmoteUsersUrl, *ConnectedAccount->GetAccountID()));
 	Request->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
@@ -55,15 +57,19 @@ void FUGCManager::StartPollingUGC()
 		TEXT("x-api-key"), GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);
 
 	if (!Request->ProcessRequest())
-		UE_LOG(LogKinetixUGC,
-	       Warning,
-	       TEXT("[FUGCManager] StartPollingUGC(): Unable to process request !"));
+	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
+			UE_LOG(LogKinetixUGC,
+		       Warning,
+		       TEXT("[FUGCManager] StartPollingUGC(): Unable to process request !"));
+	}
 }
 
-void FUGCManager::StartPollingForNewUGCToken()
+void FUGCManager::GetUGCTokenState()
 {
 	if (TokenUUID.IsEmpty())
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] StartPollingForNewUGCToken(): Tried to poll UGC Token without calling GetUgcUrl!"));
 		return;
@@ -88,20 +94,24 @@ void FUGCManager::StartPollingForNewUGCToken()
 		GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration.VirtualWorld);
 
 	if (!Request->ProcessRequest())
+	{
+		if(UKinetixDeveloperSettings::GetLogFlag())	
 		UE_LOG(LogKinetixUGC,
 	       Warning,
 	       TEXT("[FUGCManager] StartPollingUGC(): Unable to process request !"));
+	}
 }
 
 void FUGCManager::GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback)
 {
-	if (UgcUrl.IsEmpty() || (FDateTime::Now() - LastFetchedDate).GetMinutes() > FetchTimeOutInMinutes)
+	if (UgcUrl.IsEmpty())
 	{
 		const FAccount* ConnectedAccount = FAccountManager::Get()->GetConnectedAccount();
 		if (ConnectedAccount == nullptr)
 			return;
 
-		FString Uri = GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(KINETIXUGCURL, *ConnectedAccount->GetAccountID());
+		FString Uri = GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + FString::Printf(
+			KINETIXUGCURL, *ConnectedAccount->GetAccountID());
 
 		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 		Request->OnProcessRequestComplete().BindRaw(this, &FUGCManager::OnUGCUrlResponse);
@@ -117,12 +127,16 @@ void FUGCManager::GetUgcUrl(const TDelegate<void(FString)>& InUrlFetchedCallback
 		UgCUrlFetchedCallback = InUrlFetchedCallback;
 
 		if (!Request->ProcessRequest())
+		{
+			if(UKinetixDeveloperSettings::GetLogFlag())	
 			UE_LOG(LogKinetixUGC, Warning, TEXT("[FUGCManager] GetUgcUrl(): Unable to process request !"));
+		}
 
 		return;
 	}
 
-	InUrlFetchedCallback.ExecuteIfBound(UgcUrl);
+	UgCUrlFetchedCallback = InUrlFetchedCallback;
+	GetUGCTokenState();
 }
 
 bool FUGCManager::IsUGCAvailable()
@@ -135,6 +149,7 @@ void FUGCManager::OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr
 {
 	if (!Response.IsValid())
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnPollingResponse(): Failed to connect to service !"));
 		return;
@@ -143,6 +158,7 @@ void FUGCManager::OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr
 	if (!(Response->GetResponseCode() >= EHttpResponseCodes::Ok
 		&& Response->GetResponseCode() < EHttpResponseCodes::Ambiguous))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnPollingResponse(): Wrong response from server %i !"),
 		       Response->GetResponseCode());
@@ -158,6 +174,7 @@ void FUGCManager::OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr
 		FJsonSerializer::Deserialize(JsonReader, ResponseValue);
 	if (!bDeserializationResult)
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnPollingResponse(): Unable to deserialize response !"));
 		return;
@@ -177,6 +194,7 @@ void FUGCManager::OnPollingResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr
 
 	Account->AddEmoteFromMetadata(AnimationMetadata);
 
+	if(UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixUGC, Warning,
 	       TEXT("[FUGCManager] OnPollingResponse(): Unable to deserialize response !"));
 }
@@ -186,6 +204,7 @@ void FUGCManager::OnUGCUrlResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr<
 {
 	if (!Response.IsValid())
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnUGCUrlResponse(): Failed to connect to service !"));
 		return;
@@ -193,6 +212,7 @@ void FUGCManager::OnUGCUrlResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr<
 
 	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnUGCUrlResponse(): Wrong response from server %i !"),
 		       Response->GetResponseCode());
@@ -208,6 +228,7 @@ void FUGCManager::OnUGCUrlResponse(TSharedPtr<IHttpRequest> Request, TSharedPtr<
 		FJsonSerializer::Deserialize(JsonReader, ResponseValue);
 	if (!bDeserializationResult)
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnUGCUrlResponse(): Failed to deserialize response !"));
 		return;
@@ -225,13 +246,27 @@ void FUGCManager::OnUGCTokenResponse(TSharedPtr<IHttpRequest> Request, TSharedPt
 {
 	if (!Response.IsValid())
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnUGCTokenResponse(): Failed to connect to service !"));
 		return;
 	}
 
+	if (EHttpResponseCodes::NotFound == Response->GetResponseCode())
+	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
+		UE_LOG(LogKinetixUGC, Display,
+		       TEXT("[FUGCManager] OnUGCTokenResponse(): %i received from server, cleaning token..."),
+		       Response->GetResponseCode());
+		TokenUUID.Empty();
+		UgcUrl.Empty();
+		GetUgcUrl(UgCUrlFetchedCallback);
+		return;
+	}
+
 	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnUGCTokenResponse(): Wrong response from server %i !"),
 		       Response->GetResponseCode());
@@ -247,6 +282,7 @@ void FUGCManager::OnUGCTokenResponse(TSharedPtr<IHttpRequest> Request, TSharedPt
 		FJsonSerializer::Deserialize(JsonReader, ResponseValue);
 	if (!bDeserializationResult)
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnUGCUrlResponse(): Failed to deserialize response !"));
 		return;
@@ -257,14 +293,21 @@ void FUGCManager::OnUGCTokenResponse(TSharedPtr<IHttpRequest> Request, TSharedPt
 	TSharedPtr<FJsonObject> JsonObject = ResponseValue->AsObject();
 	if (!JsonObject.Get()->TryGetNumberField(TEXT("expireIn"), NumValue))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixUGC, Warning,
 		       TEXT("[FUGCManager] OnUGCUrlResponse(): Failed to deserialize response !"));
 		return;
 	}
 
-	if (NumValue < 1)
+	// UGC token still valid
+	if (NumValue != 0)
 	{
-		TokenUUID.Empty();
-		UgcUrl.Empty();
+		UgCUrlFetchedCallback.ExecuteIfBound(UgcUrl);
+		return;
 	}
+
+	// Should never reach here but never know
+	TokenUUID.Empty();
+	UgcUrl.Empty();
+	GetUgcUrl(UgCUrlFetchedCallback);
 }

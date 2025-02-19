@@ -2,6 +2,7 @@
 
 #include "Core/Account/KinetixAccount.h"
 
+#include "KinetixDeveloperSettings.h"
 #include "Managers/AccountManager.h"
 
 DEFINE_LOG_CATEGORY(LogKinetixAccount);
@@ -16,7 +17,6 @@ UKinetixAccount::UKinetixAccount(FVTableHelper& Helper)
 
 UKinetixAccount::~UKinetixAccount()
 {
-	UE_LOG(LogKinetixAccount, Warning, TEXT("[UKinetixAccount] ~UKinetixAccount"));
 	FAccountManager::Get()->StopPolling();
 }
 
@@ -34,6 +34,7 @@ void UKinetixAccount::ConnectAccount(const FString& InUserID)
 {
 	if (InUserID.IsEmpty())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("ConnectAccount: InUserID is empty !"));
 		return ;
 	}

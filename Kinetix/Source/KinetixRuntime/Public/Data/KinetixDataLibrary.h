@@ -19,7 +19,7 @@ static FString SDKAPIUsersUrl = TEXT("/v1/virtual-world/users");
 #define KINETIXUGCTOKEN TEXT("/v1/process/token/%s")
 #define KINETIXALIASURL TEXT("/v1/virtual-world/alias/")
 
-#define SDKUSERAGENT TEXT("SDK-Unreal/0.6")
+#define SDKUSERAGENT TEXT("SDK-Unreal/0.8")
 
 #define KINETIXSMARTCACHESLOT TEXT("KinetixSmartCacheSlot")
 

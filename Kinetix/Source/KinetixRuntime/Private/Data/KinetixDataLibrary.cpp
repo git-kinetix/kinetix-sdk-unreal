@@ -11,6 +11,7 @@
 #include "glTFRuntimeFunctionLibrary.h"
 #include "JsonBlueprintFunctionLibrary.h"
 #include "JsonObjectWrapper.h"
+#include "KinetixDeveloperSettings.h"
 #include "UObject/SavePackage.h"
 
 #include "KinetixRuntimeModule.h"
@@ -38,6 +39,7 @@ bool UKinetixDataBlueprintFunctionLibrary::RemoveContentFromPluginPath(FString& 
 
 	if (Index == INDEX_NONE)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Wrong path given %s"), *RelativePath);
 		return false;
 	}
@@ -71,6 +73,8 @@ bool UKinetixDataBlueprintFunctionLibrary::GetMetadataFiles(TArray<FString>& Out
 	PlatformFile.FindFilesRecursively(OutFiles,
 	                                  *FPaths::ProjectContentDir(),
 	                                  *InFileExtension);
+	
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixRuntime, Warning, TEXT("FPaths::ProjectContentDir(): %s"), *FPaths::ProjectContentDir());
 #endif
 
@@ -153,30 +157,35 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromFile(UObject*
 
 	if (!GetJsonObjectFromFile(WorldContextObject, File, JsonObjectRef))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("File doesn't exist !"));
 		return false;
 	}
 
 	if (!GetUUIDFromJson(AnimationMetadata.Id.UUID, JsonObjectRef))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to get UUID !"));
 		return false;
 	}
 
 	if (!GetNameFromJson(AnimationMetadata.Name, JsonObjectRef))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to get Name !"));
 		return false;
 	}
 
 	if (!GetOwnershipFromJson(AnimationMetadata.Ownership, JsonObjectRef))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to get Ownership !"));
 		return false;
 	}
 
 	if (!GetDurationFromJson(AnimationMetadata.Duration, JsonObjectRef))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Unable to get Duration !"));
 		return false;
 	}
@@ -201,7 +210,8 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 	JsonObject->TryGetObjectField(TEXT("metadata"), MetadataObject);
 	if (!(MetadataObject && MetadataObject->IsValid()))
 	{
-		UE_LOG(LogKinetixRuntime, Error, TEXT("WRONG WRONG WRONG"));
+		if (UKinetixDeveloperSettings::GetLogFlag())
+		UE_LOG(LogKinetixRuntime, Error, TEXT("Unable "));
 		return false;
 	}
 
@@ -255,6 +265,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 
 				if (StringField == TEXT("userData"))
 				{
+					if (UKinetixDeveloperSettings::GetLogFlag())
 					UE_LOG(LogKinetixRuntime, Warning,
 					       TEXT("[FAccount] GetAnimationMetadataFromJson(): Found UserDatas !"));
 
@@ -269,7 +280,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 					// Ready for kinanim integration
 					FString Extension;
 					AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
-					// if (Extension == TEXT("glb"))
+					// Same, change to "glb" to get the glb file
 					if (Extension == TEXT("kinanim"))
 					{
 						AvatarMetadata->TryGetStringField(
@@ -301,13 +312,12 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 			continue;
 		}
 
-		// if (StringField == TEXT("unreal"))
 		if (StringField == TEXT("animation-v2"))
 		{
 			// Ready for kinanim integration
 			FString Extension;
 			FileObject->TryGetStringField(TEXT("extension"), Extension);
-			// if (Extension == TEXT("glb"))
+			// Same, change to "glb" to get the glb file
 			if (Extension == TEXT("kinanim"))
 			{
 				FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
@@ -316,16 +326,9 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 		else if ((StringField == TEXT("animation")) && (!OutAnimationMetadata.AnimationURL.Map.Contains(TEXT("https"))))
 			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
 
-		// Will be removed when kinanim in place
-		// FString CacheURL;
-		// FileObject->TryGetStringField(TEXT("url"), CacheURL);
-		// if (!CacheURL.Contains(".glb"))
-		// 	continue;
-
-		// OutAnimationMetadata.AnimationURL.Map = CacheURL;
 	}
 
-
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixRuntime, Warning,
 	       TEXT("[FKinetixDataLibrary] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
 	       *OutAnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
@@ -345,6 +348,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 	const bool bDeserializationResult = FJsonSerializer::Deserialize(JsonReader, JsonObject);
 	if (!bDeserializationResult)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning,
 		       TEXT("GetAnimationMetadataFromJson(): Unable to deserialize response ! %s"),
 		       *JsonReader.Get().GetErrorMessage());
@@ -353,6 +357,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 
 	if (!GetAnimationMetadataFromJson(JsonObject, OutAnimationMetadata))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning,
 		       TEXT("GetAnimationMetadataFromJson(): Unable to get datas from Json object ! %s"),
 		       *JsonReader.Get().GetErrorMessage());
@@ -415,6 +420,7 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 
 				if (StringField == TEXT("userData"))
 				{
+					if (UKinetixDeveloperSettings::GetLogFlag())
 					UE_LOG(LogKinetixRuntime, Warning,
 					       TEXT("[FAccount] GetAnimationMetadataFromJson(): Found UserDatas !"));
 
@@ -423,13 +429,12 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 					continue;
 				}
 
-				// if (StringField == TEXT("unreal"))
 				if (StringField == TEXT("animation"))
 				{
 					// Ready for kinanim integration
 					FString Extension;
 					AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
-					// if (Extension == TEXT("glb"))
+					// Change to "glb" to get glb file
 					if (Extension == TEXT("kinanim"))
 					{
 						AvatarMetadata->TryGetStringField(
@@ -461,13 +466,12 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 			continue;
 		}
 
-		// if (StringField == TEXT("unreal"))
 		if (StringField == TEXT("animation-v2"))
 		{
 			// Ready for kinanim integration
 			FString Extension;
 			FileObject->TryGetStringField(TEXT("extension"), Extension);
-			// if (Extension == TEXT("glb"))
+			// change to "glb" to get glb file
 			if (Extension == TEXT("kinanim"))
 			{
 				FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
@@ -476,16 +480,9 @@ bool UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(const FS
 		else if ((StringField == TEXT("animation")) && (!OutAnimationMetadata.AnimationURL.Map.Contains(TEXT("https"))))
 			FileObject->TryGetStringField(TEXT("url"), OutAnimationMetadata.AnimationURL.Map);
 
-		// Will be removed when kinanim in place
-		// FString CacheURL;
-		// FileObject->TryGetStringField(TEXT("url"), CacheURL);
-		// if (!CacheURL.Contains(".glb"))
-		// 	continue;
-
-		// OutAnimationMetadata.AnimationURL.Map = CacheURL;
 	}
 
-
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixRuntime, Warning,
 	       TEXT("[FKinetixDataLibrary] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
 	       *OutAnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
@@ -523,8 +520,6 @@ bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDel
 	FAssetRegistryModule& AssetRegistryModule =
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
-	// /Script/Engine.Skeleton'/ReadyPlayerMe/Character/Fullbody/Mesh/RPM_Mixamo_Skeleton.RPM_Mixamo_Skeleton'
-	// Normalize path D:/Kinetix/kinetix-sdk-unreal/Plugins/ReadyPlayerMe/Content/Character/Fullbody/Mesh/RPM_Mixamo_SkeletalMesh.uasset
 	FString GeneralPath = IPluginManager::Get().FindPlugin(TEXT("Kinetix"))->GetContentDir() + TEXT(
 		"/Characters/Sam");
 	GeneralPath = FPaths::CreateStandardFilename(GeneralPath);
@@ -546,12 +541,14 @@ bool UKinetixDataBlueprintFunctionLibrary::LoadReferenceSkeletonAsset(const TDel
 
 	if (SkeletalMeshDatas.IsEmpty())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("No asset found"));
 		return false;
 	}
 
 	if (!SkeletalMeshDatas[0].IsAssetLoaded())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Log, TEXT("%s not loaded yet, launch loading..."),
 		       *SkeletalMeshDatas[0].AssetName.ToString());
 

@@ -67,8 +67,6 @@ protected:
 
 	UFUNCTION()
 	FString RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path, UObject* Context);
-	void PlayAnimationOld(const FAnimationID& InAnimationID, bool bLoop,
-	                      const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate);
 
 private:
 	UFUNCTION()

@@ -50,7 +50,13 @@ const TArray<FKinetixEmote*> FAccount::FetchMetadatas()
 				TEXT("User-Agent"), SDKUSERAGENT);
 
 			if (!Request->ProcessRequest())
-				UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccount] FetchMetadatas(): Unable to process request !"));
+			{
+				if (UKinetixDeveloperSettings::GetLogFlag())
+				{
+					UE_LOG(LogKinetixAccount, Warning,
+					       TEXT("[FAccount] FetchMetadatas(): Unable to process request !"));
+				}
+			}
 		});
 
 	return Emotes.Array();
@@ -82,21 +88,22 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 {
 	if (!Response.IsValid())
 	{
-		UE_LOG(LogKinetixAccount, Warning,
+		if (UKinetixDeveloperSettings::GetLogFlag())
+			UE_LOG(LogKinetixAccount, Warning,
 		       TEXT("[FAccount] MetadataRequestComplete(): Failed to connect to service !"));
 		return;
 	}
 
-	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()) && !(Response->GetResponseCode() == 208))
+	if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()) && Response->GetResponseCode() != 208)
 	{
-		UE_LOG(LogKinetixAccount, Warning,
+		if (UKinetixDeveloperSettings::GetLogFlag())
+			UE_LOG(LogKinetixAccount, Warning,
 		       TEXT("[FAccount] MetadataRequestComplete(): Wrong response from server %i !"),
 		       Response->GetResponseCode());
 		return;
 	}
 
 	const FString JsonResponse = Response->GetContentAsString();
-	UE_LOG(LogKinetixAccount, Log, TEXT("%s"), *JsonResponse);
 
 	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
@@ -104,7 +111,8 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 	const bool bDeserializationResult = FJsonSerializer::Deserialize(JsonReader, JsonArray);
 	if (!bDeserializationResult)
 	{
-		UE_LOG(LogKinetixAccount, Warning,
+		if (UKinetixDeveloperSettings::GetLogFlag())
+			UE_LOG(LogKinetixAccount, Warning,
 		       TEXT("[FAccount] MetadataRequestComplete(): Unable to deserialize response ! %s"),
 		       *JsonReader.Get().GetErrorMessage());
 		return;
@@ -112,7 +120,8 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 
 	if (JsonArray.Num() == Metadatas.Num())
 	{
-		UE_LOG(LogKinetixAccount, Log,
+		if (UKinetixDeveloperSettings::GetLogFlag())
+			UE_LOG(LogKinetixAccount, Log,
 		       TEXT("[FAccount] MetadataRequestComplete(): Nothing changed on "));
 		CallMetadatasAvailableDelegates();
 		return;
@@ -217,7 +226,7 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 						// Ready for kinanim integration
 						FString Extension;
 						AvatarMetadata->TryGetStringField(TEXT("extension"), Extension);
-						// if (Extension == TEXT("glb"))
+						// Change the extension to "glb" to get the glb file instead
 						if (Extension == TEXT("kinanim"))
 						{
 							AvatarMetadata->TryGetStringField(
@@ -256,11 +265,11 @@ void FAccount::MetadataRequestComplete(TSharedPtr<IHttpRequest, ESPMode::ThreadS
 				{
 					FileObject->TryGetStringField(TEXT("url"), AnimationMetadata.AnimationURL.Map);
 				}
-				// AnimationMetadata.AnimationURL.Map = CacheURL;
 			}
 		}
 
-		UE_LOG(LogKinetixAccount, Warning,
+		if (AnimationMetadata.AvatarMetadatas.Num() > 0)
+			UE_LOG(LogKinetixAccount, Warning,
 		       TEXT("[FAccount] MetadataRequestComplete(): Generated AnimationMetadata: %s %s %f %s %s"),
 		       *AnimationMetadata.Id.UUID.ToString(EGuidFormats::DigitsWithHyphensLower),
 		       *AnimationMetadata.Name.ToString(),

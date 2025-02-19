@@ -57,6 +57,7 @@ void UAnimSequenceSamplerComponent::BeginPlay()
 	KCC = CurrentOwner->GetComponentByClass<UKinetixCharacterComponent>();
 	if (!IsValid(KCC))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime,
 		       Warning,
 		       TEXT(
@@ -151,11 +152,6 @@ void UAnimSequenceSamplerComponent::Play(FAnimationQueue& InAnimQueue)
 	}
 }
 
-void UAnimSequenceSamplerComponent::SetDebugPoesable(UPoseableMeshComponent* InPoseableMeshComponent)
-{
-	// PoseableMeshComp = InPoseableMeshComponent;
-}
-
 void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 {
 	if (!IsValid(InActor))
@@ -185,31 +181,6 @@ void UAnimSequenceSamplerComponent::SetContext(const AActor* InActor)
 		bKinetixSkeletalMeshFound = true;
 		i = 255;
 	}
-
-	return;
-
-	// SkeletalMeshComponentToPause =
-	// 	InActor->GetComponentByClass<USkeletalMeshComponent>();
-	//
-	// if (!ensure(IsValid(SkeletalMeshComponentToPause))) return;
-	//
-	// SkeletalMeshComponentToPause->GetBoneNames(BoneNames);
-	//
-	// // UAnimInstance* AnimInstance = SkeletalMeshComponentToPause->GetAnimInstance();
-	// // if (!IsValid(AnimInstance))
-	// // {
-	// // 	UE_LOG(LogKinetixRuntime, Warning, TEXT("ERROR: No AnimInstance on %s"),
-	// // 	       *SkeletalMeshComponentToPause->GetName());
-	// // }
-	//
-	// RequiredBones =
-	// 	SkeletalMeshComponentToPause->GetAnimInstance()->GetRequiredBones();
-
-	// PoseableMeshComp = InActor->GetComponentByClass<UPoseableMeshComponent>();
-	// if (!IsValid(PoseableMeshComp))
-	// 	return;
-	// if (GetOwnerRole() == ROLE_AutonomousProxy)
-	// 	PoseableMeshComp->SetHiddenInGame(true, true);
 }
 
 void UAnimSequenceSamplerComponent::PlayAnimation_Implementation(const FAnimationID& InID, const FString& AvatarID, UAnimSequence* InAnimSequence)
@@ -261,11 +232,6 @@ void UAnimSequenceSamplerComponent::StopAnimation_Implementation()
 	Time = 0.f;
 
 	ServerSendStopAnimation();
-
-	// if (BlendState == EBlendState::BS_None || BlendState == EBlendState::BS_Out)
-	// 	return;
-	//
-	// ForceBlendOut();
 }
 
 void UAnimSequenceSamplerComponent::EnableAnimInstance()
@@ -292,6 +258,7 @@ bool UAnimSequenceSamplerComponent::ServerSendFramePose_Validate(FKinetixNetwork
 {
 	if (NetworkedPose.Bones.Num() != BoneNames.Num())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime,
 		       Warning,
 		       TEXT(
@@ -318,7 +285,6 @@ void UAnimSequenceSamplerComponent::AllDispatchPose_Implementation(FKinetixNetwo
 	if (!bKinetixSkeletalMeshFound)
 		return;
 
-	// FTransform BoneTransform;
 	FVector TempVector = FVector::ZeroVector;
 
 	TArray<FName> Copy;
@@ -328,12 +294,9 @@ void UAnimSequenceSamplerComponent::AllDispatchPose_Implementation(FKinetixNetwo
 		BoneTransforms[i].SetLocation(TempVector);
 		BoneTransforms[i].SetRotation(NetworkedPose.Bones[i].LocalQuaternion.ToQuat());
 		BoneTransforms[i].SetScale3D(NetworkedPose.Bones[i].LocalScale.ToFVector());
-		// PoseableMeshComp->SetBoneTransformByName(BoneNames[i], BoneTransform, EBoneSpaces::ComponentSpace);
 	}
 
 	KinetixSkeletalMeshComponentSource->NativeSendNetworkedPose(BoneNames, BoneTransforms);
-	// IKinetixSamplerAnimationInterface::Execute_SendNetworkedPose(
-	// 	KinetixSkeletalMeshComponentSource/*, TEXT("TEST"), BoneTransforms*/);
 	if (!IsValid(AnimInstanceToNotify.GetObject()))
 		return;
 

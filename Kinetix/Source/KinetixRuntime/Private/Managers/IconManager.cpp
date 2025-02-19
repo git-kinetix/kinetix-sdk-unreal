@@ -105,9 +105,6 @@ struct FDownloadIconFunctor
 
 UTexture2DDynamic* FIconManager::GetIcon(const FAnimationID& ID, const FOnIconAvailable& OnIconAvailableDelegate)
 {
-	// return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ID]()
-	// {
-
 	if (IconTexturesByID.Contains(ID))
 	{
 		UTexture2DDynamic* Icon = IconTexturesByID[ID];

@@ -24,3 +24,9 @@ void UKinetixDeveloperSettings::GetBlendshapeFlags(bool& OutBlendshapesFlag)
 {
 	OutBlendshapesFlag = GetDefault<UKinetixDeveloperSettings>()->bEnableBlendshapes;
 }
+
+bool UKinetixDeveloperSettings::GetLogFlag()
+{
+	FKinetixCoreConfiguration OutCoreConfiguration = GetDefault<UKinetixDeveloperSettings>()->CoreConfiguration;
+	return OutCoreConfiguration.bShowLogs;
+}

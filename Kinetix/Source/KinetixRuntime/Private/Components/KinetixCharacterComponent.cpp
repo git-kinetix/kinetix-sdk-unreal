@@ -8,6 +8,7 @@
 #include "Subsystems/SubsystemBlueprintLibrary.h"
 
 // For the logs
+#include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
 #include "Core/KinetixCoreSubsystem.h"
 #include "Interfaces/KinetixAnimationInterface.h"
@@ -19,8 +20,6 @@ UKinetixCharacterComponent::UKinetixCharacterComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// bRegisterPlayerOnLaunch = false;
 
 	SetIsReplicatedByDefault(true);
 }
@@ -39,6 +38,8 @@ void UKinetixCharacterComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 void UKinetixCharacterComponent::ServerCalledFromClientWithData_Implementation(const FString& DataToSend)
 {
 	auto CurrentOwner = GetOwner();
+
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UKismetSystemLibrary::PrintString(this,
 	                                  FString::Printf(TEXT("%s %s ServerCalledFromClientWithData: %s"),
 	                                                  *UEnum::GetValueAsString(CurrentOwner->GetLocalRole()),
@@ -80,6 +81,7 @@ void UKinetixCharacterComponent::PlayAnimationInternal(FAnimationID InID, bool b
 	                                     {
 		                                     if (!IsValid(AnimSequence))
 		                                     {
+		                                     	if (UKinetixDeveloperSettings::GetLogFlag())
 			                                     UE_LOG(LogKinetixRuntime, Warning,
 			                                            TEXT(
 				                                            "[UKinetixComponent] PlayAnimation: %s AnimSequence is null !"
@@ -144,6 +146,7 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 {
 	if (!InAnimationID.UUID.IsValid())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("[KinetixComponent] PlayAnimation: %s Given AnimationID is null !"),
 		       *GetName());
 		return;
@@ -153,6 +156,7 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 		USubsystemBlueprintLibrary::GetGameInstanceSubsystem(this, UKinetixCoreSubsystem::StaticClass()));
 	if (!IsValid(KinetixCoreSubsystem))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Error, TEXT("[UKinetixComponent] PlayAnimation: KinetixCoreSubsystem unavailable !"));
 		return;
 	}
@@ -162,6 +166,7 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 	                                     {
 		                                     if (!IsValid(AnimSequence))
 		                                     {
+		                                     	if (UKinetixDeveloperSettings::GetLogFlag())
 			                                     UE_LOG(LogKinetixRuntime, Warning,
 			                                            TEXT(
 				                                            "[UKinetixComponent] PlayAnimation: %s AnimSequence is null !"
@@ -190,6 +195,7 @@ void UKinetixCharacterComponent::PlayAnimation_Implementation(const FAnimationID
 			                                     AnimInstanceToNotify.GetObject(), true);
 		                                     CurrentAnimationIDBeingPlayed = InAnimationID;
 
+	                                     	if (UKinetixDeveloperSettings::GetLogFlag())
 		                                     UKismetSystemLibrary::PrintString(this,
 		                                                                       FString::Printf(
 			                                                                       TEXT("PlayAnimation '%s' on '%s'"),
@@ -205,6 +211,7 @@ void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
 	AActor* CurrentOwner = GetOwner();
 	if (!IsValid(CurrentOwner))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("%s's owner is NULL !"), *GetName());
 		return;
 	}
@@ -213,6 +220,7 @@ void UKinetixCharacterComponent::CheckSkeletalMeshComponent()
 		CurrentOwner->GetComponentByClass(USkeletalMeshComponent::StaticClass()));
 	if (!IsValid(OwnerSkeletalMeshComponent))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("%s's owner doesn't have SkeletalMeshComponent !"), *GetName());
 		CurrentOwner->GetWorldTimerManager().SetTimer(CheckSkeletalMeshTimer, this,
 		                                              &UKinetixCharacterComponent::CheckSkeletalMeshComponent, 0.1f,
@@ -242,6 +250,7 @@ void UKinetixCharacterComponent::OnOwnerAnimationInitialized()
 	UWorld* CurrentWorld = GetWorld();
 	if (!IsValid(CurrentWorld))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this,
 		                                  FString::Printf(
 			                                  TEXT("%s OnOwnerAnimationInitialized: GetWorld() returned null!"),
@@ -257,6 +266,7 @@ void UKinetixCharacterComponent::OnOwnerAnimationInitialized()
 	UGameInstance* GameInstance = CurrentWorld->GetGameInstance();
 	if (!IsValid(GameInstance))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this,
 		                                  FString::Printf(
 			                                  TEXT("%s OnOwnerAnimationInitialized: GetGameInstance() returned null!"),
@@ -272,6 +282,7 @@ void UKinetixCharacterComponent::OnOwnerAnimationInitialized()
 	UKinetixCoreSubsystem* KinetixCoreSubsystem = GameInstance->GetSubsystem<UKinetixCoreSubsystem>();
 	if (!IsValid(KinetixCoreSubsystem))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this,
 		                                  FString::Printf(
 			                                  TEXT("%s OnOwnerAnimationInitialized: GetSubsystem() returned null!"),
@@ -280,22 +291,13 @@ void UKinetixCharacterComponent::OnOwnerAnimationInitialized()
 		                                  true,
 		                                  FLinearColor::Yellow,
 		                                  10.f);
-		return;
 	}
-
-	// KinetixCoreSubsystem->KinetixAnimation->RegisterLocalPlayerAnimInstance(
-	// 	OwnerSkeletalMeshComponent->GetAnimInstance());
 }
 
 FString UKinetixCharacterComponent::RemapBones(const int32 NodeIndex, const FString& CurveName, const FString& Path,
                                                UObject* Context)
 {
 	return CurveName;
-}
-
-void UKinetixCharacterComponent::PlayAnimationOld(const FAnimationID& InAnimationID, bool bLoop,
-                                                  const FOnPlayedKinetixAnimationLocalPlayer& OnPlayedAnimationDelegate)
-{
 }
 
 void UKinetixCharacterComponent::OnKinetixAnimationEnded()

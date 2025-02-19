@@ -3,6 +3,7 @@
 #include "PlayerManager.h"
 
 #include "EmoteManager.h"
+#include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
 #include "MemoryManager.h"
 #include "Components/KinetixCharacterComponent.h"
@@ -13,12 +14,14 @@ FPlayerManager::FPlayerManager(bool bInPlayAutomaticallyOnAnimator)
 	  bPlayAutomatcallyOnAnimInstance(bInPlayAutomaticallyOnAnimator),
 	  EmotesToPreload(nullptr)
 {
-	UE_LOG(LogKinetixRuntime, Log, TEXT("PlayerManager instanciated"));
+	if (UKinetixDeveloperSettings::GetLogFlag())
+		UE_LOG(LogKinetixRuntime, Log, TEXT("PlayerManager instanciated"));
 }
 
 FPlayerManager::~FPlayerManager()
 {
-	UE_LOG(LogKinetixRuntime, Log, TEXT("LocalPlayerManager destroyed"));
+	if (UKinetixDeveloperSettings::GetLogFlag())
+		UE_LOG(LogKinetixRuntime, Log, TEXT("LocalPlayerManager destroyed"));
 }
 
 bool FPlayerManager::AddKinetixComponentAndInitialize(UAnimInstance* InAnimInstance, FString AvatarUUID)
@@ -68,7 +71,8 @@ bool FPlayerManager::RemovePlayerCharacterComponent()
 	AActor* LocalOwner = LocalKinetixComponent->GetOwner();
 	if (!IsValid(LocalOwner))
 	{
-		UE_LOG(LogKinetixAnimation, Warning, TEXT("[LocalPlayerManager]: %s is valid but his owner is null !"),
+		if (UKinetixDeveloperSettings::GetLogFlag())
+			UE_LOG(LogKinetixAnimation, Warning, TEXT("[LocalPlayerManager]: %s is valid but his owner is null !"),
 		       *LocalKinetixComponent->GetName());
 		LocalKinetixComponent->DestroyComponent();
 		return false;
@@ -160,7 +164,8 @@ void FPlayerManager::LoadLocalPlayerAnimation(const FAnimationID& InAnimationID,
 			                                   {
 				                                   DownloadedEmotesReadyToPlay.Add(
 					                                   InAnimationID, Emote->GetAnimSequence());
-				                                   UE_LOG(LogKinetixAnimation, Warning,
+				                                   if (UKinetixDeveloperSettings::GetLogFlag())
+					                                   UE_LOG(LogKinetixAnimation, Warning,
 				                                          TEXT(
 					                                          "[LocalPlayerManager] LoadLocalPlayerAnimation: AnimationLoaded"
 				                                          ));

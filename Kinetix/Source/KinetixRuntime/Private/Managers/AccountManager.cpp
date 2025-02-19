@@ -20,14 +20,10 @@ FAccountManager* FAccountManager::Instance = nullptr;
 FAccountManager::FAccountManager()
 	: LoggedAccount(nullptr), AssignEmotePipe(TEXT("AssignEmotePipe"))
 {
-	// check(!AssociateEmoteEvent.IsValid());
-	// AssociateEmoteEvent = MakeUnique<UE::Tasks::FTaskEvent>(UE_SOURCE_LOCATION);
 }
 
 FAccountManager::~FAccountManager()
 {
-	// Instance = nullptr;
-
 	AccountPoller.StopPolling();
 }
 
@@ -40,6 +36,7 @@ bool FAccountManager::ConnectAccount(const FString& InUserID)
 {
 	if (VirtualWorldID.IsEmpty())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] ConnectAccount: VirtualWorldID is null !"));
 		return false;
 	}
@@ -48,12 +45,12 @@ bool FAccountManager::ConnectAccount(const FString& InUserID)
 
 	if (IsAccountConnected(UserID))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] ConnectAccount: %s already connected !"), *InUserID);
 		return false;
 	}
 
 	if (!AccountExists(UserID))
-	// && !TryCreateAccount(InUserID))
 	{
 		// From here it's just that we couldn't send the request
 		return false;
@@ -66,6 +63,7 @@ void FAccountManager::FinishAccountConnection()
 {
 	if (LoggedAccount != nullptr)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] ConnectAccount: %s already connected !"),
 		       *LoggedAccount->GetAccountID());
 		DisconnectAccount();
@@ -115,10 +113,12 @@ bool FAccountManager::AssociateEmotesToVirtualWorld(const TArray<FAnimationID>& 
 
 	Request->SetContentAsString(FString::Printf(TEXT("{\"uuids\":[%s]}"), *UUIDs));
 
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AssociateEmotesToVirtualWorld: %s"),
 	       *FString::Printf(TEXT("{\"uuids\":%s}"), *UUIDs));
 	if (!Request->ProcessRequest())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning,
 		       TEXT("[FAccountManager] AssociateEmotesToVirtualWorld: %s Error in Http request"),
 		       *LoggedAccount->GetAccountID());
@@ -176,11 +176,13 @@ bool FAccountManager::TryCreateAccount(const FString& InUserID)
 	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
 	if (!Request->ProcessRequest())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] TryCreateAccount: %s Error in Http request"),
 		       *InUserID);
 		return false;
 	}
 
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] TryCreateAccount: %s"), *InUserID);
 	return false;
 }
@@ -206,8 +208,6 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = HttpModule.CreateRequest();
 	Request->OnProcessRequestComplete().BindRaw(this, &FAccountManager::OnGetUserResponse);
 
-	UE_LOG(LogKinetixRuntime, Warning, TEXT("SDKAPIUrlBase %s"),
-		*GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase);
 	Request->SetURL(GetDefault<UKinetixDeveloperSettings>()->SDKAPIUrlBase + SDKAPIUsersUrl + "/" + InUserID);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
@@ -218,6 +218,7 @@ bool FAccountManager::AccountExists(const FString& InUserID)
 	UE_LOG(LogKinetixAccount, Warning, TEXT("%s"), *Request->GetContentType());
 	if (!Request->ProcessRequest())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] AccountExists: %s Error in Http request"),
 		       *InUserID);
 		return false;
@@ -247,6 +248,7 @@ void FAccountManager::OnGetHttpResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 	TSharedPtr<FJsonObject> JsonObject;
 	if (!HttpResponse.IsValid())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] OnGetHttpResponse: Failed to connect to service"));
 		return;
 	}
@@ -256,6 +258,7 @@ void FAccountManager::OnGetHttpResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 
 	if (!FJsonSerializer::Deserialize(JsonReader, JsonObject))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] OnGetHttpResponse: Failed to deserialize Json %s"),
 		       *JsonReader->GetErrorMessage());
 		return;
@@ -270,6 +273,7 @@ void FAccountManager::OnGetHttpResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 			ErrorLog += Value.Key + " : " + Value.Value->AsString() + LINE_TERMINATOR;
 		}
 
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] OnGetHttpResponse: Failed to connect to service %s"),
 		       *ErrorLog);
 		return;
@@ -284,10 +288,12 @@ void FAccountManager::OnGetUserResponse(TSharedPtr<IHttpRequest, ESPMode::Thread
 {
 	if (!HttpResponse.IsValid())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning, TEXT("[FAccountManager] OnGetUserResponse: Failed to connect to service"));
 		return;
 	}
 
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixAccount, Log, TEXT("[FAccountManager] OnGetUserResponse: %i"), HttpResponse->GetResponseCode());
 
 	if (HttpResponse->GetResponseCode() != 200)
@@ -306,6 +312,7 @@ void FAccountManager::OnGetEmotesToVirtualWorldResponse(
 {
 	if (!Response.IsValid())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning,
 		       TEXT("[FAccountManager] OnGetEmotesToVirtualWorldResponse: Failed to connect to service"));
 		return;
@@ -313,14 +320,12 @@ void FAccountManager::OnGetEmotesToVirtualWorldResponse(
 
 	if (Response->GetResponseCode() == EHttpResponseCodes::Denied)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAccount, Warning,
 		       TEXT(
 			       "[FAccountManager] OnGetEmotesToVirtualWorldResponse: Emote is already registered or there is an error in the request : %s!"
 		       ), *Response->GetContentAsString());
 		return;
 	}
-
-	// check(AssociateEmoteEvent.IsValid());
-	// AssociateEmoteEvent->Trigger();
-	//AssociateEmoteEvent.Reset();
+	
 }

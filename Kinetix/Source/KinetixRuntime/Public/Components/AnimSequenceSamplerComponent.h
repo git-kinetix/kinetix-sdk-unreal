@@ -38,7 +38,6 @@ public:
 	void Play(UAnimSequence* InAnimSequence, const FAnimationID& InAnimationID);
 	void Play(FAnimationQueue& InAnimQueue);
 
-	void SetDebugPoesable(UPoseableMeshComponent* InPoseableMeshComponent);
 	void SetContext(const AActor* InActor);
 
 #pragma region IKinetixSamplerInterface inheritance

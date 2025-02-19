@@ -3,6 +3,7 @@
 
 #include "Managers/PlayersManager.h"
 
+#include "KinetixDeveloperSettings.h"
 #include "PlayerManager.h"
 #include "Core/Animation/KinetixAnimation.h"
 
@@ -46,7 +47,8 @@ void FPlayersManager::AddPlayerCharacterComponent(UAnimInstance* InAnimInstance,
 	NewPlayer->AddPlayerCharacterComponent(InAnimInstance, AvatarUUID);
 	Players.Add(NewPlayer);
 	OutGuid = NewPlayer->UUID;
-	
+
+	if(UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixAnimation, Warning, TEXT("OutGuid: %s, NewPlayer.UUID %s, Pleyrs[].UUID: %s"),
 		*OutGuid.ToString(EGuidFormats::DigitsWithHyphensLower),
 		*NewPlayer->UUID.ToString(EGuidFormats::DigitsWithHyphensLower),

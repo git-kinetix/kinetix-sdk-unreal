@@ -11,6 +11,8 @@ DECLARE_LOG_CATEGORY_EXTERN(LogKinetixUGC, Log, All);
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnUGCUrlFetched, FString, Url);
 
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnUGCTokenStateFetched, bool, bTokenValid);
+
 /**
  * 
  */
@@ -34,9 +36,6 @@ public:
 	void StartPollingForUGC() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Kinetix|UGC")
-	void StartPollingForNewUGCToken() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Kinetix|UGC")
 	void GetUGCUrl(const FOnUGCUrlFetched& UrlFetchedCallback);
 
 	UFUNCTION()
@@ -50,4 +49,6 @@ private:
 	UPROPERTY()
 	FOnUGCUrlFetched UrlFetchedCallback;
 	
+	UPROPERTY()
+	FOnUGCTokenStateFetched UGCTokenStateFetchedCallback;
 };

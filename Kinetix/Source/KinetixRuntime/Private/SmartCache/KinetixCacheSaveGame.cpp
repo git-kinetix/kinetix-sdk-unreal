@@ -101,8 +101,6 @@ void UKinetixCacheSaveGame::LoadManifest(FOnKinetixCacheLoadedDelegate& InCallba
 	FAsyncLoadGameFromSlotDelegate LoadGameDelegate =
 		FAsyncLoadGameFromSlotDelegate::CreateStatic(&UKinetixCacheSaveGame::OnManifestLoaded);
 
-	// Callback = InCallback;
-
 	UGameplayStatics::AsyncLoadGameFromSlot(KINETIXSMARTCACHESLOT, 0, LoadGameDelegate);
 }
 
@@ -110,6 +108,7 @@ void UKinetixCacheSaveGame::OnManifestCreated(const FString& SlotName, int UserI
 {
 	if (!bSuccess)
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixSmartCache, Error, TEXT("OnManifestCreated: Failed to save manifest on disk !"));
 	}
 }
@@ -137,12 +136,11 @@ void UKinetixCacheSaveGame::OnManifestLoaded(const FString& SlotName, const int3
 	UKinetixCacheSaveGame* KinetixCacheSaveGame = Cast<UKinetixCacheSaveGame>(ReturnedSaveGame);
 	if (KinetixCacheSaveGame == nullptr)
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixSmartCache, Warning, TEXT("[UKinetixCacheSaveGame] OnManifestLoaded: No manifest on disk!"));
 		// From this part we should create a new one
 
 		CreateCacheSave();
-
-		return;
 	}
 }
 
@@ -167,6 +165,7 @@ void UKinetixCacheSaveGame::ClearCache()
 	IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
 	if (!FileManager.DeleteDirectoryRecursively(*GeneralPath))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixSmartCache, Warning, TEXT("Failed to delete Smart Cache folder"));
 	}
 }

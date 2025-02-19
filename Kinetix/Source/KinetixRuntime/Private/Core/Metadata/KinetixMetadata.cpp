@@ -3,6 +3,7 @@
 
 #include "Core/Metadata/KinetixMetadata.h"
 
+#include "KinetixDeveloperSettings.h"
 #include "KinetixRuntimeModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Core/KinetixCoreSubsystem.h"
@@ -84,6 +85,7 @@ void UKinetixMetadata::GetUserAnimationMetadatas(const FOnMetadatasAvailable& Ca
 
 	if (!IsValid(KinetixCore))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixMetadata, Warning, TEXT("Unable to find Kinetix Core !"));
 		return;
 	}
@@ -106,10 +108,12 @@ void UKinetixMetadata::LoadIconByAnimationID(const FAnimationID& InID, const FOn
 {
 	if (!InID.UUID.IsValid())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixMetadata, Warning, TEXT("LoadIconByAnimationID(): UUID is invalid !"));
 		return;
 	}
 
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixMetadata,
 	       Warning,
 	       TEXT("LoadIconByAnimationID(): Try get local icon or download it"));

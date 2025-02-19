@@ -26,11 +26,6 @@ void UKinetixUGC::StartPollingForUGC() const
 	FUGCManager::Get().StartPollingUGC();
 }
 
-void UKinetixUGC::StartPollingForNewUGCToken() const
-{
-	FUGCManager::Get().StartPollingForNewUGCToken();
-}
-
 void UKinetixUGC::GetUGCUrl(const FOnUGCUrlFetched& InUrlFetchedCallback)
 {
 	UrlFetchedCallback = InUrlFetchedCallback;

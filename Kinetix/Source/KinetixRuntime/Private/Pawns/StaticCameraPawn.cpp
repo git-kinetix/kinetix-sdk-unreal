@@ -5,6 +5,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "KinetixDeveloperSettings.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -19,6 +20,7 @@ AStaticCameraPawn::AStaticCameraPawn()
 	CameraRoot = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraRoot"));
 	if (!IsValid(CameraRoot))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixRuntime, Warning, TEXT("Camera is null !"));
 		return;
 	}
@@ -42,6 +44,7 @@ void AStaticCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		PC->GetLocalPlayer());
 	if (!IsValid(InputSubsystem))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this, TEXT("ERROR: EnhancedInput not configured !"), true, true,
 		                                  FLinearColor::Red, 10.f);
 		return;
@@ -49,6 +52,7 @@ void AStaticCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 	if (!IsValid(CameraInputMapping))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this, TEXT("%s Input Mapping not set !"), true, true, FLinearColor::Yellow,
 		                                  5.f);
 		return;
@@ -60,6 +64,7 @@ void AStaticCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 	if (!IsValid(EnhancedInputComponent))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this, TEXT("%s EnhancedPlayerInputComponent not set in ProjectSettings !"),
 		                                  true, true, FLinearColor::Yellow, 5.f);
 		return;
@@ -68,6 +73,7 @@ void AStaticCameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	if (!IsValid(InputNextCamera)
 		|| !IsValid(InputPreviousCamera))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this, TEXT("%s Input actions not set !"), true, true, FLinearColor::Yellow,
 		                                  5.f);
 		return;
@@ -93,6 +99,7 @@ void AStaticCameraPawn::GoToCamera(AStaticCameraPawn* InCameraToGo)
 {
 	if (!IsValid(InCameraToGo))
 	{
+		if(UKinetixDeveloperSettings::GetLogFlag())
 		UKismetSystemLibrary::PrintString(this,
 		                                  FString::Printf(TEXT("%s GoToNextCamera: No camera setup !"), *GetName()),
 		                                  true, true, FLinearColor::Yellow, 5.f);

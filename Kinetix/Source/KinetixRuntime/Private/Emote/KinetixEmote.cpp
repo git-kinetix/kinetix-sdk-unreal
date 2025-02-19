@@ -3,6 +3,7 @@
 
 #include "Emote/KinetixEmote.h"
 
+#include "KinetixDeveloperSettings.h"
 #include "Core/Metadata/KinetixMetadata.h"
 
 FKinetixEmote::FKinetixEmote(): bIsLocal(false), AnimSequence(nullptr)
@@ -51,6 +52,7 @@ void FKinetixEmote::SetAnimSequence(UAnimSequence* InAnimSequence)
 {
 	if (!IsValid(InAnimSequence))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixMetadata, Warning, TEXT("[KinetixEmote] SetAnimSequence: Given AnimSequence is null !"));
 		return;
 	}

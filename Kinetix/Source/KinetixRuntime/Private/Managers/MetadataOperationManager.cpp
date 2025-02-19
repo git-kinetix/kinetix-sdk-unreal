@@ -42,6 +42,7 @@ void FMetadataOperationManager::GetAnimationMetadataOfEmote(const FAnimationMeta
 			{
 				if (!Response.IsValid())
 				{
+					if (UKinetixDeveloperSettings::GetLogFlag())
 					UE_LOG(LogKinetixMetadata, Warning,
 					       TEXT(
 						       "[FMetadataOperationManager] OnGetEmotesToVirtualWorldResponse: Failed to connect to service"
@@ -51,6 +52,7 @@ void FMetadataOperationManager::GetAnimationMetadataOfEmote(const FAnimationMeta
 
 				if (Response->GetResponseCode() == EHttpResponseCodes::Denied)
 				{
+					if (UKinetixDeveloperSettings::GetLogFlag())
 					UE_LOG(LogKinetixAccount, Warning,
 					       TEXT(
 						       "[FMetadataOperationManager] OnGetEmotesToVirtualWorldResponse: Emote is already registered or there is an error in the request : %s!"
@@ -85,7 +87,10 @@ void FMetadataOperationManager::GetAnimationMetadataOfEmote(const FAnimationMeta
 			});
 
 		if (!Request->ProcessRequest())
+		{
+			if (UKinetixDeveloperSettings::GetLogFlag())			
 			UE_LOG(LogKinetixMetadata, Warning,
 		       TEXT("[FMetadataOperationManager] GetAnimationMetadata(): Unable to process request !"));
+		}
 	});
 }

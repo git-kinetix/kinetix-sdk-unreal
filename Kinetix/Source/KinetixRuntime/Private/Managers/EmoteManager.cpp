@@ -4,34 +4,25 @@
 #include "Managers/EmoteManager.h"
 
 #include "glTFRuntimeAsset.h"
-#include "glTFRuntimeFunctionLibrary.h"
 #include "glTFRuntimeParser.h"
 #include "HttpModule.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Core/Animation/KinetixAnimation.h"
-#include "Engine/AssetManager.h"
 #include "Interfaces/IHttpResponse.h"
 
 #include "KinanimBonesDataAsset.h"
 
-#include "KinetixRuntimeModule.h"
-#include "UObject/SavePackage.h"
-
 #pragma region SmartCache
 
 #include "IKinanimInterface.h"
-// #include <KinanimWrapper.h>
 
 #include "KinanimWrapper.h"
 #include "KinetixDeveloperSettings.h"
 #include "MemoryManager.h"
 #include "KinanimWrapper/KinanimParser.h"
-#include "Kismet/GameplayStatics.h"
-#include "Serialization/BufferArchive.h"
 #include "SmartCache/KinetixCacheSaveGame.h"
 
 #pragma endregion
-
 
 // Otherwise there is no exports of static symbols
 TUniquePtr<FEmoteManager> FEmoteManager::Instance(nullptr);
@@ -43,10 +34,6 @@ FEmoteManager::FEmoteManager()
 
 FEmoteManager::~FEmoteManager()
 {
-	// if (IsValid(ReferenceSkeletalMesh))
-	// {
-	// 	ReferenceSkeletalMesh->RemoveFromRoot();
-	// }
 	Instance = nullptr;
 }
 
@@ -136,6 +123,7 @@ void FEmoteManager::SetReferenceSkeleton(USkeletalMesh* SkeletalMesh)
 {
 	if (!IsValid(SkeletalMesh))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Warning, TEXT("[EmoteManager] SetReferenceSkeleton: Given skeleton is null !"))
 		return;
 	}
@@ -161,6 +149,7 @@ bool FEmoteManager::GetAnimSequenceFromGltfAsset(const FKinetixEmote* InEmote, U
 	USkeletalMesh* RefSkeletalMesh = GetReferenceSkeleton();
 	if (!IsValid(RefSkeletalMesh))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Warning,
 		       TEXT("[FAccount] AnimationRequestComplete(): RefSekeletalMesh is null !"));
 		return true;
@@ -170,6 +159,7 @@ bool FEmoteManager::GetAnimSequenceFromGltfAsset(const FKinetixEmote* InEmote, U
 
 	if (!IsValid(AnimSequence))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FAccount] AnimationRequestComplete(): AnimSequence is null !"));
 		return true;
@@ -210,6 +200,7 @@ void FEmoteManager::LoadBoneMapping(
 
 		if (!bAvatarIDFound)
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation, Error,
 			       TEXT("[EmoteManager] LoadMapping(): Given AvatarID not in emote metadata's avatars"));
 			return;
@@ -220,11 +211,9 @@ void FEmoteManager::LoadBoneMapping(
 		this, &FEmoteManager::MappingRequestComplete,
 		InEmote->GetAnimationMetadata(), AvatarUUID, OnOperationFinished);
 
-	//HttpRequest->OnHeaderReceived().BindRaw(this, &FEmoteManager::AnimationHeaderReceived);
-	//HttpRequest->OnRequestProgress().BindRaw(this, &FEmoteManager::AnimationRequestProgress);
-
 	if (!HttpRequest->ProcessRequest())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Warning,
 		       TEXT("[EmoteManager] LoadMapping: Unable to process animation request !"));
 	}
@@ -247,6 +236,7 @@ void FEmoteManager::MappingRequestComplete(TSharedPtr<IHttpRequest> HttpRequest,
 	const bool bDeserializationResult = FJsonSerializer::Deserialize(JsonReader, JsonObject);
 	if (!bDeserializationResult)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation,
 		       Error, TEXT("[FEmoteManager] MappingRequestComplete: Unable to desrialize Json"));
 		return;
@@ -257,6 +247,7 @@ void FEmoteManager::MappingRequestComplete(TSharedPtr<IHttpRequest> HttpRequest,
 
 	if (!JsonValue->IsValid())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation,
 		       Error, TEXT("[FEmoteManager] MappingRequestComplete: Unable to retreive JsonObject"));
 		return;
@@ -484,6 +475,7 @@ void FEmoteManager::MappingRequestComplete(TSharedPtr<IHttpRequest> HttpRequest,
 	FKinetixEmote* Emote = GetEmote(AnimationMetadata.Id);
 	if (Emote == nullptr)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation,
 		       Error, TEXT("[FEmoteManager] MappingRequestComplete: Unable to retreive Emote"));
 		return;
@@ -535,6 +527,7 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 
 				if (!BoneMappingHttpRequest->ProcessRequest())
 				{
+					if (UKinetixDeveloperSettings::GetLogFlag())
 					UE_LOG(LogKinetixAnimation, Warning,
 					       TEXT("[EmoteManager] LoadAnimation: Unable to process animation request !"));
 				}
@@ -553,6 +546,7 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 
 		if (!FPaths::FileExists(Path))
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation,
 			       Error,
 			       TEXT("[FEmoteManager] LoadAnimation(): Kinanim file not found !"))
@@ -562,36 +556,25 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 		TArray<uint8> KinanimFileContent;
 		if (!FFileHelper::LoadFileToArray(KinanimFileContent, *Path))
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation, Warning, TEXT("[EmoteManager] LoadAnimation: Failed to load file at %s"),
 			       *Path);
 			return;
 		}
 
-		// const TArray<uint8> JsonContent = HttpResponse->GetContent();
-		//
+
 		const char* KinanimFileArray = reinterpret_cast<const char*>(KinanimFileContent.GetData());
-		// void* BinaryStream = Kinanim::CreateBinaryStreamFromArray(Datas, JsonContent.Num());
-		
-		// const TCHAR* File = *Path;
+
 		void* Filestream = Kinanim::CreateBinaryStreamFromArray(
 			KinanimFileArray,
 			KinanimFileContent.Num());
-
-		// void* Filestream = Kinanim::OpenReadFile(File);
-
-		// if (Filestream == nullptr)
-		// {
-		// 	UE_LOG(LogKinetixAnimation,
-		// 	       Error,
-		// 	       TEXT("[FEmoteManager] LoadAnimation(): Failed to open Kinanim file !"))
-		// 	return;
-		// }
 
 		UAnimSequence* ToReturn = UKinanimParser::LoadSkeletalAnimationFromStream(
 			GetReferenceSkeleton(), Filestream, KinanimBoneMapping, bBlendshapesEnabled);
 
 		if (!IsValid(ToReturn))
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation,
 			       Error,
 			       TEXT("[FEmoteManager] LoadAnimation(): Failed to create anim sequence !"))
@@ -599,8 +582,7 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 		}
 
 		ToReturn->AddToRoot();
-		// delete File;
-		// Kinanim::ifstream_CloseStream(Filestream);
+
 		Kinanim::ioMemStream_CloseStream(Filestream);
 		
 		FKinetixEmote* Emote = GetEmote(InEmote->GetAnimationMetadata().Id);
@@ -642,6 +624,7 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 
 				if (!HttpRequest->ProcessRequest())
 				{
+					if (UKinetixDeveloperSettings::GetLogFlag())
 					UE_LOG(LogKinetixAnimation, Warning,
 					       TEXT("[EmoteManager] LoadAnimation: Unable to process animation request !"));
 				}
@@ -659,6 +642,7 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 
 		if (!bAvatarIDFound)
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation, Error,
 			       TEXT("[EmoteManager] LoadAnimation(): Given AvatarID not in emote metadata's avatars"));
 			return;
@@ -669,20 +653,14 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 		HttpRequest->SetURL(InEmote->GetAnimationMetadata().AnimationURL.Map);
 		HttpRequest->SetHeader(TEXT("User-Agent"), SDKUSERAGENT);
 	}
-
-	// HttpRequest->OnProcessRequestComplete().BindRaw(
-	// 	this, &FEmoteManager::AnimationRequestComplete,
-	// 	InEmote->GetAnimationMetadata(), OnOperationFinished);
-
+	
 	HttpRequest->OnProcessRequestComplete().BindRaw(
 		this, &FEmoteManager::HeaderRequestComplete,
 		InEmote->GetAnimationMetadata(), OnOperationFinished);
 
-	//HttpRequest->OnHeaderReceived().BindRaw(this, &FEmoteManager::AnimationHeaderReceived);
-	//HttpRequest->OnRequestProgress().BindRaw(this, &FEmoteManager::AnimationRequestProgress);
-
 	if (!HttpRequest->ProcessRequest())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Warning,
 		       TEXT("[EmoteManager] LoadAnimation: Unable to process animation request !"));
 	}
@@ -691,11 +669,13 @@ void FEmoteManager::LoadAnimation(const FKinetixEmote* InEmote,
 void FEmoteManager::AnimationHeaderReceived(FHttpRequestPtr Request, const FString& HeaderName,
                                             const FString& HeaderValue)
 {
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixAnimation, Log, TEXT("Received Header %s %s"), *HeaderName, *HeaderValue);
 }
 
 void FEmoteManager::AnimationRequestProgress(FHttpRequestPtr Request, int32 BytesSent, int32 BytesReceived)
 {
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixAnimation, Log, TEXT("Request in progress... %i bytes sent %i received"), BytesSent,
 	       BytesReceived);
 }
@@ -725,6 +705,7 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 	void* BinaryStream = Kinanim::CreateBinaryStreamFromArray(Datas, JsonContent.Num());
 	if (BinaryStream == nullptr)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream ! %s"),
 		       *JsonString);
@@ -737,6 +718,7 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 
 	if (!IsValid(KinanimAnimSequence))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create anim sequence from binary stream ! %s"
 		       ),
@@ -746,51 +728,8 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 
 #pragma endregion
 
-	// TArray<TSharedPtr<FJsonValue>> JsonArray;
-	// const TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonString);
-	//
-	// FglTFRuntimeConfig RuntimeConfig;
-
-	// Setup for animation V1
-	// RuntimeConfig.TransformBaseType = EglTFRuntimeTransformBaseType::YForward;
-
-	// Setup for animation V2
-	// RuntimeConfig.TransformBaseType = EglTFRuntimeTransformBaseType::Transform;
-	// RuntimeConfig.BaseTransform.SetRotation(FRotator(0.f, 180.f, 0.f).Quaternion());
-	// RuntimeConfig.BaseTransform.SetScale3D(FVector(-1.f, 1.f, 1.f));
-	//
-	// UglTFRuntimeAsset* GlTFAsset =
-	// 	UglTFRuntimeFunctionLibrary::glTFLoadAssetFromData(
-	// 		HttpResponse->GetContent(),
-	// 		RuntimeConfig);
-
-	// if (!IsValid(GlTFAsset))
-	// {
-	// 	UE_LOG(LogKinetixAnimation, Warning,
-	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to deserialize response ! %s"),
-	// 	       *JsonString);
-	// 	return;
-	// }
-
-	// FglTFRuntimeSkeletalAnimationConfig SkeletalAnimConfig;
-	// if (CurveRemapper.IsBound())
-	// {
-	// 	SkeletalAnimConfig.CurveRemapper.Remapper = CurveRemapper;
-	// }
-	// USkeletalMesh* RefSkeletalMesh = GetReferenceSkeleton();
-	// if (!IsValid(RefSkeletalMesh))
-	// {
-	// 	UE_LOG(LogKinetixAnimation, Warning,
-	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): RefSekeletalMesh is null !"));
-	// 	return;
-	// }
-	//
-	// UAnimSequence* AnimSequence = GlTFAsset->LoadSkeletalAnimation(RefSkeletalMesh, 0,
-	//                                                                SkeletalAnimConfig);
-
 #pragma region Saving file
-
-
+	
 	FString Path;
 	UKinetixDataBlueprintFunctionLibrary::GetCacheAnimationPath(Path, InAnimationMetadata.Id);
 
@@ -798,6 +737,7 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 	{
 		if (!FFileHelper::SaveArrayToFile(HttpResponse->GetContent(), *Path))
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation,
 			       Error,
 			       TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .kinanim file failed !"))
@@ -806,22 +746,9 @@ void FEmoteManager::AnimationRequestComplete(TSharedPtr<IHttpRequest, ESPMode::T
 
 #pragma endregion
 
-#pragma region Loading file into asset
-
-	// UglTFRuntimeAsset* LoadedGltfAsset = UglTFRuntimeFunctionLibrary::glTFLoadAssetFromFilename(
-	// 	Path, false, RuntimeConfig);
-	//
-	// if (LoadedGltfAsset == nullptr)
-	// {
-	// 	UE_LOG(LogKinetixAnimation,
-	// 	       Error,
-	// 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Loaded .glb file failed !"))
-	// }
-
-#pragma endregion
-
 	if (!IsValid(KinanimAnimSequence))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FAccount] AnimationRequestComplete(): AnimSequence is null !"));
 		return;
@@ -857,6 +784,7 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 	void* BinaryStream = Kinanim::CreateBinaryStreamFromArray(Datas, JsonContent.Num());
 	if (BinaryStream == nullptr)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream ! %s"),
 		       *JsonString);
@@ -867,6 +795,7 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 	if (!UKinanimParser::LoadStartDataFromStream(
 		GetReferenceSkeleton(), BinaryStream, &Importer))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream ! %s"),
 		       *JsonString);
@@ -887,9 +816,9 @@ void FEmoteManager::HeaderRequestComplete(TSharedPtr<IHttpRequest, ESPMode::Thre
 		this, &FEmoteManager::OnKinanimAvailableToPlay, OnSuccessDelegate);
 	if (!KinanimDownloader->DownloadRemainingFrames())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] AnimationRequestComplete(): Unable to create binary stream !"));
-		return;
 	}
 }
 
@@ -899,6 +828,7 @@ void FEmoteManager::OnKinanimAvailableToPlay(UKinanimDownloader* KinanimDownload
 
 	if (!IsValid(KinanimAnimSequence))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FAccount] AnimationRequestComplete(): AnimSequence is null !"));
 		return;
@@ -926,6 +856,7 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 {
 	if (!IsValid(KinanimDownloader))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] OnKinanimComplete(): Kinanim downloader is null !"));
 		return;
@@ -935,6 +866,7 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 
 	if (!IsValid(KinanimAnimSequence))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FAccount] AnimationRequestComplete(): AnimSequence is null !"));
 		return;
@@ -953,6 +885,7 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 	{
 		if (!FFileHelper::SaveArrayToFile(TArray<uint8>(), *Path))
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation,
 			       Error,
 			       TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .kinanim file failed !"))
@@ -967,12 +900,14 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 		PathWithoutFile += '/';
 		if (!FileManager.CreateDirectory(*PathWithoutFile))
 		{
+			if (UKinetixDeveloperSettings::GetLogFlag())
 			UE_LOG(LogKinetixAnimation,
 			       Error,
 			       TEXT("[FEmoteManager] AnimationRequestComplete(): Saving .kinanim file failed !"))
 		}
 	}
 
+	if (UKinetixDeveloperSettings::GetLogFlag())
 	UE_LOG(LogKinetixAnimation,
 	       Warning,
 	       TEXT("[FEmoteManager] AnimationRequestComplete(): Try saving file with %d frames !"),
@@ -983,6 +918,7 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 	void* UncompressedHeader = KinanimDownloader->GetUncompressedHeader();
 	if (UncompressedHeader == nullptr)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] AnimationRequestComplete(): No header on KinanimDownloader !"))
 		return;
@@ -996,6 +932,7 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 
 	if (TotalSize == 0)
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Error,
 		       TEXT("[FEmoteManager] AnimationRequestComplete(): Returned size of Kinanim is 0 !"))
 		return;
@@ -1024,25 +961,14 @@ void FEmoteManager::OnKinanimComplete(UKinanimDownloader* KinanimDownloader, TDe
 	FFileHelper::SaveArrayToFile(TargetBuffer, *Path);
 
 	Kinanim::ioMemStream_CloseStream(ExportStream);
-	return;
 
-	//void* ExportStream = Kinanim::CreateBinaryStream(100000);
-	// void* ExportStream = Kinanim::OpenWriteFile(*Path, false);
-	// KinanimWrapper::KinanimExporter_WriteHeader(ExportStream, KinanimDownloader->GetUncompressedHeader());
-	// KinanimWrapper::KinanimExporter_Content_WriteFrames(
-	// 	ExportStream,
-	// 	KinanimDownloader->GetFrames(),
-	// 	KinanimDownloader->GetFrameCount(),
-	// 	KinanimWrapper::KinanimHeader_Get_hasBlendshapes(KinanimDownloader->GetUncompressedHeader()),
-	// 	0);
-	//
-	// Kinanim::ioMemStream_CloseStream(ExportStream);
 }
 
 void FEmoteManager::OnReferenceSkeletonAvailable(FAssetData AssetData)
 {
 	if (!AssetData.IsValid())
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Warning,
 		       TEXT("[EmoteManager] OnReferenceSkeletonAvailable: AssetData not valid !"));
 		return;
@@ -1051,6 +977,7 @@ void FEmoteManager::OnReferenceSkeletonAvailable(FAssetData AssetData)
 	ReferenceSkeletalMesh = Cast<USkeletalMesh>(AssetData.GetAsset());
 	if (!IsValid(ReferenceSkeletalMesh))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Warning,
 		       TEXT("[EmoteManager] OnReferenceSkeletonAvailable: ReferenceSkeletalMesh not valid !"));
 		return;

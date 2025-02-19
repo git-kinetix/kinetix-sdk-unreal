@@ -13,7 +13,6 @@ void UKinetixAnimInstance::SendNetworkedPose_Implementation()
 
 void UKinetixAnimInstance::NativeSendNetworkedPose(const TArray<FName>& BoneNames, const TArray<FTransform>& BoneTransforms)
 {
-	// UKismetSystemLibrary::PrintString(this, TEXT("NativeSendNetworkedPose"));
 	BP_SendNetworkedPose(BoneNames, BoneTransforms);
 }
 

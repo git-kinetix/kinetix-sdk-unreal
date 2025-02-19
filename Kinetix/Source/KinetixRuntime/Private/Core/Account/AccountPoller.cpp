@@ -36,7 +36,8 @@ void FAccountPoller::StartPolling()
 				UE::Tasks::FTask Task =
 					UE::Tasks::Launch(UE_SOURCE_LOCATION, []
 					{
-						UE_LOG(LogKinetixAccount, Warning,
+						if (UKinetixDeveloperSettings::GetLogFlag())
+							UE_LOG(LogKinetixAccount, Warning,
 						       TEXT("[FAccountPoller] StartPolling(): New Polling !"));
 
 						UE::Tasks::FTaskEvent Blocker{UE_SOURCE_LOCATION};
@@ -49,15 +50,18 @@ void FAccountPoller::StartPolling()
 							{
 								if (!Response.IsValid())
 								{
-									UE_LOG(LogKinetixAccount, Warning,
+									if (UKinetixDeveloperSettings::GetLogFlag())
+										UE_LOG(LogKinetixAccount, Warning,
 									       TEXT("[FAccountPoller] StartPolling(): Failed to connect to service !"));
 									Blocker.Trigger();
 									return;
 								}
 
-								if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()) && !(Response->GetResponseCode() == 208))
+								if (!EHttpResponseCodes::IsOk(Response->GetResponseCode()) && !(Response->
+									GetResponseCode() == 208))
 								{
-									UE_LOG(LogKinetixAccount, Warning,
+									if (UKinetixDeveloperSettings::GetLogFlag())
+										UE_LOG(LogKinetixAccount, Warning,
 									       TEXT("[FAccountPoller] StartPolling(): Wrong response from server %i !"),
 									       Response->GetResponseCode());
 									Blocker.Trigger();
@@ -74,7 +78,8 @@ void FAccountPoller::StartPolling()
 									FJsonSerializer::Deserialize(JsonReader, ResponseValue);
 								if (!bDeserializationResult)
 								{
-									UE_LOG(LogKinetixAccount, Warning,
+									if (UKinetixDeveloperSettings::GetLogFlag())
+										UE_LOG(LogKinetixAccount, Warning,
 									       TEXT("[FAccountPoller] StartPolling(): Unable to deserialize response !"));
 									Blocker.Trigger();
 									return;
@@ -87,8 +92,8 @@ void FAccountPoller::StartPolling()
 									Blocker.Trigger();
 									return;
 								}
-
-								UE_LOG(LogKinetixAccount, Warning,
+								if (UKinetixDeveloperSettings::GetLogFlag())
+									UE_LOG(LogKinetixAccount, Warning,
 								       TEXT("[FAccountPoller] StartPolling(): New Response !"));
 
 								if (Account->GetEmotes().Num() >= Elements.Num())
@@ -103,14 +108,14 @@ void FAccountPoller::StartPolling()
 								for (int i = 0; i < Elements.Num(); ++i)
 								{
 									TSharedPtr<FJsonObject> JsonObject = Elements[i].Get()->AsObject();
-									if(!JsonObject.IsValid()) continue;
+									if (!JsonObject.IsValid()) continue;
 
 									const TSharedPtr<FJsonObject>* DataObject;
 									JsonObject->TryGetObjectField(TEXT("data"), DataObject);
-									
+
 									UKinetixDataBlueprintFunctionLibrary::GetAnimationMetadataFromJson(
 										*DataObject, CurrentMetadata);
-										
+
 									bHasFoundMetadata = false;
 
 									for (FKinetixEmote* Emote : CurrentEmotes)
@@ -142,10 +147,13 @@ void FAccountPoller::StartPolling()
 							TEXT("User-Agent"), SDKUSERAGENT);
 
 						if (!Request->ProcessRequest())
+						{
+							if (UKinetixDeveloperSettings::GetLogFlag())							
 							UE_LOG(LogKinetixAccount, Warning,
 						       TEXT("[FAccountPoller] StartPolling(): Unable to process request !"));
+						}
 
-						Blocker.BusyWait();
+						Blocker.Wait();
 					});
 				UE::Tasks::AddNested(Task);
 
@@ -159,7 +167,7 @@ void FAccountPoller::StartPolling()
 					{
 						FPlatformProcess::Sleep(IntervalTimeInSeconds);
 					});
-				Task.BusyWait();
+				Task.Wait();
 			}
 		});
 }

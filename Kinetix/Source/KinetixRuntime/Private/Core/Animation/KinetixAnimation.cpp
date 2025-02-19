@@ -2,6 +2,7 @@
 
 #include "Core/Animation/KinetixAnimation.h"
 
+#include "KinetixDeveloperSettings.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Managers/EmoteManager.h"
 #include "Managers/MemoryManager.h"
@@ -36,6 +37,7 @@ void UKinetixAnimation::RegisterLocalPlayerAnimInstance(UAnimInstance* InAnimIns
 {
 	if (!IsValid(InAnimInstance))
 	{
+		if (UKinetixDeveloperSettings::GetLogFlag())
 		UE_LOG(LogKinetixAnimation, Warning, TEXT("RegisterLocalPlayerAnimInstance: AnimInstance is null !"));
 		return;
 	}
